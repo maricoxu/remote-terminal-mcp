@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+
+/**
+ * Cursor-Bridge MCP 可执行文件
+ * 这是NPM包的入口点
+ */
+
+require('../index.js');
