@@ -14,7 +14,7 @@ SERVER_HOST="{{SERVER_HOST}}"
 JUMP_HOST="{{JUMP_HOST}}"
 CONTAINER_NAME="{{CONTAINER_NAME}}"
 SESSION_NAME="{{SESSION_NAME}}"
-BOS_BUCKET="bos:/klx-pytorch-work-bd-bj/xuyehua/template"
+BOS_BUCKET="your-storage-path-here"
 
 # =============================================================================
 # 日志函数
@@ -103,7 +103,7 @@ create_docker_container() {
         -v /home:/home \
         -v /data:/data \
         -v /tmp:/tmp \
-        iregistry.baidu-int.com/xmlir/xmlir_ubuntu_2004_x86_64:v0.32 \
+        your-registry.com/your-org/ubuntu-dev:latest \
         bash
     
     log_info "容器创建完成"

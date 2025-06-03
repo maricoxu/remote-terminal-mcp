@@ -159,7 +159,7 @@ cd cursor-bridge
 servers:
   # 服务器1：深度学习训练服务器（直连）
   dl-server-01:
-    host: "192.168.1.100"              # 服务器IP或主机名
+    host: "10.0.1.50"              # 服务器IP或主机名
     username: "zhangsan"               # 你的用户名
     session_name: "dl-server-01"       # tmux会话名称（建议与服务器名一致）
     workspace_dir: "/home/zhangsan/workspace"  # 工作目录

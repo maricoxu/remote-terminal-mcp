@@ -449,7 +449,7 @@ class CursorBridgeMCPServer:
 ssh -J {config['jump_host']} {config['host']}
 
 # 进入容器
-docker exec -it {config.get('container_name', 'xyh_pytorch')} bash
+docker exec -it {config.get('container_name', 'user_container')} bash
 
 # 连接或创建tmux会话
 tmux attach -t {session_name} || tmux new -s {session_name}
@@ -461,7 +461,7 @@ tmux attach -t {session_name} || tmux new -s {session_name}
 ssh {config['host']}
 
 # 进入容器  
-docker exec -it {config.get('container_name', 'xyh_pytorch')} bash
+docker exec -it {config.get('container_name', 'user_container')} bash
 
 # 连接或创建tmux会话
 tmux attach -t {session_name} || tmux new -s {session_name}

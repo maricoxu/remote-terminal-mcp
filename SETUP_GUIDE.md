@@ -42,7 +42,7 @@ settings:
   default_tmux_session: 'default'    # 默认会话名
   auto_create_session: true          # 自动创建会话
   debug_mode: false                  # 调试模式
-  bos_bucket: 'bos:/klx-pytorch-work-bd-bj/xuyehua/template'
+  bos_bucket: 'your-storage-path-here'
   connection_timeout: 30             # 连接超时(秒)
   retry_attempts: 3                  # 重试次数
 
