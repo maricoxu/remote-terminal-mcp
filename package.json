@@ -1,21 +1,29 @@
 {
   "name": "@xuyehua/remote-terminal-mcp",
-  "version": "0.1.0",
-  "description": "Remote Terminal MCP Server - Ultra minimal version",
+  "version": "0.2.0",
+  "description": "Remote Terminal MCP Server - 智能script-based连接系统，完整集成connect_cpu_221.sh逻辑",
   "main": "index.js",
   "bin": {
     "remote-terminal-mcp": "index.js"
   },
   "scripts": {
     "start": "node index.js",
-    "test": "node index.js --test"
+    "test": "node index.js --test",
+    "build": "echo 'No build step needed for this package'",
+    "prepublishOnly": "npm test"
   },
   "keywords": [
     "mcp", 
     "remote", 
-    "terminal",
+    "terminal", 
     "cursor",
-    "claude"
+    "claude",
+    "script-based",
+    "docker",
+    "relay-cli",
+    "intelligent-connection",
+    "tmux",
+    "ssh"
   ],
   "author": {
     "name": "xuyehua",
@@ -32,10 +40,22 @@
   "files": [
     "index.js",
     "python/",
+    "config/",
+    "templates/",
+    "docs/",
+    "scripts/",
     "README.md",
     "LICENSE"
   ],
   "publishConfig": {
     "access": "public"
+  },
+  "homepage": "https://github.com/xuyehua/remote-terminal-mcp",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xuyehua/remote-terminal-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/xuyehua/remote-terminal-mcp/issues"
   }
 }

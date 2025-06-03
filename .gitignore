@@ -131,5 +131,19 @@ test-output/
 
 # Configuration files (personal)
 config/local.yaml
+config/*.local.yaml
+config/*.local.yml
 .cursor-bridge/
 .remote-terminal/
+
+# Remote Terminal MCP specific
+config/servers.local.yaml
+config/servers.local.yml
+*.local.yaml
+*.local.yml
+
+# SSH keys and sensitive files
+*.pem
+*.key
+id_rsa*
+id_ed25519*

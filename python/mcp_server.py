@@ -11,9 +11,33 @@ import sys
 import os
 import subprocess
 import time
+from pathlib import Path
+
+# 添加当前目录到Python路径
+sys.path.append(str(Path(__file__).parent))
+
+# 设置安静模式，防止SSH Manager显示启动摘要
+os.environ['MCP_QUIET'] = '1'
+
+from ssh_manager import SSHManager
 
 # 调试模式
 DEBUG = os.getenv('MCP_DEBUG') == '1'
+
+# 初始化SSH管理器
+ssh_manager = None
+
+def get_ssh_manager():
+    """获取SSH管理器实例"""
+    global ssh_manager
+    if ssh_manager is None:
+        try:
+            ssh_manager = SSHManager()
+            debug_log("SSH管理器初始化成功")
+        except Exception as e:
+            debug_log(f"SSH管理器初始化失败: {e}")
+            ssh_manager = None
+    return ssh_manager
 
 def debug_log(msg):
     if DEBUG:
@@ -242,6 +266,68 @@ async def handle_request(request):
                                 }
                             }
                         }
+                    },
+                    {
+                        "name": "list_remote_servers",
+                        "description": "列出所有配置的远程服务器",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {}
+                        }
+                    },
+                    {
+                        "name": "test_server_connection",
+                        "description": "测试远程服务器连接",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "server_name": {
+                                    "type": "string",
+                                    "description": "要测试的服务器名称"
+                                }
+                            },
+                            "required": ["server_name"]
+                        }
+                    },
+                    {
+                        "name": "execute_remote_command",
+                        "description": "在远程服务器上执行命令",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "server_name": {
+                                    "type": "string",
+                                    "description": "目标服务器名称"
+                                },
+                                "command": {
+                                    "type": "string",
+                                    "description": "要执行的命令"
+                                }
+                            },
+                            "required": ["server_name", "command"]
+                        }
+                    },
+                    {
+                        "name": "get_server_status",
+                        "description": "获取远程服务器状态信息",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "server_name": {
+                                    "type": "string",
+                                    "description": "服务器名称"
+                                }
+                            },
+                            "required": ["server_name"]
+                        }
+                    },
+                    {
+                        "name": "refresh_server_connections",
+                        "description": "刷新所有服务器连接状态",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {}
+                        }
                     }
                 ]
             }
@@ -344,6 +430,214 @@ async def handle_request(request):
             except Exception as e:
                 debug_log(f"Error in list_directory: {e}")
                 return create_error_response(request_id, f"列出目录失败: {str(e)}")
+        
+        elif tool_name == "list_remote_servers":
+            try:
+                manager = get_ssh_manager()
+                if not manager:
+                    return create_error_response(request_id, "SSH管理器初始化失败，请检查配置文件")
+                
+                servers = manager.list_servers()
+                if not servers:
+                    return create_success_response(request_id, "📭 没有配置任何远程服务器\n\n💡 请运行 ./scripts/init-config.sh 初始化配置")
+                
+                result_text = f"🖥️ 配置的远程服务器 ({len(servers)}个):\n\n"
+                
+                for server in servers:
+                    status_icon = "🟢" if server['connected'] else "🔴"
+                    result_text += f"{status_icon} **{server['name']}** ({server['type']})\n"
+                    result_text += f"   📍 地址: {server['host']}\n"
+                    result_text += f"   📝 描述: {server['description']}\n"
+                    
+                    if server.get('jump_host'):
+                        result_text += f"   🔗 跳板机: {server['jump_host']}\n"
+                    
+                    specs = server.get('specs', {})
+                    if specs:
+                        if specs.get('gpu_count', 0) > 0:
+                            result_text += f"   🎮 GPU: {specs['gpu_count']}x {specs.get('gpu_type', 'Unknown')}\n"
+                        result_text += f"   💾 内存: {specs.get('memory', 'Unknown')}\n"
+                    
+                    if server['last_check'] > 0:
+                        import datetime
+                        check_time = datetime.datetime.fromtimestamp(server['last_check'])
+                        result_text += f"   ⏰ 上次检查: {check_time.strftime('%Y-%m-%d %H:%M:%S')}\n"
+                    
+                    result_text += "\n"
+                
+                default_server = manager.get_default_server()
+                if default_server:
+                    result_text += f"🌟 默认服务器: {default_server}\n"
+                
+                result_text += "\n💡 使用 'test_server_connection' 测试连接状态"
+                
+                return create_success_response(request_id, result_text)
+                
+            except Exception as e:
+                debug_log(f"Error in list_remote_servers: {e}")
+                return create_error_response(request_id, f"列出远程服务器失败: {str(e)}")
+        
+        elif tool_name == "test_server_connection":
+            try:
+                server_name = arguments.get("server_name", "")
+                if not server_name:
+                    return create_error_response(request_id, "服务器名称不能为空")
+                
+                manager = get_ssh_manager()
+                if not manager:
+                    return create_error_response(request_id, "SSH管理器初始化失败，请检查配置文件")
+                
+                success, message = manager.test_connection(server_name)
+                
+                if success:
+                    result_text = f"✅ 服务器连接测试成功\n\n"
+                    result_text += f"🖥️ 服务器: {server_name}\n"
+                    result_text += f"📶 状态: {message}\n"
+                    result_text += f"🔗 连接正常，可以执行远程命令"
+                else:
+                    result_text = f"❌ 服务器连接测试失败\n\n"
+                    result_text += f"🖥️ 服务器: {server_name}\n"
+                    result_text += f"⚠️ 错误: {message}\n"
+                    result_text += f"\n💡 请检查:\n"
+                    result_text += f"   • 服务器地址和端口\n"
+                    result_text += f"   • SSH密钥配置\n"
+                    result_text += f"   • 网络连接\n"
+                    result_text += f"   • 服务器是否在线"
+                
+                return create_success_response(request_id, result_text)
+                
+            except Exception as e:
+                debug_log(f"Error in test_server_connection: {e}")
+                return create_error_response(request_id, f"测试服务器连接失败: {str(e)}")
+        
+        elif tool_name == "execute_remote_command":
+            try:
+                server_name = arguments.get("server_name", "")
+                command = arguments.get("command", "")
+                
+                if not server_name:
+                    return create_error_response(request_id, "服务器名称不能为空")
+                if not command:
+                    return create_error_response(request_id, "命令不能为空")
+                
+                manager = get_ssh_manager()
+                if not manager:
+                    return create_error_response(request_id, "SSH管理器初始化失败，请检查配置文件")
+                
+                success, output = manager.execute_command(server_name, command)
+                
+                result_text = f"🔧 在远程服务器 **{server_name}** 执行命令\n"
+                result_text += f"📝 命令: `{command}`\n\n"
+                
+                if success:
+                    result_text += f"✅ 执行成功\n\n{output}"
+                else:
+                    result_text += f"❌ 执行失败\n\n{output}"
+                
+                return create_success_response(request_id, result_text)
+                
+            except Exception as e:
+                debug_log(f"Error in execute_remote_command: {e}")
+                return create_error_response(request_id, f"执行远程命令失败: {str(e)}")
+        
+        elif tool_name == "get_server_status":
+            try:
+                server_name = arguments.get("server_name", "")
+                if not server_name:
+                    return create_error_response(request_id, "服务器名称不能为空")
+                
+                manager = get_ssh_manager()
+                if not manager:
+                    return create_error_response(request_id, "SSH管理器初始化失败，请检查配置文件")
+                
+                status = manager.get_server_status(server_name)
+                
+                if 'error' in status:
+                    return create_error_response(request_id, status['error'])
+                
+                result_text = f"🖥️ 服务器状态: **{server_name}**\n\n"
+                result_text += f"📍 地址: {status['host']}\n"
+                result_text += f"📝 描述: {status['description']}\n"
+                
+                # 显示服务器规格
+                specs = status.get('specs', {})
+                if specs:
+                    result_text += f"\n🔧 硬件配置:\n"
+                    if specs.get('cpu_cores'):
+                        result_text += f"   🖥️ CPU: {specs['cpu_cores']} 核心\n"
+                    if specs.get('memory'):
+                        result_text += f"   💾 内存: {specs['memory']}\n"
+                    if specs.get('gpu_count', 0) > 0:
+                        result_text += f"   🎮 GPU: {specs['gpu_count']}x {specs.get('gpu_type', 'Unknown')}\n"
+                
+                # 显示连接状态
+                status_icon = "🟢" if status['connected'] else "🔴"
+                result_text += f"\n📶 连接状态: {status_icon} {'在线' if status['connected'] else '离线'}\n"
+                
+                if status['last_check'] > 0:
+                    import datetime
+                    check_time = datetime.datetime.fromtimestamp(status['last_check'])
+                    result_text += f"⏰ 上次检查: {check_time.strftime('%Y-%m-%d %H:%M:%S')}\n"
+                
+                # 显示详细信息
+                info = status.get('info', {})
+                if info:
+                    result_text += f"\n📊 系统信息:\n"
+                    
+                    if 'hostname' in info:
+                        result_text += f"   🏷️ 主机名: {info['hostname']}\n"
+                    
+                    if 'uptime' in info:
+                        result_text += f"   ⏱️ 运行时间: {info['uptime']}\n"
+                    
+                    if 'load' in info:
+                        result_text += f"   📈 系统负载: {info['load']}\n"
+                    
+                    if 'memory' in info:
+                        result_text += f"   💾 内存使用:\n{info['memory']}\n"
+                    
+                    if 'disk_usage' in info:
+                        result_text += f"   💿 磁盘使用:\n{info['disk_usage']}\n"
+                    
+                    if 'gpu_status' in info:
+                        result_text += f"   🎮 GPU状态:\n{info['gpu_status']}\n"
+                
+                return create_success_response(request_id, result_text)
+                
+            except Exception as e:
+                debug_log(f"Error in get_server_status: {e}")
+                return create_error_response(request_id, f"获取服务器状态失败: {str(e)}")
+        
+        elif tool_name == "refresh_server_connections":
+            try:
+                manager = get_ssh_manager()
+                if not manager:
+                    return create_error_response(request_id, "SSH管理器初始化失败，请检查配置文件")
+                
+                results = manager.refresh_all_connections()
+                
+                if not results:
+                    return create_success_response(request_id, "📭 没有配置任何服务器")
+                
+                result_text = f"🔄 刷新所有服务器连接状态\n\n"
+                
+                online_count = sum(1 for success in results.values() if success)
+                total_count = len(results)
+                
+                result_text += f"📊 总计: {online_count}/{total_count} 服务器在线\n\n"
+                
+                for server_name, success in results.items():
+                    status_icon = "🟢" if success else "🔴"
+                    status_text = "在线" if success else "离线"
+                    result_text += f"{status_icon} {server_name}: {status_text}\n"
+                
+                result_text += f"\n⏰ 刷新时间: {time.strftime('%Y-%m-%d %H:%M:%S')}"
+                
+                return create_success_response(request_id, result_text)
+                
+            except Exception as e:
+                debug_log(f"Error in refresh_server_connections: {e}")
+                return create_error_response(request_id, f"刷新服务器连接失败: {str(e)}")
         
         else:
             return create_error_response(request_id, f"未知工具: {tool_name}", -32601)

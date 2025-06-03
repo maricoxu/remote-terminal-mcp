@@ -1,0 +1,161 @@
+# Remote Terminal MCP 服务器配置模板
+# 复制此文件为 servers.local.yaml 并修改为你的实际配置
+
+# 服务器配置
+servers:
+  # 示例1：直接SSH连接
+  bjhw-sys-rpm0221.bjhw:
+    type: "direct_ssh"
+    host: "bjhw-sys-rpm0221.bjhw"     # 📍 修改为你的服务器地址
+    port: 22
+    username: "xuyehua"               # 📍 修改为你的用户名
+    private_key_path: "~/.ssh/id_rsa"      # 📍 修改为你的私钥路径
+    description: "GPU训练服务器"
+    
+    # 服务器信息（可选）
+    specs:
+      gpu_count: 8
+      gpu_type: "Tesla A100"
+      memory: "512GB"
+      cpu_cores: 64
+    
+    # 默认会话配置
+    session:
+      name: "gpu-work"
+      working_directory: "/workspace"
+      shell: "/bin/zsh"
+      environment:
+        CUDA_VISIBLE_DEVICES: "0,1,2,3,4,5,6,7"
+        PYTHONPATH: "/workspace:/workspace/src"
+  
+  # 示例2：通过跳板机连接
+  secure-server:
+    type: "jump_ssh"
+    host: "internal-server.company.com"     # 📍 最终目标服务器
+    port: 22
+    username: "xuyehua"               # 📍 修改为你的用户名
+    private_key_path: "~/.ssh/company_key"  # 📍 修改为你的私钥
+    description: "内网安全服务器"
+    
+    # 跳板机配置
+    jump_host:
+      host: "bastion.company.com"          # 📍 跳板机地址
+      port: 22
+      username: "xuyehua"            # 📍 跳板机用户名
+      private_key_path: "~/.ssh/bastion_key"  # 📍 跳板机私钥
+    
+    session:
+      name: "secure-work"
+      working_directory: "/home/xuyehua"
+      shell: "/bin/bash"
+  
+  # 示例3：开发测试服务器
+  dev-server:
+    type: "direct_ssh"
+    host: "dev.example.com"                 # 📍 修改为你的开发服务器
+    port: 2222                              # 📍 非标准端口示例
+    username: "developer"                   # 📍 修改为你的用户名
+    private_key_path: "~/.ssh/dev_key"     # 📍 修改为你的私钥
+    description: "开发测试环境"
+    
+    specs:
+      gpu_count: 2
+      gpu_type: "RTX 3090"
+      memory: "64GB"
+      cpu_cores: 16
+    
+    session:
+      name: "dev-session"
+      working_directory: "/home/developer/projects"
+      shell: "/bin/zsh"
+      environment:
+        NODE_ENV: "development"
+        PYTHONPATH: "/home/developer/projects"
+  
+  # 示例4：CPU计算服务器
+  cpu-server:
+    type: "direct_ssh"
+    host: "cpu-cluster.example.com"         # 📍 修改为你的CPU服务器
+    port: 22
+    username: "xuyehua"               # 📍 修改为你的用户名
+    private_key_path: "~/.ssh/id_rsa"      # 📍 修改为你的私钥
+    description: "CPU密集计算服务器"
+    
+    specs:
+      gpu_count: 0
+      memory: "256GB"
+      cpu_cores: 128
+    
+    session:
+      name: "cpu-work"
+      working_directory: "/data/projects"
+      shell: "/bin/bash"
+      environment:
+        OMP_NUM_THREADS: "32"
+        MKL_NUM_THREADS: "16"
+
+# 全局设置
+global_settings:
+  default_server: "gpu-server-01"          # 📍 修改为你的默认服务器
+  connection_timeout: 30                   # 连接超时时间（秒）
+  command_timeout: 300                     # 命令执行超时时间（秒）
+  auto_reconnect: true                     # 断线自动重连
+  max_retry_attempts: 3                    # 最大重试次数
+  
+  # SSH全局选项
+  ssh_options:
+    ServerAliveInterval: 60                # 保活间隔（秒）
+    ServerAliveCountMax: 3                 # 最大保活次数
+    StrictHostKeyChecking: "no"            # 是否严格检查主机密钥
+    UserKnownHostsFile: "/dev/null"        # 已知主机文件（开发环境可设为/dev/null）
+    ConnectTimeout: 10                     # SSH连接超时
+
+# 安全配置
+security:
+  # 允许的命令模式（正则表达式）
+  allowed_commands:
+    - "^ls.*"                              # ls 相关命令
+    - "^pwd$"                              # pwd 命令
+    - "^cd .*"                             # cd 命令
+    - "^mkdir .*"                          # mkdir 命令
+    - "^cat .*"                            # cat 命令
+    - "^head .*"                           # head 命令
+    - "^tail .*"                           # tail 命令
+    - "^ps .*"                             # ps 命令
+    - "^nvidia-smi.*"                      # nvidia-smi 命令
+    - "^python.*"                          # python 相关命令
+    - "^pip.*"                             # pip 相关命令
+    - "^git .*"                            # git 命令
+    - "^tmux.*"                            # tmux 命令
+  
+  # 禁止的命令模式
+  forbidden_commands:
+    - "^rm -rf /$"                         # 危险的删除命令
+    - "^sudo .*"                           # sudo 命令（根据需要调整）
+    - "^su .*"                             # su 命令
+    - ".*passwd.*"                         # 密码相关命令
+
+# ================================================================
+# 📚 配置完成后的使用方法：
+# ================================================================
+# 
+# 1️⃣ 复制模板文件：
+#    cp config/servers.template.yaml config/servers.local.yaml
+#
+# 2️⃣ 编辑本地配置：
+#    nano config/servers.local.yaml
+#    （修改所有标记为 📍 的配置项）
+#
+# 3️⃣ 在Cursor中使用：
+#    "连接到gpu-server-01"
+#    "在dev-server上执行 nvidia-smi"
+#    "列出所有配置的服务器"
+#
+# ================================================================
+
+# ⚠️ 重要安全提醒：
+# 1. 请将所有示例地址、用户名、密钥路径替换为你的实际配置
+# 2. 此模板文件可以提交到版本控制
+# 3. 实际配置文件 servers.local.yaml 不会被提交（已加入gitignore）
+# 4. 确保SSH私钥文件权限正确（chmod 600）
+# 5. 定期更换SSH密钥对提高安全性 
