@@ -1,31 +1,21 @@
 {
   "name": "@xuyehua/remote-terminal-mcp",
   "version": "0.1.0",
-  "description": "统一远程终端管理的MCP服务 - 一键连接，多服务器操作如本地",
+  "description": "Remote Terminal MCP Server - Ultra minimal version",
   "main": "index.js",
   "bin": {
-    "remote-terminal-mcp": "./bin/remote-terminal-mcp"
+    "remote-terminal-mcp": "index.js"
   },
   "scripts": {
-    "test": "node test/test.js",
-    "dev": "node index.js --debug",
-    "dry-run": "node index.js --test",
-    "postinstall": "node scripts/post-install.js",
-    "build": "node scripts/build.js"
+    "start": "node index.js",
+    "test": "node index.js --test"
   },
   "keywords": [
     "mcp", 
     "remote", 
-    "terminal", 
-    "ssh",
-    "server-management",
-    "tmux",
-    "remote-development",
-    "multi-server",
-    "devops",
-    "ai-development",
-    "cluster",
-    "automation"
+    "terminal",
+    "cursor",
+    "claude"
   ],
   "author": {
     "name": "xuyehua",
@@ -33,36 +23,18 @@
   },
   "license": "MIT",
   "dependencies": {
-    "yaml": "^2.3.4",
-    "inquirer": "^8.2.6",
     "chalk": "^4.1.2",
     "ora": "^5.4.1"
   },
-  "devDependencies": {
-    "jest": "^29.7.0"
-  },
   "engines": {
-    "node": ">=14.0.0",
-    "python": ">=3.8.0"
+    "node": ">=14.0.0"
   },
   "files": [
     "index.js",
-    "bin/",
-    "lib/",
     "python/",
-    "templates/",
-    "scripts/",
     "README.md",
     "LICENSE"
   ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/xuyehua/remote-terminal-mcp.git"
-  },
-  "bugs": {
-    "url": "https://github.com/xuyehua/remote-terminal-mcp/issues"
-  },
-  "homepage": "https://github.com/xuyehua/remote-terminal-mcp#readme",
   "publishConfig": {
     "access": "public"
   }

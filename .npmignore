@@ -1,0 +1,53 @@
+# 开发文件
+.git/
+.vscode/
+.cursor/
+*.log
+npm-debug.log*
+.DS_Store
+
+# 测试和构建文件
+test/
+coverage/
+.nyc_output/
+build/
+dist/
+
+# 配置文件
+.env
+.env.local
+.env.*.local
+
+# 文档和示例
+docs/
+examples/
+screenshots/
+*.md
+!README.md
+
+# 临时文件
+*.tmp
+*.temp
+.cache/
+
+# IDE文件
+*.swp
+*.swo
+*~
+
+# 系统文件
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# NPM
+node_modules/
+package-lock.json
+yarn.lock
+
+# 私有文件
+scripts/
+bin/
+BUGFIX_LOG.md
+INCREMENTAL_FIX.md
+FINAL_FIX_SUMMARY.md 
