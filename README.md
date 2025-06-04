@@ -4,6 +4,7 @@
 
 ## 🌟 功能特色
 
+- 🎯 **零安装使用** - 只需编辑mcp.json，npx自动处理一切依赖和配置
 - 🚀 **智能连接管理** - 支持relay-cli、跳板机、直连多种模式
 - 🐳 **Docker容器支持** - 自动检测、创建、管理Docker开发环境
 - 🔄 **会话持久化** - 基于tmux的会话管理，断线重连无压力
@@ -12,9 +13,31 @@
 
 ## 🎯 快速开始
 
-### 1. 安装
+### 1. 零安装配置（推荐）
 
-#### 方式一：NPM安装（推荐）
+**只需编辑一个文件，无需任何安装！**
+
+在 `~/.cursor/mcp.json` 中添加：
+
+```json
+{
+  "mcpServers": {
+    "remote-terminal": {
+      "command": "npx",
+      "args": ["-y", "@xuyehua/remote-terminal-mcp"],
+      "disabled": false,
+      "autoApprove": true,
+      "description": "🖥️ Remote Terminal MCP"
+    }
+  }
+}
+```
+
+重启Cursor即可使用！首次运行时npx会自动下载和配置。
+
+### 2. 其他安装方式
+
+#### 方式一：NPM全局安装
 
 ```bash
 # 全局安装
@@ -45,35 +68,7 @@ pip install -r requirements.txt
 # Ubuntu: sudo apt install tmux
 ```
 
-### 2. 配置Cursor
-
-#### 方式一：自动配置（npm安装后）
-
-如果使用npm安装，初始化时会自动配置：
-
-```bash
-remote-terminal-mcp init  # 自动生成Cursor配置
-```
-
-#### 方式二：手动配置
-
-在 `~/.cursor/mcp.json` 中添加：
-
-```json
-{
-  "mcpServers": {
-    "remote-terminal": {
-      "command": "npx",
-      "args": ["-y", "@xuyehua/remote-terminal-mcp"],
-      "disabled": false,
-      "autoApprove": true,
-      "description": "🖥️ Remote Terminal MCP"
-    }
-  }
-}
-```
-
-或使用本地路径（源码安装）：
+然后在mcp.json中使用本地路径：
 
 ```json
 {
@@ -89,11 +84,19 @@ remote-terminal-mcp init  # 自动生成Cursor配置
 }
 ```
 
-> 💡 **提示**：npm安装推荐使用npx方式，源码安装需要指定实际项目路径
-
 ### 3. 开始使用
 
-#### CLI工具（npm安装）
+配置完成后，在Cursor中直接与AI对话：
+
+```
+"列出所有远程服务器"
+"连接到my-server"  
+"在服务器上执行 nvidia-smi"
+```
+
+#### 高级配置（可选）
+
+如果使用npm全局安装，可以使用CLI工具：
 
 ```bash
 # 初始化配置
@@ -104,19 +107,6 @@ remote-terminal-mcp config
 
 # 环境诊断
 remote-terminal-mcp doctor
-
-# 启动MCP服务器
-remote-terminal-mcp start
-```
-
-#### 在Cursor中使用
-
-重启Cursor后，直接与AI对话：
-
-```
-"列出所有远程服务器"
-"连接到my-server"  
-"在服务器上执行 nvidia-smi"
 ```
 
 ## 🔧 服务器配置
