@@ -49,12 +49,12 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/xuyehua/remote-terminal-mcp",
+  "homepage": "https://github.com/maricoxu/remote-terminal-mcp",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/xuyehua/remote-terminal-mcp.git"
+    "url": "git+https://github.com/maricoxu/remote-terminal-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/xuyehua/remote-terminal-mcp/issues"
+    "url": "https://github.com/maricoxu/remote-terminal-mcp/issues"
   }
 }

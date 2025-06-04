@@ -6,6 +6,16 @@
 npm-debug.log*
 .DS_Store
 
+# Python缓存
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 测试文件
+python/test_*.py
+python/debug_*.py
+
 # 测试和构建文件
 test/
 coverage/
@@ -46,8 +56,6 @@ package-lock.json
 yarn.lock
 
 # 私有文件
-scripts/
-bin/
 BUGFIX_LOG.md
 INCREMENTAL_FIX.md
 FINAL_FIX_SUMMARY.md 
