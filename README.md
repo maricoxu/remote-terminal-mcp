@@ -7,12 +7,28 @@
 - 🚀 **智能连接管理** - 支持relay-cli、跳板机、直连多种模式
 - 🐳 **Docker容器支持** - 自动检测、创建、管理Docker开发环境
 - 🔄 **会话持久化** - 基于tmux的会话管理，断线重连无压力
-- 🛠️ **环境自动配置** - BOS云存储同步、SSH密钥、zsh环境一键设置
+- 🛠️ **环境自动配置** - 云存储同步、SSH密钥、zsh环境一键设置
 - 📊 **统一管理界面** - 在Cursor中通过AI对话管理所有远程服务器
 
 ## 🎯 快速开始
 
-### 1. 配置Cursor
+### 1. 安装依赖
+
+```bash
+# 克隆项目
+git clone https://github.com/your-username/remote-terminal-mcp.git
+cd remote-terminal-mcp
+
+# 安装依赖
+npm install
+pip install -r requirements.txt
+
+# 确保系统已安装 tmux
+# macOS: brew install tmux
+# Ubuntu: sudo apt install tmux
+```
+
+### 2. 配置Cursor
 
 在 `~/.cursor/mcp.json` 中添加：
 
@@ -21,7 +37,7 @@
   "mcpServers": {
     "remote-terminal": {
       "command": "node",
-      "args": ["/Users/xuyehua/Code/remote-terminal-mcp/index.js"],
+      "args": ["/path/to/remote-terminal-mcp/index.js"],
       "disabled": false,
       "autoApprove": true,
       "description": "🖥️ Remote Terminal MCP"
@@ -32,38 +48,32 @@
 
 > 💡 **提示**：将路径改为你的实际项目路径
 
-### 2. 对话配置服务器
-
-重启Cursor后，直接说：
-
-```
-"帮我配置一台服务器，地址是 gpu.company.com"
-```
-
-AI会引导你完成配置，无需手动编辑文件！
-
 ### 3. 开始使用
+
+重启Cursor后，直接与AI对话：
 
 ```
 "列出所有远程服务器"
-"连接到gpu-server"  
+"连接到my-server"  
 "在服务器上执行 nvidia-smi"
 ```
 
-## 🔧 服务器配置指南
+## 🔧 服务器配置
 
-### 配置文件结构
+### 基础配置文件结构
+
+配置文件位置：`~/.remote-terminal-mcp/config.yaml`
 
 ```yaml
 servers:
   my-server:
     type: "script_based"           # 服务器类型
-    description: "我的服务器"       # 描述信息
+    description: "我的开发服务器"    # 描述信息
     connection:                    # 连接配置
-      tool: "relay-cli"           # 连接工具: relay-cli/ssh
-      mode: "direct"              # 连接模式: direct/jump_host
+      tool: "ssh"                 # 连接工具: ssh/relay-cli
+      mode: "direct"              # 连接模式
       target:
-        host: "server.domain.com"  # 目标主机地址
+        host: "server.example.com" # 目标主机地址
         user: "root"              # 用户名
     docker:                       # Docker配置(可选)
       container_name: "dev_env"   # 容器名
@@ -71,12 +81,12 @@ servers:
       auto_create: true           # 自动创建
     session:                      # 会话配置
       name: "my_dev"              # tmux会话名
-      working_directory: "/work"  # 工作目录
+      working_directory: "/workspace" # 工作目录
       shell: "/bin/zsh"          # Shell类型
-    bos:                          # BOS配置(可选)
+    bos:                          # 云存储配置(可选)
       access_key: "your_key"      # 访问密钥
       secret_key: "your_secret"   # 密钥
-      bucket: "bos://bucket/path" # 存储桶路径
+      bucket: "your-bucket/path"  # 存储桶路径
 ```
 
 ### 支持的连接模式
@@ -84,7 +94,7 @@ servers:
 #### 1. 直连模式 (Direct)
 ```yaml
 connection:
-  tool: "ssh"  # 或 "relay-cli"
+  tool: "ssh"
   mode: "direct"
   target:
     host: "your-server.com"
@@ -94,23 +104,26 @@ connection:
 #### 2. 跳板机模式 (Jump Host)
 ```yaml
 connection:
-  tool: "relay-cli"
+  tool: "ssh"
   mode: "jump_host"
   jump_host:
-    host: "jump@jump-server.com"
+    host: "user@jump-server.com"
     password: "your_password"  # 建议使用密钥
   target:
     host: "target-server"
     user: "root"
 ```
 
-#### 3. Relay-CLI模式 (百度内网)
+#### 3. 双层跳板机模式
 ```yaml
 connection:
   tool: "relay-cli"
-  mode: "direct"
-  target:
-    host: "internal-server.domain"
+  mode: "double_jump_host"
+  first_jump:
+    host: "user@first-jump.com"
+    password: "password1"
+  second_jump:
+    host: "10.0.0.100"
     user: "root"
 ```
 
@@ -134,7 +147,6 @@ connection:
 # 环境管理
 "启动server-02的开发环境"
 "重启my-server的Docker容器"
-"同步BOS配置到server-03"
 ```
 
 ### 直接使用tmux
@@ -146,11 +158,45 @@ tmux list-sessions
 # 连接到特定服务器会话
 tmux attach -t server01_dev
 
-# 从会话中分离
-# Ctrl+b d
+# 从会话中分离 (Ctrl+b d)
 ```
 
-## 📊 服务器管理
+### 使用Python脚本
+
+```bash
+# 直接连接服务器
+python3 connect_server.py my-server
+
+# 列出所有服务器
+python3 connect_server.py --list
+
+# 强制重新连接
+python3 connect_server.py my-server --force-recreate
+```
+
+## 🐳 Docker集成
+
+### 自动容器管理
+
+系统会自动：
+1. 检测Docker服务是否可用
+2. 查找指定名称的容器
+3. 如果容器存在且运行中，直接进入
+4. 如果容器存在但停止，重新启动并进入
+5. 如果容器不存在，自动创建并进入
+
+### Docker配置示例
+
+```yaml
+docker:
+  container_name: "my_dev_env"
+  image: "ubuntu:20.04"
+  auto_create: true
+  working_directory: "/workspace"
+  run_options: "--privileged -v /data:/data"
+```
+
+## 📊 管理功能
 
 ### 添加新服务器
 
@@ -159,198 +205,152 @@ tmux attach -t server01_dev
 nano ~/.remote-terminal-mcp/config.yaml
 ```
 
-2. **添加服务器配置**：
-```yaml
-servers:
-  new-server:
-    type: "script_based"
-    description: "新服务器"
-    connection:
-      tool: "ssh"
-      mode: "direct"
-      target:
-        host: "new-server.com"
-        user: "root"
-    session:
-      name: "new_dev"
-      working_directory: "/workspace"
-```
+2. **添加服务器配置**到 `servers` 段
 
-3. **重启MCP服务器**或重新加载Cursor
+3. **重启Cursor MCP服务**或重新加载
 
 ### 服务器类型说明
 
 - **`local_tmux`** - 本地tmux会话
-- **`script_based`** - 远程服务器（支持Docker、BOS等高级功能）
+- **`script_based`** - 远程服务器（支持Docker、云存储等高级功能）
 - **`direct_ssh`** - 简单SSH连接
 
-## 🐳 Docker集成
+### 常用操作
 
-### 自动容器管理
+```bash
+# 检查配置
+python3 debug_config.py
 
-```yaml
-docker:
-  container_name: "my_dev_env"
-  image: "ubuntu:20.04"
-  auto_create: true
-  run_options: "--privileged -v /data:/data"
+# 测试连接
+python3 connect_server.py server-name --test
+
+# 诊断问题
+python3 connect_server.py server-name --diagnose
 ```
 
-### 容器操作流程
+## 🛠️ 高级功能
 
-1. **检查容器** - 自动检测容器是否存在
-2. **创建/启动** - 不存在则创建，已停止则启动
-3. **进入容器** - 使用配置的shell进入开发环境
-4. **环境配置** - 可选的BOS同步、SSH密钥设置
+### 云存储集成
 
-## ☁️ BOS云存储同步
-
-### 配置BOS
+支持自动配置云存储服务：
 
 ```yaml
 bos:
   access_key: "your_access_key"
   secret_key: "your_secret_key"
-  bucket: "bos://your-bucket/config-path"
+  bucket: "your-bucket/path"
 ```
 
-### 同步的文件
-
-- `.zshrc` - Zsh配置
-- `.p10k.zsh` - Powerlevel10k主题
-- `.zsh_history` - 命令历史
-- SSH密钥和其他开发配置
-
-## 🔒 安全配置
-
-### 命令限制
+### 环境自动化
 
 ```yaml
-security:
-  allowed_commands:
-    - "ls.*"
-    - "ps.*"
-    - "nvidia-smi"
-  forbidden_commands:
-    - "rm -rf /"
-    - "format.*"
-  require_confirmation:
-    - "rm -rf"
-    - "shutdown"
-    - "reboot"
+environment_setup:
+  auto_setup: true
+  quick_connect_mode: true
 ```
 
-### 认证建议
-
-- 使用SSH密钥而非密码
-- 定期轮换访问凭证
-- 限制网络访问权限
-- 启用审计日志
-
-## ⚙️ 高级配置
-
-### 智能预连接
-
-```yaml
-global_settings:
-  auto_preconnect: true
-  preconnect_servers:
-    - "local-dev"
-    - "main-server"
-    - "gpu-cluster"
-  preconnect_timeout: 60
-  preconnect_parallel: 3
-```
-
-### 环境变量
+### 会话管理
 
 ```yaml
 session:
   environment:
-    PYTHONPATH: "/workspace:/workspace/src"
-    CUDA_VISIBLE_DEVICES: "0,1"
     PROJECT_ROOT: "/workspace"
+    PYTHONPATH: "/workspace:/workspace/src"
+    TERM: "xterm-256color"
+  shell: "/bin/zsh"
 ```
 
-## 🛠️ 故障排除
+## 🐛 故障排除
 
 ### 常见问题
 
-#### 1. relay-cli认证失败
+1. **连接超时**
+   - 检查网络连接
+   - 确认服务器地址正确
+   - 验证SSH密钥或密码
+
+2. **Docker容器问题**
+   - 确认Docker服务运行
+   - 检查镜像是否存在
+   - 验证容器权限设置
+
+3. **tmux会话问题**
+   - 检查tmux是否安装
+   - 确认会话名称唯一
+   - 验证会话状态
+
+### 调试命令
+
 ```bash
-# 检查relay-cli是否正确安装
-which relay-cli
+# 显示详细配置信息
+python3 debug_config.py
 
-# 手动测试连接
-relay-cli
+# 测试特定服务器连接
+python3 connect_server.py server-name --test
+
+# 显示连接诊断信息
+python3 connect_server.py server-name --diagnose
+
+# 强制重新创建会话
+python3 connect_server.py server-name --force-recreate
 ```
 
-#### 2. Docker容器无法创建
-```bash
-# 检查Docker服务状态
-sudo systemctl status docker
+## 📝 配置模板
 
-# 验证镜像是否存在
-docker images | grep your-image
+### 基础服务器模板
+
+```yaml
+my-server:
+  type: "script_based"
+  description: "我的开发服务器"
+  connection:
+    tool: "ssh"
+    mode: "direct"
+    target:
+      host: "server.example.com"
+      user: "root"
+  session:
+    name: "my_dev"
+    working_directory: "/workspace"
+    shell: "/bin/zsh"
 ```
 
-#### 3. tmux会话连接失败
-```bash
-# 检查tmux服务
-tmux list-sessions
+### GPU服务器模板
 
-# 重启tmux服务器
-tmux kill-server
+```yaml
+gpu-server:
+  type: "script_based"
+  description: "GPU训练服务器"
+  connection:
+    tool: "ssh"
+    mode: "direct"
+    target:
+      host: "gpu.example.com"
+      user: "root"
+  docker:
+    container_name: "pytorch_env"
+    image: "pytorch/pytorch:latest"
+    auto_create: true
+    working_directory: "/workspace"
+  session:
+    name: "gpu_dev"
+    working_directory: "/workspace"
 ```
-
-### 调试模式
-
-启用详细日志：
-```json
-{
-  "env": {
-    "MCP_DEBUG": "1"
-  }
-}
-```
-
-## 📈 性能优化
-
-### 连接池管理
-- 复用已建立的连接
-- 智能超时机制
-- 自动重连机制
-
-### 并发控制
-- 限制同时连接数
-- 优先级队列
-- 资源分配策略
 
 ## 🤝 贡献指南
 
-1. Fork项目
-2. 创建功能分支
-3. 提交更改
-4. 创建Pull Request
+1. Fork 项目
+2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
+3. 提交更改 (`git commit -m 'Add amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 开启 Pull Request
 
-## 📄 许可证
+## 📄 License
 
-MIT License - 详见 LICENSE 文件
+MIT License - 详见 [LICENSE](LICENSE) 文件
 
-## 🔗 相关资源
+## 🙏 致谢
 
-- [MCP协议文档](https://modelcontextprotocol.io/)
-- [tmux用户指南](https://github.com/tmux/tmux/wiki)
-- [Docker官方文档](https://docs.docker.com/)
-- [relay-cli使用指南](https://apigo.baidu.com/d/TgXlCxmm)
-
----
-
-## 📞 支持
-
-如有问题或建议，请：
-- 提交Issue
-- 发起Discussion
-- 联系维护者
-
-**让远程开发变得简单高效！** 🚀
+- [Model Context Protocol](https://github.com/modelcontextprotocol) - 强大的AI工具集成协议
+- [tmux](https://github.com/tmux/tmux) - 终端多路复用器
+- [Cursor](https://cursor.sh/) - AI代码编辑器

@@ -9,15 +9,15 @@ CONNECTION_TOOL="relay-cli"
 # 目标服务器配置（直连模式）
 SERVER_HOST="bjhw-sys-rpm0221.bjhw"
 DOCKER_CONTAINER="xyh_pytorch"
-DOCKER_IMAGE="iregistry.baidu-int.com/xmlir/xmlir_ubuntu_2004_x86_64:v0.32"
+DOCKER_IMAGE="ubuntu:20.04"
 
 # 环境配置选项
 AUTO_SETUP_ENVIRONMENT=true
 QUICK_CONNECT_MODE=true
 
 # BOS配置信息（仅首次环境配置时使用）
-BOS_ACCESS_KEY="ALTAKhAZPC4OOKQ2zm"
-BOS_SECRET_KEY="your_secret_key"  # 请填入实际的secret key
+BOS_ACCESS_KEY="your_access_key"
+BOS_SECRET_KEY="your_secret_key"
 BOS_BUCKET="bos://klx-pytorch-work-bd-bj/xuyehua/template"
 
 # 颜色定义

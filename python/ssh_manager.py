@@ -18,6 +18,16 @@ from pathlib import Path
 import re
 
 
+def debug_log_cmd(cmd_list, description=""):
+    """打印执行的命令（调试用）"""
+    if os.getenv('MCP_DEBUG') or os.getenv('SHOW_COMMANDS'):
+        if isinstance(cmd_list, list):
+            cmd_str = ' '.join(cmd_list)
+        else:
+            cmd_str = str(cmd_list)
+        print(f"🐍 [COMMAND] {description}: {cmd_str}")
+
+
 @dataclass
 class ServerConfig:
     """服务器配置"""
@@ -478,13 +488,16 @@ class SSHManager:
                     subprocess.run(['tmux', 'kill-session', '-t', session_name], capture_output=True)
             
             # 检查tmux是否可用
-            tmux_check = subprocess.run(['tmux', '-V'], capture_output=True)
+            tmux_check_cmd = ['tmux', '-V']
+            debug_log_cmd(tmux_check_cmd, "检查tmux版本")
+            tmux_check = subprocess.run(tmux_check_cmd, capture_output=True)
             if tmux_check.returncode != 0:
                 return False, "❌ tmux不可用 - 请安装tmux: brew install tmux"
             
             # 创建新的tmux会话
             print(f"📋 创建新环境: {session_name}")
             create_cmd = ['tmux', 'new-session', '-d', '-s', session_name]
+            debug_log_cmd(create_cmd, "创建tmux会话")
             result = subprocess.run(create_cmd, capture_output=True, text=True)
             
             if result.returncode != 0:
@@ -506,7 +519,14 @@ class SSHManager:
                     return False, f"❌ 连接工具启动失败: {msg}"
             
             # 步骤2: 连接到目标服务器
-            target_host = connection_config.get('target', {}).get('host', server.host)
+            connection_mode = connection_config.get('mode', 'direct')
+            
+            # 根据连接模式获取目标主机
+            if connection_mode == 'double_jump_host':
+                target_host = connection_config.get('second_jump', {}).get('host', server.host)
+            else:
+                target_host = connection_config.get('target', {}).get('host', server.host)
+            
             if target_host:
                 print(f"🎯 步骤2: 连接到目标服务器 ({target_host})")
                 success, msg = self._connect_to_target_server(session_name, target_host, connection_config)
@@ -585,8 +605,9 @@ class SSHManager:
         """启动连接工具并等待就绪"""
         try:
             print(f"   🔧 启动 {tool}...")
-            subprocess.run(['tmux', 'send-keys', '-t', session_name, tool, 'Enter'], 
-                         capture_output=True)
+            send_cmd = ['tmux', 'send-keys', '-t', session_name, tool, 'Enter']
+            debug_log_cmd(send_cmd, f"启动{tool}")
+            subprocess.run(send_cmd, capture_output=True)
             
             # 智能等待工具启动
             max_wait = 15  # 最大等待15秒
@@ -597,8 +618,9 @@ class SSHManager:
                 print(f"   ⏳ 等待工具启动... ({i+1}/{max_wait})")
                 
                 # 检查工具是否准备就绪
-                result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
-                                      capture_output=True, text=True)
+                capture_cmd = ['tmux', 'capture-pane', '-t', session_name, '-p']
+                debug_log_cmd(capture_cmd, "捕获会话输出")
+                result = subprocess.run(capture_cmd, capture_output=True, text=True)
                 
                 if result.returncode == 0:
                     output = result.stdout.lower()
@@ -621,6 +643,10 @@ class SSHManager:
             # 检查是否需要跳板机连接
             if connection_config and connection_config.get('mode') == 'jump_host':
                 return self._connect_via_jump_host(session_name, target_host, connection_config)
+            
+            # 检查是否需要双层跳板机连接
+            if connection_config and connection_config.get('mode') == 'double_jump_host':
+                return self._connect_via_double_jump_host(session_name, connection_config)
             
             # 检查是否是relay-cli模式（TJ服务器）
             connection_tool = connection_config.get('tool', 'ssh') if connection_config else 'ssh'
@@ -653,9 +679,9 @@ class SSHManager:
                 if result.returncode == 0:
                     output = result.stdout
                     # 检查relay登录成功信号 - 多种检测方式
-                    if ('Login Giano succeeded by BEEP' in output or 'succeeded by BEEP' in output or
-                        ('Last login:' in output and '-bash-baidu-ssl$' in output) or
-                        ('-bash-baidu-ssl$' in output and 'Last login:' in output)):
+                    if ('Login succeeded' in output or 'succeeded' in output or
+                        ('Last login:' in output and 'bash-' in output) or
+                        ('bash-' in output and 'Last login:' in output)):
                         print(f"   ✅ Relay登录成功！")
                         break
                     elif 'Login Giano failed by BEEP' in output:
@@ -806,24 +832,28 @@ class SSHManager:
                 return False, "跳板机配置缺失"
             
             print(f"   🚀 步骤1: 连接跳板机 {jump_host}")
-            subprocess.run(['tmux', 'send-keys', '-t', session_name, f'ssh {jump_host}', 'Enter'],
-                         capture_output=True)
+            jump_ssh_cmd = ['tmux', 'send-keys', '-t', session_name, f'ssh {jump_host}', 'Enter']
+            debug_log_cmd(jump_ssh_cmd, "连接跳板机")
+            subprocess.run(jump_ssh_cmd, capture_output=True)
             time.sleep(3)
             
             # 处理指纹认证（如果需要）
-            result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
-                                  capture_output=True, text=True)
+            capture_cmd = ['tmux', 'capture-pane', '-t', session_name, '-p']
+            debug_log_cmd(capture_cmd, "检查指纹认证")
+            result = subprocess.run(capture_cmd, capture_output=True, text=True)
             if 'fingerprint' in result.stdout.lower() or 'yes/no' in result.stdout.lower():
                 print("   🔑 接受指纹...")
-                subprocess.run(['tmux', 'send-keys', '-t', session_name, 'yes', 'Enter'],
-                             capture_output=True)
+                accept_cmd = ['tmux', 'send-keys', '-t', session_name, 'yes', 'Enter']
+                debug_log_cmd(accept_cmd, "接受指纹")
+                subprocess.run(accept_cmd, capture_output=True)
                 time.sleep(2)
             
             # 输入跳板机密码
             if jump_password:
                 print("   🔐 输入跳板机密码...")
-                subprocess.run(['tmux', 'send-keys', '-t', session_name, jump_password, 'Enter'],
-                             capture_output=True)
+                password_cmd = ['tmux', 'send-keys', '-t', session_name, jump_password, 'Enter']
+                debug_log_cmd(password_cmd, "输入跳板机密码")
+                subprocess.run(password_cmd, capture_output=True)
                 time.sleep(4)
             
             # 验证跳板机连接
@@ -834,24 +864,54 @@ class SSHManager:
             
             print(f"   ✅ 跳板机连接成功")
             
+            # 获取目标服务器密码和用户
+            target_config = connection_config.get('target', {})
+            target_password = target_config.get('password')
+            target_user = target_config.get('user', 'root')  # 默认用户为root
+            
             # 从跳板机连接到目标服务器
             print(f"   🎯 步骤2: 从跳板机连接到 {target_host}")
-            subprocess.run(['tmux', 'send-keys', '-t', session_name, f'ssh root@{target_host}', 'Enter'],
-                         capture_output=True)
+            # 检查target_host是否已经包含用户名
+            if '@' in target_host:
+                ssh_target = target_host  # 已经包含用户名，直接使用
+            else:
+                ssh_target = f'{target_user}@{target_host}'  # 使用配置中的用户名
+            
+            target_ssh_cmd = ['tmux', 'send-keys', '-t', session_name, f'ssh {ssh_target}', 'Enter']
+            debug_log_cmd(target_ssh_cmd, "连接目标服务器")
+            subprocess.run(target_ssh_cmd, capture_output=True)
             time.sleep(4)
             
-            # 验证目标服务器连接
+            # 验证目标服务器连接并处理密码
             for i in range(10):  # 最多等待20秒
                 time.sleep(2)
-                result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
-                                      capture_output=True, text=True)
+                capture_cmd = ['tmux', 'capture-pane', '-t', session_name, '-p']
+                debug_log_cmd(capture_cmd, f"检查连接状态(第{i+1}次)")
+                result = subprocess.run(capture_cmd, capture_output=True, text=True)
                 
-                if 'root@' in result.stdout:
+                output = result.stdout.lower()
+                debug_log_cmd(f"Output: {result.stdout[-200:]}", "会话输出")
+                
+                # 检查是否需要输入密码
+                if "password:" in output:
+                    if target_password:
+                        print(f"   🔐 输入目标服务器密码...")
+                        pwd_cmd = ['tmux', 'send-keys', '-t', session_name, target_password, 'Enter']
+                        debug_log_cmd(pwd_cmd, "输入目标服务器密码")
+                        subprocess.run(pwd_cmd, capture_output=True)
+                        time.sleep(3)
+                        continue
+                    else:
+                        return False, f"目标服务器需要密码但未在配置中提供: {target_host}"
+                
+                # 检查连接成功的标志
+                if any(indicator in result.stdout for indicator in ['root@', '$', '#']) and 'password:' not in output:
                     print(f"   ✅ 已成功连接到目标服务器: {target_host}")
                     return True, f"通过跳板机成功连接到 {target_host}"
                     
-                if 'denied' in result.stdout.lower() or 'failed' in result.stdout.lower():
-                    return False, f"目标服务器连接被拒绝: {target_host}"
+                # 检查连接失败的标志
+                if any(error in output for error in ['denied', 'failed', 'connection timed out', 'no route to host']):
+                    return False, f"目标服务器连接失败: {result.stdout[-200:]}"
             
             return False, f"连接目标服务器超时: {target_host}"
             
@@ -1938,4 +1998,131 @@ class SSHManager:
         print("   1️⃣ 立即体验: tmux attach -t dev-session")
         print("   2️⃣ 配置远程: nano ~/.remote-terminal-mcp/config.yaml")
         print("   3️⃣ MCP工具: 通过Claude使用各种MCP工具")
-        print("="*50 + "\n") 
+        print("="*50 + "\n")
+
+    def _connect_via_double_jump_host(self, session_name: str, connection_config: dict) -> Tuple[bool, str]:
+        """通过双层跳板机连接到目标服务器
+        
+        连接序列:
+        1. relay-cli -> shell ready
+        2. ssh user@first-jump + password
+        3. ssh root@target-server + password
+        """
+        try:
+            first_jump = connection_config.get('first_jump', {})
+            second_jump = connection_config.get('second_jump', {})
+            
+            first_jump_host = first_jump.get('host', '')
+            first_jump_password = first_jump.get('password', '')
+            second_jump_host = second_jump.get('host', '')
+            second_jump_user = second_jump.get('user', 'root')
+            second_jump_password = second_jump.get('password', '')
+            
+            if not first_jump_host or not second_jump_host:
+                return False, "双层跳板机配置不完整"
+            
+            # 步骤1: 等待relay-cli就绪（显示shell提示符）
+            print(f"   🚀 步骤1: 等待relay-cli就绪 (shell ready)")
+            max_wait = 20
+            for i in range(max_wait):
+                time.sleep(1)
+                capture_cmd = ['tmux', 'capture-pane', '-t', session_name, '-p']
+                debug_log_cmd(capture_cmd, f"检查relay状态(第{i+1}次)")
+                result = subprocess.run(capture_cmd, capture_output=True, text=True)
+                
+                if 'bash-' in result.stdout and '$' in result.stdout:
+                    print(f"   ✅ relay-cli已就绪")
+                    break
+            else:
+                return False, "等待relay-cli超时"
+            
+            # 步骤2: 连接第一层跳板机
+            print(f"   🎯 步骤2: 连接第一层跳板机 {first_jump_host}")
+            first_ssh_cmd = ['tmux', 'send-keys', '-t', session_name, f'ssh {first_jump_host}', 'Enter']
+            debug_log_cmd(first_ssh_cmd, "连接第一层跳板机")
+            subprocess.run(first_ssh_cmd, capture_output=True)
+            time.sleep(3)
+            
+            # 检查并输入第一层密码
+            print(f"   🔐 输入第一层跳板机密码...")
+            pwd_cmd = ['tmux', 'send-keys', '-t', session_name, first_jump_password, 'Enter']
+            debug_log_cmd(pwd_cmd, "输入第一层密码")
+            subprocess.run(pwd_cmd, capture_output=True)
+            time.sleep(4)
+            
+            # 等待第一层连接成功
+            print(f"   ⏳ 验证第一层跳板机连接...")
+            first_jump_user = first_jump_host.split('@')[0] if '@' in first_jump_host else 'yh'
+            for i in range(15):
+                time.sleep(1)
+                capture_cmd = ['tmux', 'capture-pane', '-t', session_name, '-p']
+                debug_log_cmd(capture_cmd, f"检查第一层连接状态(第{i+1}次)")
+                result = subprocess.run(capture_cmd, capture_output=True, text=True)
+                
+                output = result.stdout.lower()
+                debug_log_cmd(None, f"第一层连接输出: Output: {result.stdout[-100:]}")
+                
+                # 检查第一层连接成功标志 - 具体匹配第一层提示符
+                first_jump_prompt = f"[{first_jump_user}@"
+                if (first_jump_prompt in result.stdout and 
+                    ('~]$' in result.stdout or result.stdout.strip().endswith('$'))):
+                    print(f"   ✅ 第一层跳板机连接成功")
+                    time.sleep(1)  # 给系统稳定时间
+                    break
+                elif 'Permission denied' in result.stdout or 'Authentication failed' in result.stdout:
+                    return False, f"第一层跳板机认证失败: {result.stdout[-200:]}"
+                elif 'Connection timed out' in result.stdout:
+                    return False, f"第一层跳板机连接超时: {result.stdout[-200:]}"
+            else:
+                # 最后检查一次，可能已经连接但显示有延迟
+                result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
+                                       capture_output=True, text=True)
+                if f"[{first_jump_user}@" in result.stdout and '~]$' in result.stdout:
+                    print(f"   ✅ 第一层跳板机连接成功（延迟检测）")
+                else:
+                    return False, "第一层跳板机连接超时"
+            
+            # 步骤3: 从第一层跳板机连接到目标服务器
+            print(f"   🎯 步骤3: 从第一层跳板机连接到目标服务器 {second_jump_host}")
+            second_ssh_cmd = ['tmux', 'send-keys', '-t', session_name, f'ssh {second_jump_user}@{second_jump_host}', 'Enter']
+            debug_log_cmd(second_ssh_cmd, "连接目标服务器")
+            subprocess.run(second_ssh_cmd, capture_output=True)
+            time.sleep(4)
+            
+            # 验证最终连接并处理密码
+            for i in range(10):
+                time.sleep(2)
+                capture_cmd = ['tmux', 'capture-pane', '-t', session_name, '-p']
+                debug_log_cmd(capture_cmd, f"检查最终连接状态(第{i+1}次)")
+                result = subprocess.run(capture_cmd, capture_output=True, text=True)
+                
+                output = result.stdout.lower()
+                debug_log_cmd(f"Output: {result.stdout[-200:]}", "最终连接输出")
+                
+                # 检查是否需要输入密码
+                if "password:" in output:
+                    if second_jump_password:
+                        print(f"   🔐 输入目标服务器密码...")
+                        pwd_cmd = ['tmux', 'send-keys', '-t', session_name, second_jump_password, 'Enter']
+                        debug_log_cmd(pwd_cmd, "输入目标服务器密码")
+                        subprocess.run(pwd_cmd, capture_output=True)
+                        time.sleep(3)
+                        continue
+                    else:
+                        print(f"   ℹ️ 目标服务器提示密码但配置为无需密码，等待无密码连接...")
+                        time.sleep(2)
+                        continue
+                
+                # 检查连接成功的标志
+                if any(indicator in result.stdout for indicator in [f'{second_jump_user}@', '$', '#']) and 'password:' not in output:
+                    print(f"   ✅ 已成功连接到目标服务器: {second_jump_host}")
+                    return True, f"通过双层跳板机成功连接到 {second_jump_host}"
+                    
+                # 检查连接失败的标志
+                if any(error in output for error in ['denied', 'failed', 'connection timed out', 'no route to host']):
+                    return False, f"目标服务器连接失败: {result.stdout[-200:]}"
+            
+            return False, f"连接目标服务器超时: {second_jump_host}"
+            
+        except Exception as e:
+            return False, f"双层跳板机连接失败: {str(e)}"

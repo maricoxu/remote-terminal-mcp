@@ -1,8 +1,50 @@
 # Dependencies
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+*.pyc
+__pycache__/
+
+# Logs
+*.log
+mcp_server.log
+
+# Configuration files with sensitive data
+config/config.yaml
+**/config.yaml
+*.backup
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# User specific files
+user_config/
+local_config/
+
+# Test outputs
+test_output/
+test_results/
+
+# Build outputs
+dist/
+build/
+*.tgz
 
 # Runtime data
 pids
@@ -60,7 +102,6 @@ typings/
 .yarn-integrity
 
 # dotenv environment variables file
-.env
 .env.test
 
 # parcel-bundler cache (https://parceljs.org/)
@@ -94,7 +135,6 @@ Vue.js
 .tern-port
 
 # Python
-__pycache__/
 *.py[cod]
 *$py.class
 *.so

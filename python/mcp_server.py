@@ -328,6 +328,30 @@ async def handle_request(request):
                             "type": "object",
                             "properties": {}
                         }
+                    },
+                    {
+                        "name": "establish_connection",
+                        "description": "建立到远程服务器的完整连接，包含配置诊断、错误报告和智能session管理",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "server_name": {
+                                    "type": "string",
+                                    "description": "要连接的服务器名称"
+                                },
+                                "force_recreate": {
+                                    "type": "boolean",
+                                    "description": "是否强制重新创建session（即使已存在）",
+                                    "default": False
+                                },
+                                "debug_mode": {
+                                    "type": "boolean", 
+                                    "description": "是否启用调试模式，保留失败的session用于诊断",
+                                    "default": True
+                                }
+                            },
+                            "required": ["server_name"]
+                        }
                     }
                 ]
             }
@@ -638,6 +662,193 @@ async def handle_request(request):
             except Exception as e:
                 debug_log(f"Error in refresh_server_connections: {e}")
                 return create_error_response(request_id, f"刷新服务器连接失败: {str(e)}")
+        
+        elif tool_name == "establish_connection":
+            try:
+                server_name = arguments.get("server_name", "")
+                force_recreate = arguments.get("force_recreate", False)
+                debug_mode = arguments.get("debug_mode", True)
+                
+                if not server_name:
+                    return create_error_response(request_id, "服务器名称不能为空")
+                
+                manager = get_ssh_manager()
+                if not manager:
+                    return create_error_response(request_id, "SSH管理器初始化失败，请检查配置文件")
+                
+                # 获取服务器配置
+                server = manager.get_server(server_name)
+                if not server:
+                    available_servers = [s['name'] for s in manager.list_servers()]
+                    return create_error_response(request_id, 
+                        f"服务器 '{server_name}' 不存在\n\n"
+                        f"可用服务器: {', '.join(available_servers) if available_servers else '无'}\n\n"
+                        f"💡 请检查配置文件: ~/.remote-terminal-mcp/config.yaml")
+                
+                result_text = f"🚀 建立连接到服务器: **{server_name}**\n\n"
+                
+                # 步骤1: 配置验证
+                result_text += "🔍 **步骤1: 配置验证**\n"
+                config_issues = []
+                
+                # 验证必要的配置字段
+                if server.type == "script_based":
+                    if not server.specs:
+                        config_issues.append("缺少specs配置")
+                    else:
+                        connection_config = server.specs.get('connection', {})
+                        if not connection_config:
+                            config_issues.append("缺少connection配置")
+                        else:
+                            # 验证跳板机配置
+                            if connection_config.get('mode') == 'jump_host':
+                                jump_host = connection_config.get('jump_host', {})
+                                if not jump_host.get('host'):
+                                    config_issues.append("跳板机配置缺少host")
+                                if not jump_host.get('password'):
+                                    config_issues.append("跳板机配置缺少password")
+                            
+                            # 验证目标服务器配置
+                            target_config = connection_config.get('target', {})
+                            if not target_config.get('host'):
+                                config_issues.append("目标服务器配置缺少host")
+                
+                if config_issues:
+                    result_text += f"❌ 配置验证失败\n"
+                    for issue in config_issues:
+                        result_text += f"   • {issue}\n"
+                    result_text += f"\n🔧 **修复建议**:\n"
+                    result_text += f"编辑配置文件: ~/.remote-terminal-mcp/config.yaml\n"
+                    result_text += f"在 servers.{server_name} 下添加缺失的配置项\n"
+                    return create_error_response(request_id, result_text)
+                
+                result_text += "✅ 配置验证通过\n\n"
+                
+                # 步骤2: Session管理
+                result_text += "📋 **步骤2: Session管理**\n"
+                session_name = server.session.name if server.session else f"{server_name}_dev"
+                
+                # 检查现有session
+                session_exists = False
+                try:
+                    check_result = subprocess.run(['tmux', 'has-session', '-t', session_name], 
+                                                capture_output=True)
+                    session_exists = (check_result.returncode == 0)
+                except:
+                    pass
+                
+                if session_exists:
+                    if force_recreate:
+                        result_text += f"🔄 强制重建session: {session_name}\n"
+                        subprocess.run(['tmux', 'kill-session', '-t', session_name], capture_output=True)
+                        session_exists = False
+                    else:
+                        result_text += f"♻️ 检测到现有session: {session_name}\n"
+                        # 检查session状态
+                        try:
+                            pane_content = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'], 
+                                                        capture_output=True, text=True)
+                            if pane_content.returncode == 0:
+                                # 简单检查是否看起来像是活跃连接
+                                content = pane_content.stdout.lower()
+                                if any(indicator in content for indicator in ['@', '$', '#', 'login', 'welcome']):
+                                    result_text += f"✅ Session连接状态良好，直接使用现有session\n"
+                                    result_text += f"\n🎯 **连接完成**\n"
+                                    result_text += f"使用命令连接: `tmux attach -t {session_name}`\n"
+                                    return create_success_response(request_id, result_text)
+                                else:
+                                    result_text += f"⚠️ Session存在但连接状态未知，将重新建立连接\n"
+                        except:
+                            result_text += f"⚠️ 无法检查session状态，将重新建立连接\n"
+                
+                # 步骤3: 建立连接
+                result_text += "\n🔗 **步骤3: 建立连接**\n"
+                
+                try:
+                    success, connection_message = manager._establish_script_based_connection(server)
+                    
+                    if success:
+                        result_text += f"✅ 连接建立成功\n"
+                        result_text += f"📝 详情: {connection_message}\n"
+                        result_text += f"\n🎯 **连接完成**\n"
+                        result_text += f"使用命令连接: `tmux attach -t {session_name}`\n"
+                        
+                        # 提供快速命令
+                        result_text += f"\n💡 **快速操作**:\n"
+                        result_text += f"• 连接session: `tmux attach -t {session_name}`\n"
+                        result_text += f"• 分离session: Ctrl+B, 然后按 D\n"
+                        result_text += f"• 查看所有session: `tmux list-sessions`\n"
+                        
+                    else:
+                        # 连接失败处理
+                        result_text += f"❌ 连接建立失败\n"
+                        result_text += f"📝 错误详情: {connection_message}\n"
+                        
+                        # 智能错误诊断
+                        result_text += f"\n🔧 **错误诊断和修复建议**:\n"
+                        
+                        if "connection timed out" in connection_message.lower():
+                            result_text += f"• 网络连接超时 - 检查网络连接和服务器地址\n"
+                            result_text += f"• 如果使用跳板机，验证跳板机地址是否正确\n"
+                        elif "permission denied" in connection_message.lower():
+                            result_text += f"• 认证失败 - 检查用户名和密码是否正确\n"
+                            result_text += f"• 验证SSH密钥配置\n"
+                        elif "host unreachable" in connection_message.lower():
+                            result_text += f"• 主机不可达 - 检查网络连接和IP地址\n"
+                        else:
+                            result_text += f"• 检查服务器配置文件\n"
+                            result_text += f"• 验证网络连接和认证信息\n"
+                            result_text += f"• 检查目标服务器是否运行\n"
+                        
+                        # Session处理策略
+                        if debug_mode:
+                            # 重命名失败的session用于调试
+                            debug_session_name = f"{session_name}_debug_{int(time.time())}"
+                            try:
+                                subprocess.run(['tmux', 'rename-session', '-t', session_name, debug_session_name], 
+                                             capture_output=True)
+                                result_text += f"\n🐛 **调试模式**:\n"
+                                result_text += f"失败的session已重命名为: `{debug_session_name}`\n"
+                                result_text += f"使用 `tmux attach -t {debug_session_name}` 查看现场\n"
+                                result_text += f"调试完成后使用 `tmux kill-session -t {debug_session_name}` 清理\n"
+                            except:
+                                result_text += f"\n⚠️ 无法重命名debug session\n"
+                        else:
+                            # 直接删除失败的session
+                            try:
+                                subprocess.run(['tmux', 'kill-session', '-t', session_name], capture_output=True)
+                                result_text += f"\n🧹 失败的session已清理\n"
+                            except:
+                                pass
+                        
+                        return create_error_response(request_id, result_text)
+                
+                except Exception as e:
+                    error_message = str(e)
+                    result_text += f"❌ 连接过程异常\n"
+                    result_text += f"📝 异常详情: {error_message}\n"
+                    
+                    result_text += f"\n🔧 **异常处理建议**:\n"
+                    result_text += f"• 检查SSH管理器配置\n"
+                    result_text += f"• 验证服务器配置完整性\n"
+                    result_text += f"• 重启MCP服务器\n"
+                    
+                    if debug_mode and session_exists:
+                        debug_session_name = f"{session_name}_error_{int(time.time())}"
+                        try:
+                            subprocess.run(['tmux', 'rename-session', '-t', session_name, debug_session_name], 
+                                         capture_output=True)
+                            result_text += f"\n🐛 异常session已保留为: `{debug_session_name}`\n"
+                        except:
+                            pass
+                    
+                    return create_error_response(request_id, result_text)
+                
+                return create_success_response(request_id, result_text)
+                
+            except Exception as e:
+                debug_log(f"Error in establish_connection: {e}")
+                return create_error_response(request_id, f"建立连接失败: {str(e)}")
         
         else:
             return create_error_response(request_id, f"未知工具: {tool_name}", -32601)
