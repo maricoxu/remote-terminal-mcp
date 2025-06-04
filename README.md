@@ -12,15 +12,17 @@
 
 ## 🎯 快速开始
 
-### 1. 安装依赖
+### 1. 安装
 
 ```bash
 # 克隆项目
-git clone https://github.com/your-username/remote-terminal-mcp.git
+git clone https://github.com/maricoxu/remote-terminal-mcp.git
 cd remote-terminal-mcp
 
-# 安装依赖
+# 安装Node.js依赖
 npm install
+
+# 安装Python依赖
 pip install -r requirements.txt
 
 # 确保系统已安装 tmux
