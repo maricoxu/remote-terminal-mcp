@@ -14,6 +14,21 @@
 
 ### 1. 安装
 
+#### 方式一：NPM安装（推荐）
+
+```bash
+# 全局安装
+npm install -g @xuyehua/remote-terminal-mcp
+
+# 初始化配置
+remote-terminal-mcp init
+
+# 环境检查
+remote-terminal-mcp doctor
+```
+
+#### 方式二：源码安装（开发者）
+
 ```bash
 # 克隆项目
 git clone https://github.com/maricoxu/remote-terminal-mcp.git
@@ -32,7 +47,33 @@ pip install -r requirements.txt
 
 ### 2. 配置Cursor
 
+#### 方式一：自动配置（npm安装后）
+
+如果使用npm安装，初始化时会自动配置：
+
+```bash
+remote-terminal-mcp init  # 自动生成Cursor配置
+```
+
+#### 方式二：手动配置
+
 在 `~/.cursor/mcp.json` 中添加：
+
+```json
+{
+  "mcpServers": {
+    "remote-terminal": {
+      "command": "npx",
+      "args": ["-y", "@xuyehua/remote-terminal-mcp"],
+      "disabled": false,
+      "autoApprove": true,
+      "description": "🖥️ Remote Terminal MCP"
+    }
+  }
+}
+```
+
+或使用本地路径（源码安装）：
 
 ```json
 {
@@ -48,9 +89,27 @@ pip install -r requirements.txt
 }
 ```
 
-> 💡 **提示**：将路径改为你的实际项目路径
+> 💡 **提示**：npm安装推荐使用npx方式，源码安装需要指定实际项目路径
 
 ### 3. 开始使用
+
+#### CLI工具（npm安装）
+
+```bash
+# 初始化配置
+remote-terminal-mcp init
+
+# 配置服务器
+remote-terminal-mcp config
+
+# 环境诊断
+remote-terminal-mcp doctor
+
+# 启动MCP服务器
+remote-terminal-mcp start
+```
+
+#### 在Cursor中使用
 
 重启Cursor后，直接与AI对话：
 
