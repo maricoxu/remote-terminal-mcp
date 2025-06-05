@@ -144,16 +144,16 @@ Documentation: https://github.com/maricoxu/remote-terminal-mcp
         this.log('⚙️  Configure server information...');
 
         if (!fs.existsSync(this.configFile)) {
-            this.log('❌ 配置文件不存在，请先Run: remote-terminal-mcp init', 'error');
+            this.log('Config file not found, please run: remote-terminal-mcp init', 'error');
             return;
         }
 
-        this.log(`📝 请Edit config file: ${this.configFile}`);
-        this.log('\n配置Examples:');
+        this.log(`Please edit config file: ${this.configFile}`);
+        this.log('\nConfiguration examples:');
         console.log(`{
   "servers": {
     "my-server": {
-      "mode": "direct",  // 或 "jump_host", "double_jump_host"
+      "mode": "direct",  // or "jump_host", "double_jump_host"
       "connection": {
         "host": "192.168.1.100",
         "port": 22,
@@ -228,7 +228,7 @@ Documentation: https://github.com/maricoxu/remote-terminal-mcp
             execSync('pip --version', { stdio: 'ignore' });
             this.log('pip installed', 'success');
         } catch (error) {
-            this.log('⚠️  pip未安装，可能影响Python依赖管理', 'warning');
+            this.log('pip not installed, may affect Python dependency management', 'warning');
         }
 
         // 检查tmux
@@ -236,10 +236,10 @@ Documentation: https://github.com/maricoxu/remote-terminal-mcp
             const tmuxVersion = execSync('tmux -V', { encoding: 'utf8' }).trim();
             this.log(`✅ tmux: ${tmuxVersion}`, 'success');
         } catch (error) {
-            this.log('⚠️  tmux未安装', 'warning');
+            this.log('tmux not installed', 'warning');
             const platform = os.platform();
             const installCmd = platform === 'darwin' ? 'brew install tmux' : 'sudo apt install tmux';
-            this.log(`   安装: ${installCmd}`, 'info');
+            this.log(`   Install: ${installCmd}`, 'info');
         }
 
         // 检查配置文件
@@ -252,7 +252,7 @@ Documentation: https://github.com/maricoxu/remote-terminal-mcp
                 this.log(`   Number of configured servers: ${serverCount}`, 'info');
             } catch (error) {
                 this.log('Config file format error', 'error');
-                this.log('   请检查JSON语法', 'info');
+                this.log('   Please check JSON syntax', 'info');
                 allGood = false;
             }
         } else {
@@ -269,7 +269,7 @@ Documentation: https://github.com/maricoxu/remote-terminal-mcp
             this.log('   Run: remote-terminal-mcp init', 'info');
         }
 
-        this.log('\n' + (allGood ? '🎉 环境检查完成，一切正常！' : '⚠️  发现一些问题，请按提示解决'));
+        this.log('\n' + (allGood ? 'Environment check completed, everything is normal!' : 'Some issues found, please follow the prompts to resolve'));
     }
 
     run() {
@@ -298,7 +298,7 @@ Documentation: https://github.com/maricoxu/remote-terminal-mcp
                 if (!command) {
                     this.start(); // Default start MCP server
                 } else {
-                    this.log(`❌ 未知Commands: ${command}`, 'error');
+                    this.log(`Unknown command: ${command}`, 'error');
                     this.showHelp();
                     process.exit(1);
                 }
