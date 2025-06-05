@@ -3,7 +3,7 @@
 """
 SSH连接管理器
 
-处理SSH连接、跳板机和远程命令执行
+处理SSH连接、Jump host和远程Command执行
 """
 
 import os
@@ -19,7 +19,7 @@ import re
 
 
 def debug_log_cmd(cmd_list, description=""):
-    """打印执行的命令（调试用）"""
+    """打印执行的Command（调试用）"""
     if os.getenv('MCP_DEBUG') or os.getenv('SHOW_COMMANDS'):
         if isinstance(cmd_list, list):
             cmd_str = ' '.join(cmd_list)
@@ -35,7 +35,7 @@ def log_output(message):
 
 @dataclass
 class ServerConfig:
-    """服务器配置"""
+    """Server配置"""
     name: str
     type: str  # direct_ssh, jump_ssh, script_based
     host: str
@@ -50,7 +50,7 @@ class ServerConfig:
 
 @dataclass
 class ConnectionStatus:
-    """连接状态"""
+    """连接Status"""
     server_name: str
     connected: bool
     last_check: float
@@ -85,7 +85,7 @@ class SSHManager:
             self._show_startup_summary(session_result, preconnect_results)
     
     def _find_config_file(self) -> str:
-        """查找配置文件，如果不存在则自动创建默认配置"""
+        """查找配置文件，如果does not exist则自动创建默认配置"""
         # 1. 用户目录配置
         user_config_dir = Path.home() / ".remote-terminal-mcp"
         user_config_file = user_config_dir / "config.yaml"
@@ -93,7 +93,7 @@ class SSHManager:
         if user_config_file.exists():
             return str(user_config_file)
         
-        # 2. 如果用户配置不存在，则自动创建
+        # 2. 如果用户配置does not exist，则自动创建
         script_dir = Path(__file__).parent
         project_dir = script_dir.parent
         template_config = project_dir / "config" / "servers.template.yaml"
@@ -106,7 +106,7 @@ class SSHManager:
             import shutil
             shutil.copy2(template_config, user_config_file)
             
-            # 创建默认tmux会话（如果tmux可用且会话不存在）
+            # 创建默认tmux会话（如果tmux可用且会话does not exist）
             self._create_default_tmux_session()
             
             log_output(f"📦 已自动创建默认配置: {user_config_file}")
@@ -122,7 +122,7 @@ class SSHManager:
             return str(template_config)
         
         raise FileNotFoundError(
-            "未找到配置模板文件！请检查项目完整性。\n"
+            "未找到配置模板文件！Please check项目完整性。\n"
             f"缺失文件: {template_config}"
         )
     
@@ -166,18 +166,18 @@ class SSHManager:
         except FileNotFoundError:
             return False  # tmux未安装
         except Exception:
-            return False  # 其他错误
+            return False  # 其他Error
     
     def _load_config(self):
         """加载配置文件"""
         if not os.path.exists(self.config_path):
-            raise FileNotFoundError(f"配置文件不存在: {self.config_path}")
+            raise FileNotFoundError(f"配置文件does not exist: {self.config_path}")
         
         try:
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 config = yaml.safe_load(f)
             
-            # 解析服务器配置
+            # 解析Server配置
             servers_config = config.get('servers', {})
             for server_name, server_config in servers_config.items():
                 # 为script_based类型构建specs字典
@@ -207,7 +207,7 @@ class SSHManager:
                     jump_host=server_config.get('jump_host')
                 )
                 
-                # 初始化连接状态
+                # 初始化连接Status
                 self.connections[server_name] = ConnectionStatus(
                     server_name=server_name,
                     connected=False,
@@ -222,7 +222,7 @@ class SSHManager:
             raise Exception(f"解析配置文件失败: {e}")
     
     def list_servers(self) -> List[Dict[str, Any]]:
-        """列出所有服务器"""
+        """列出所有Server"""
         servers_info = []
         for server_name, server in self.servers.items():
             status = self.connections[server_name]
@@ -245,7 +245,7 @@ class SSHManager:
         return servers_info
     
     def get_server(self, server_name: str) -> Optional[ServerConfig]:
-        """获取服务器配置"""
+        """获取Server配置"""
         return self.servers.get(server_name)
     
     def _expand_path(self, path: str) -> str:
@@ -255,19 +255,19 @@ class SSHManager:
         return path
     
     def _validate_command(self, command: str) -> bool:
-        """验证命令是否安全"""
+        """验证Command是否安全"""
         if not self.security_settings:
-            return True  # 如果没有安全配置，允许所有命令
+            return True  # 如果没有安全配置，允许所有Command
         
         allowed_commands = self.security_settings.get('allowed_commands', [])
         forbidden_commands = self.security_settings.get('forbidden_commands', [])
         
-        # 检查禁止的命令
+        # 检查禁止的Command
         for pattern in forbidden_commands:
             if re.match(pattern, command):
                 return False
         
-        # 检查允许的命令
+        # 检查允许的Command
         if allowed_commands:
             for pattern in allowed_commands:
                 if re.match(pattern, command):
@@ -277,7 +277,7 @@ class SSHManager:
         return True  # 没有限制或通过检查
     
     def _build_ssh_command(self, server: ServerConfig, command: Optional[str] = None) -> List[str]:
-        """构建SSH命令"""
+        """构建SSHCommand"""
         ssh_cmd = ['ssh']
         
         # SSH选项
@@ -298,7 +298,7 @@ class SSHManager:
         if server.port != 22:
             ssh_cmd.extend(['-p', str(server.port)])
         
-        # 跳板机
+        # Jump host
         if server.type == 'jump_ssh' and server.jump_host:
             jump_host_info = server.jump_host
             jump_key_path = self._expand_path(jump_host_info.get('private_key_path', server.private_key_path))
@@ -313,30 +313,30 @@ class SSHManager:
         # 目标主机
         ssh_cmd.append(f"{server.username}@{server.host}")
         
-        # 要执行的命令
+        # 要执行的Command
         if command:
             ssh_cmd.append(command)
         
         return ssh_cmd
     
     def execute_command(self, server_name: str, command: str) -> Tuple[bool, str]:
-        """在远程服务器执行命令"""
+        """在远程ServerExecute command"""
         server = self.servers.get(server_name)
         if not server:
-            return False, f"服务器 {server_name} 不存在"
+            return False, f"Server {server_name} does not exist"
         
-        # 验证命令安全性
+        # 验证Command安全性
         if not self._validate_command(command):
-            return False, f"命令被安全策略禁止: {command}"
+            return False, f"Command被安全策略禁止: {command}"
         
-        # 根据服务器类型选择执行方式
+        # 根据Server类型选择执行方式
         if server.type == 'script_based':
             return self._execute_script_based_command(server, command)
         else:
             return self._execute_ssh_command(server, command)
     
     def _execute_ssh_command(self, server: ServerConfig, command: str) -> Tuple[bool, str]:
-        """执行SSH命令（原有逻辑）"""
+        """执行SSHCommand（原有逻辑）"""
         try:
             ssh_cmd = self._build_ssh_command(server, command)
             
@@ -351,23 +351,23 @@ class SSHManager:
             if result.stdout:
                 output += f"📤 输出:\n{result.stdout}\n"
             if result.stderr:
-                output += f"⚠️ 错误输出:\n{result.stderr}\n"
+                output += f"⚠️ Error输出:\n{result.stderr}\n"
             
             output += f"🔢 退出码: {result.returncode}"
             
-            # 更新连接状态
+            # 更新连接Status
             self.connections[server.name].connected = result.returncode == 0
             self.connections[server.name].last_check = time.time()
             
             return result.returncode == 0, output
             
         except subprocess.TimeoutExpired:
-            return False, f"⏱️ 命令执行超时"
+            return False, f"⏱️ Command执行超时"
         except Exception as e:
-            return False, f"❌ 命令执行失败: {str(e)}"
+            return False, f"❌ CommandExecution failed: {str(e)}"
     
     def _execute_script_based_command(self, server: ServerConfig, command: str) -> Tuple[bool, str]:
-        """执行script_based类型服务器的命令 - 增强版本带连接验证"""
+        """执行script_based类型Server的Command - 增强版本带连接验证"""
         session_name = server.session.get('name', f"{server.name}_session") if server.session else f"{server.name}_session"
         
         try:
@@ -376,14 +376,14 @@ class SSHManager:
                                         capture_output=True)
             
             if check_result.returncode != 0:
-                log_output(f"🔗 会话不存在，正在建立连接...")
-                # 会话不存在，需要先建立连接
+                log_output(f"🔗 会话does not exist，正在建立连接...")
+                # 会话does not exist，需要先建立连接
                 success, msg = self._establish_script_based_connection(server)
                 if not success:
                     return False, f"❌ 建立连接失败: {msg}"
             
-            # 步骤2: 验证会话连接状态
-            log_output(f"🔍 验证会话连接状态...")
+            # 步骤2: 验证会话连接Status
+            log_output(f"🔍 验证会话连接Status...")
             connected, status_msg = self._verify_session_connectivity(session_name)
             if not connected:
                 log_output(f"⚠️ 会话连接异常: {status_msg}")
@@ -397,10 +397,10 @@ class SSHManager:
                 if not success:
                     return False, f"❌ 重新连接失败: {msg}"
             
-            # 步骤3: 执行命令前的环境检查
-            log_output(f"📋 准备执行命令: {command}")
+            # 步骤3: Execute command前的环境检查
+            log_output(f"📋 准备Execute command: {command}")
             
-            # 发送一个简单的测试命令确认会话响应
+            # 发送一个简单的测试Command确认会话响应
             subprocess.run(['tmux', 'send-keys', '-t', session_name, 'echo "CMD_READY_$(date +%s)"', 'Enter'], 
                          capture_output=True)
             time.sleep(1)
@@ -410,20 +410,20 @@ class SSHManager:
                                   capture_output=True, text=True)
             
             if result.returncode != 0:
-                return False, f"❌ 会话响应异常，无法执行命令"
+                return False, f"❌ 会话响应异常，无法Execute command"
             
             if 'CMD_READY_' not in result.stdout:
-                return False, f"❌ 会话状态不稳定，建议手动检查 tmux attach -t {session_name}"
+                return False, f"❌ 会话Status不稳定，建议手动检查 tmux attach -t {session_name}"
             
-            # 步骤4: 执行实际命令
-            log_output(f"⚡ 执行命令: {command}")
+            # 步骤4: 执行实际Command
+            log_output(f"⚡ Execute command: {command}")
             tmux_cmd = ['tmux', 'send-keys', '-t', session_name, command, 'Enter']
             result = subprocess.run(tmux_cmd, capture_output=True, text=True)
             
             if result.returncode != 0:
-                return False, f"❌ 命令发送失败: {result.stderr}"
+                return False, f"❌ Command发送失败: {result.stderr}"
             
-            # 步骤5: 智能等待命令完成
+            # 步骤5: 智能等待Command完成
             max_wait = 10  # 最大等待10秒
             wait_interval = 1
             
@@ -437,12 +437,12 @@ class SSHManager:
                 if capture_result.returncode == 0:
                     output_lines = capture_result.stdout.strip().split('\n')
                     
-                    # 检查命令是否完成（通过提示符或输出模式判断）
+                    # 检查Command是否完成（通过提示符或输出模式判断）
                     recent_lines = output_lines[-3:] if len(output_lines) > 3 else output_lines
                     for line in recent_lines:
                         if any(prompt in line for prompt in ['$', '#', '>', '~']):
-                            # 找到提示符，命令可能已完成
-                            log_output(f"✅ 命令执行完成")
+                            # 找到提示符，Command可能已完成
+                            log_output(f"✅ Command执行完成")
                             break
                 else:
                     return False, f"❌ 获取输出失败: {capture_result.stderr}"
@@ -452,11 +452,11 @@ class SSHManager:
                                          capture_output=True, text=True)
             
             if final_capture.returncode == 0:
-                output = f"📤 命令: {command}\n"
+                output = f"📤 Command: {command}\n"
                 output += f"🖥️  会话: {session_name}\n"
                 output += f"📄 输出:\n{final_capture.stdout}"
                 
-                # 更新连接状态
+                # 更新连接Status
                 self.connections[server.name].connected = True
                 self.connections[server.name].last_check = time.time()
                 self.connections[server.name].error_message = None
@@ -466,12 +466,12 @@ class SSHManager:
                 return False, f"❌ 最终输出获取失败: {final_capture.stderr}"
                 
         except Exception as e:
-            error_msg = f"命令执行失败: {str(e)}"
+            error_msg = f"CommandExecution failed: {str(e)}"
             self.connections[server.name].error_message = error_msg
             return False, f"❌ {error_msg}"
     
     def _establish_script_based_connection(self, server: ServerConfig) -> Tuple[bool, str]:
-        """建立script_based类型的连接 - 增强版本带详细日志和状态检测"""
+        """建立script_based类型的连接 - 增强版本带详细日志和Status检测"""
         session_name = server.session.get('name', f"{server.name}_session") if server.session else f"{server.name}_session"
         
         try:
@@ -482,13 +482,13 @@ class SSHManager:
                                         capture_output=True)
             if check_result.returncode == 0:
                 log_output(f"✅ 发现已存在的会话: {session_name}")
-                # 检查现有会话状态
+                # 检查现有会话Status
                 status_ok, status_msg = self._verify_session_connectivity(session_name)
                 if status_ok:
-                    log_output(f"🚀 现有会话状态良好，直接使用")
-                    return True, f"会话已存在且状态良好: {session_name}"
+                    log_output(f"🚀 现有会话Status良好，直接使用")
+                    return True, f"会话已存在且Status良好: {session_name}"
                 else:
-                    log_output(f"⚠️  现有会话状态异常: {status_msg}")
+                    log_output(f"⚠️  现有会话Status异常: {status_msg}")
                     log_output(f"🗑️  清理并重新建立连接...")
                     subprocess.run(['tmux', 'kill-session', '-t', session_name], capture_output=True)
             
@@ -506,7 +506,7 @@ class SSHManager:
             result = subprocess.run(create_cmd, capture_output=True, text=True)
             
             if result.returncode != 0:
-                return False, f"❌ 创建tmux会话失败: {result.stderr} - 请检查tmux配置"
+                return False, f"❌ 创建tmux会话失败: {result.stderr} - Please checktmux配置"
             
             # 获取配置
             connection_config = server.specs.get('connection', {}) if server.specs else {}
@@ -523,7 +523,7 @@ class SSHManager:
                 if not success:
                     return False, f"❌ 连接工具启动失败: {msg}"
             
-            # 步骤2: 连接到目标服务器
+            # 步骤2: 连接到目标Server
             connection_mode = connection_config.get('mode', 'direct')
             
             # 根据连接模式获取目标主机
@@ -533,10 +533,10 @@ class SSHManager:
                 target_host = connection_config.get('target', {}).get('host', server.host)
             
             if target_host:
-                log_output(f"🎯 步骤2: 连接到目标服务器 ({target_host})")
+                log_output(f"🎯 步骤2: 连接到目标Server ({target_host})")
                 success, msg = self._connect_to_target_server(session_name, target_host, connection_config)
                 if not success:
-                    return False, f"❌ 目标服务器连接失败: {msg}"
+                    return False, f"❌ 目标Server连接失败: {msg}"
             
             # 步骤3: 智能Docker环境设置
             container_name = docker_config.get('container_name')
@@ -547,7 +547,7 @@ class SSHManager:
                 success, msg = self._smart_container_setup_enhanced(session_name, container_name, container_image, bos_config, env_setup)
                 if not success:
                     log_output(f"⚠️ Docker容器设置失败: {msg}")
-                    log_output("💡 建议: 检查Docker服务状态或容器配置")
+                    log_output("💡 建议: 检查Docker服务Status或容器配置")
             
             # 步骤4: 设置工作目录
             session_config = server.session or {}
@@ -566,7 +566,7 @@ class SSHManager:
             
             log_output(f"✅ 智能连接系统部署完成: {session_name}")
             
-            # 更新连接状态
+            # 更新连接Status
             self.connections[server.name].connected = True
             self.connections[server.name].last_check = time.time()
             self.connections[server.name].connection_time = time.time()
@@ -580,9 +580,9 @@ class SSHManager:
             return False, error_msg
 
     def _verify_session_connectivity(self, session_name: str) -> Tuple[bool, str]:
-        """验证现有会话的连接状态"""
+        """验证现有会话的连接Status"""
         try:
-            # 发送测试命令
+            # 发送测试Command
             subprocess.run(['tmux', 'send-keys', '-t', session_name, 'echo "CONNECTION_TEST_$(date +%s)"', 'Enter'], 
                          capture_output=True)
             time.sleep(1)
@@ -597,14 +597,14 @@ class SSHManager:
                 if 'MacBook-Pro' in output or 'localhost' in output:
                     return False, "会话已断开，回到本地环境"
                 elif 'CONNECTION_TEST_' in output:
-                    return True, "会话状态正常"
+                    return True, "会话Status正常"
                 else:
                     return False, "会话响应异常"
             else:
-                return False, "无法获取会话状态"
+                return False, "无法获取会话Status"
                 
         except Exception as e:
-            return False, f"状态检查失败: {str(e)}"
+            return False, f"Status检查失败: {str(e)}"
 
     def _start_connection_tool(self, session_name: str, tool: str) -> Tuple[bool, str]:
         """启动连接工具并等待就绪"""
@@ -643,17 +643,17 @@ class SSHManager:
             return False, f"启动工具失败: {str(e)}"
 
     def _connect_to_target_server(self, session_name: str, target_host: str, connection_config: dict = None) -> Tuple[bool, str]:
-        """连接到目标服务器并验证连接 - 支持跳板机模式和relay模式"""
+        """连接到目标Server并验证连接 - 支持Jump host模式和relay模式"""
         try:
-            # 检查是否需要跳板机连接
+            # 检查是否需要Jump host连接
             if connection_config and connection_config.get('mode') == 'jump_host':
                 return self._connect_via_jump_host(session_name, target_host, connection_config)
             
-            # 检查是否需要双层跳板机连接
+            # 检查是否需要双层Jump host连接
             if connection_config and connection_config.get('mode') == 'double_jump_host':
                 return self._connect_via_double_jump_host(session_name, connection_config)
             
-            # 检查是否是relay-cli模式（TJ服务器）
+            # 检查是否是relay-cli模式（TJServer）
             connection_tool = connection_config.get('tool', 'ssh') if connection_config else 'ssh'
             
             if connection_tool == 'relay-cli':
@@ -670,7 +670,7 @@ class SSHManager:
             return False, f"连接过程失败: {str(e)}"
     
     def _connect_via_relay(self, session_name: str, target_host: str, connection_config: dict) -> Tuple[bool, str]:
-        """通过relay-cli连接到目标服务器 - 基于cursor-bridge TJ脚本逻辑"""
+        """通过relay-cli连接到目标Server - 基于cursor-bridge TJ脚本逻辑"""
         try:
             log_output(f"   🚀 步骤1: 等待relay-cli就绪...")
             
@@ -690,7 +690,7 @@ class SSHManager:
                         log_output(f"   ✅ Relay登录成功！")
                         break
                     elif 'Login Giano failed by BEEP' in output:
-                        return False, "Relay登录失败，请检查认证"
+                        return False, "Relay登录失败，Please check认证"
                     elif 'Please input' in output or 'password' in output.lower():
                         if i < 5:
                             log_output(f"   🔐 Relay需要用户认证，请在另一终端执行:")
@@ -701,26 +701,26 @@ class SSHManager:
             else:
                 return False, "等待relay登录超时"
             
-            # 步骤2: 在relay中SSH到目标服务器
+            # 步骤2: 在relay中SSH到目标Server
             log_output(f"   🎯 步骤2: 在relay中连接到 {target_host}")
             subprocess.run(['tmux', 'send-keys', '-t', session_name, f'ssh {target_host}', 'Enter'],
                          capture_output=True)
             
-            # 等待目标服务器连接
+            # 等待目标Server连接
             return self._verify_target_server_connection(session_name, target_host)
             
         except Exception as e:
             return False, f"Relay连接失败: {str(e)}"
     
     def _verify_target_server_connection(self, session_name: str, target_host: str) -> Tuple[bool, str]:
-        """验证通过relay连接到目标服务器"""
+        """验证通过relay连接到目标Server"""
         try:
             max_wait = 30
             wait_interval = 2
             
             for i in range(0, max_wait, wait_interval):
                 time.sleep(wait_interval)
-                log_output(f"   ⏳ 等待目标服务器连接... ({i+wait_interval}/{max_wait}秒)")
+                log_output(f"   ⏳ 等待目标Server连接... ({i+wait_interval}/{max_wait}秒)")
                 
                 result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
                                       capture_output=True, text=True)
@@ -730,30 +730,30 @@ class SSHManager:
                     lines = output.strip().split('\n')
                     recent_lines = lines[-5:] if len(lines) > 5 else lines
                     
-                    # 检查目标服务器连接成功信号
+                    # 检查目标Server连接成功信号
                     for line in recent_lines:
                         line_lower = line.lower()
                         target_host_name = target_host.split('.')[0].lower()
                         
-                        # 检查是否已连接到目标服务器（而不是relay）
-                        # 必须包含目标主机名或明确的目标服务器指示符
+                        # 检查是否已连接到目标Server（而不是relay）
+                        # 必须包含目标主机名或明确的目标Server指示符
                         if (target_host_name in line_lower and '@' in line) or \
                            (target_host_name in line_lower and ('welcome' in line_lower or 'last login' in line_lower)) or \
                            ('root@' + target_host_name in line_lower):
-                            log_output(f"   ✅ 已成功连接到目标服务器 {target_host}")
+                            log_output(f"   ✅ 已成功连接到目标Server {target_host}")
                             time.sleep(2)  # 稳定连接
                             return True, f"成功连接到 {target_host}"
                     
-                    # 检查连接错误
+                    # 检查连接Error
                     for line in recent_lines:
                         line_lower = line.lower()
                         if any(error_signal in line_lower for error_signal in [
                             'connection refused', 'timeout', 'permission denied', 'host unreachable',
                             'no route to host', 'network unreachable'
                         ]):
-                            return False, f"目标服务器连接失败: {line.strip()}"
+                            return False, f"目标Server连接失败: {line.strip()}"
             
-            # 最终验证 - 使用完整路径的命令
+            # 最终验证 - 使用完整路径的Command
             log_output(f"   🔍 连接超时，执行最终验证...")
             subprocess.run(['tmux', 'send-keys', '-t', session_name, '/bin/echo "VERIFY_$(/bin/hostname)"', 'Enter'], 
                          capture_output=True)
@@ -770,7 +770,7 @@ class SSHManager:
             return False, f"连接验证失败，可能仍在relay环境中"
             
         except Exception as e:
-            return False, f"目标服务器验证失败: {str(e)}"
+            return False, f"目标Server验证失败: {str(e)}"
     
     def _verify_ssh_connection(self, session_name: str, target_host: str) -> Tuple[bool, str]:
         """验证传统SSH连接"""
@@ -780,7 +780,7 @@ class SSHManager:
             
             for i in range(0, max_wait, wait_interval):
                 time.sleep(wait_interval)
-                log_output(f"   ⏳ 等待服务器连接... ({i+wait_interval}/{max_wait}秒)")
+                log_output(f"   ⏳ 等待Server连接... ({i+wait_interval}/{max_wait}秒)")
                 
                 result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
                                       capture_output=True, text=True)
@@ -801,7 +801,7 @@ class SSHManager:
                                 time.sleep(2)
                                 return True, f"成功连接到 {target_host}"
                     
-                    # 检查错误信号
+                    # 检查Error信号
                     for line in recent_lines:
                         line_lower = line.lower()
                         if any(error_signal in line_lower for error_signal in [
@@ -821,24 +821,24 @@ class SSHManager:
                 log_output(f"   ✅ 最终验证成功，已连接到 {target_host}")
                 return True, f"连接验证成功: {target_host}"
             
-            return False, f"连接超时，无法确认连接状态"
+            return False, f"连接超时，无法确认连接Status"
             
         except Exception as e:
             return False, f"SSH连接验证失败: {str(e)}"
     
     def _connect_via_jump_host(self, session_name: str, target_host: str, connection_config: dict) -> Tuple[bool, str]:
-        """通过跳板机连接到目标服务器 - 基于cursor-bridge脚本逻辑"""
+        """通过Jump host连接到目标Server - 基于cursor-bridge脚本逻辑"""
         try:
             jump_host_config = connection_config.get('jump_host', {})
             jump_host = jump_host_config.get('host', '')
             jump_password = jump_host_config.get('password', '')
             
             if not jump_host:
-                return False, "跳板机配置缺失"
+                return False, "Jump host配置缺失"
             
-            log_output(f"   🚀 步骤1: 连接跳板机 {jump_host}")
+            log_output(f"   🚀 步骤1: 连接Jump host {jump_host}")
             jump_ssh_cmd = ['tmux', 'send-keys', '-t', session_name, f'ssh {jump_host}', 'Enter']
-            debug_log_cmd(jump_ssh_cmd, "连接跳板机")
+            debug_log_cmd(jump_ssh_cmd, "连接Jump host")
             subprocess.run(jump_ssh_cmd, capture_output=True)
             time.sleep(3)
             
@@ -853,29 +853,29 @@ class SSHManager:
                 subprocess.run(accept_cmd, capture_output=True)
                 time.sleep(2)
             
-            # 输入跳板机密码
+            # 输入Jump host密码
             if jump_password:
-                log_output("   🔐 输入跳板机密码...")
+                log_output("   🔐 输入Jump host密码...")
                 password_cmd = ['tmux', 'send-keys', '-t', session_name, jump_password, 'Enter']
-                debug_log_cmd(password_cmd, "输入跳板机密码")
+                debug_log_cmd(password_cmd, "输入Jump host密码")
                 subprocess.run(password_cmd, capture_output=True)
                 time.sleep(4)
             
-            # 验证跳板机连接
+            # 验证Jump host连接
             result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
                                   capture_output=True, text=True)
             if '$' not in result.stdout and '#' not in result.stdout:
-                return False, "跳板机连接失败，请检查密码"
+                return False, "Jump host连接失败，Please check密码"
             
-            log_output(f"   ✅ 跳板机连接成功")
+            log_output(f"   ✅ Jump host连接成功")
             
-            # 获取目标服务器密码和用户
+            # 获取目标Server密码和用户
             target_config = connection_config.get('target', {})
             target_password = target_config.get('password')
             target_user = target_config.get('user', 'root')  # 默认用户为root
             
-            # 从跳板机连接到目标服务器
-            log_output(f"   🎯 步骤2: 从跳板机连接到 {target_host}")
+            # 从Jump host连接到目标Server
+            log_output(f"   🎯 步骤2: 从Jump host连接到 {target_host}")
             # 检查target_host是否已经包含用户名
             if '@' in target_host:
                 ssh_target = target_host  # 已经包含用户名，直接使用
@@ -883,15 +883,15 @@ class SSHManager:
                 ssh_target = f'{target_user}@{target_host}'  # 使用配置中的用户名
             
             target_ssh_cmd = ['tmux', 'send-keys', '-t', session_name, f'ssh {ssh_target}', 'Enter']
-            debug_log_cmd(target_ssh_cmd, "连接目标服务器")
+            debug_log_cmd(target_ssh_cmd, "连接目标Server")
             subprocess.run(target_ssh_cmd, capture_output=True)
             time.sleep(4)
             
-            # 验证目标服务器连接并处理密码
+            # 验证目标Server连接并处理密码
             for i in range(10):  # 最多等待20秒
                 time.sleep(2)
                 capture_cmd = ['tmux', 'capture-pane', '-t', session_name, '-p']
-                debug_log_cmd(capture_cmd, f"检查连接状态(第{i+1}次)")
+                debug_log_cmd(capture_cmd, f"检查连接Status(第{i+1}次)")
                 result = subprocess.run(capture_cmd, capture_output=True, text=True)
                 
                 output = result.stdout.lower()
@@ -900,28 +900,28 @@ class SSHManager:
                 # 检查是否需要输入密码
                 if "password:" in output:
                     if target_password:
-                        log_output(f"   🔐 输入目标服务器密码...")
+                        log_output(f"   🔐 输入目标Server密码...")
                         pwd_cmd = ['tmux', 'send-keys', '-t', session_name, target_password, 'Enter']
-                        debug_log_cmd(pwd_cmd, "输入目标服务器密码")
+                        debug_log_cmd(pwd_cmd, "输入目标Server密码")
                         subprocess.run(pwd_cmd, capture_output=True)
                         time.sleep(3)
                         continue
                     else:
-                        return False, f"目标服务器需要密码但未在配置中提供: {target_host}"
+                        return False, f"目标Server需要密码但未在配置中提供: {target_host}"
                 
                 # 检查连接成功的标志
                 if any(indicator in result.stdout for indicator in ['root@', '$', '#']) and 'password:' not in output:
-                    log_output(f"   ✅ 已成功连接到目标服务器: {target_host}")
-                    return True, f"通过跳板机成功连接到 {target_host}"
+                    log_output(f"   ✅ 已成功连接到目标Server: {target_host}")
+                    return True, f"通过Jump host成功连接到 {target_host}"
                     
                 # 检查连接失败的标志
                 if any(error in output for error in ['denied', 'failed', 'connection timed out', 'no route to host']):
-                    return False, f"目标服务器连接失败: {result.stdout[-200:]}"
+                    return False, f"目标Server连接失败: {result.stdout[-200:]}"
             
-            return False, f"连接目标服务器超时: {target_host}"
+            return False, f"连接目标Server超时: {target_host}"
             
         except Exception as e:
-            return False, f"跳板机连接失败: {str(e)}"
+            return False, f"Jump host连接失败: {str(e)}"
 
     def _setup_working_directory(self, session_name: str, working_dir: str) -> Tuple[bool, str]:
         """设置工作目录"""
@@ -958,7 +958,7 @@ class SSHManager:
         try:
             log_output(f"   🔍 执行最终连接验证...")
             
-            # 发送多个验证命令
+            # 发送多个验证Command
             verification_commands = [
                 ('hostname', '主机名检查'),
                 ('whoami', '用户身份检查'),
@@ -978,7 +978,7 @@ class SSHManager:
                 
                 if result.returncode == 0:
                     output_lines = result.stdout.strip().split('\n')
-                    # 查找命令输出
+                    # 查找Command输出
                     for line in output_lines[-5:]:  # 检查最后5行
                         if line.strip() and not line.startswith(cmd) and cmd not in line:
                             verification_results.append(f"{desc}: {line.strip()}")
@@ -988,7 +988,7 @@ class SSHManager:
             if len(verification_results) >= 2:  # 至少2个验证通过
                 return True, f"连接验证成功 - {'; '.join(verification_results)}"
             else:
-                return False, f"连接验证不足，请手动检查会话状态"
+                return False, f"连接验证不足，请手动检查会话Status"
                 
         except Exception as e:
             return False, f"最终验证失败: {str(e)}"
@@ -1022,7 +1022,7 @@ class SSHManager:
                 log_output("✅ 容器已存在，进入快速连接模式...")
                 return self._handle_existing_container(session_name, container_name)
             elif 'CONTAINER_EXISTS_NO' in result.stdout:
-                log_output("🚀 容器不存在，进入创建模式...")
+                log_output("🚀 容器does not exist，进入创建模式...")
                 return self._handle_new_container(session_name, container_name, container_image, bos_config, env_setup)
             else:
                 log_output("❌ 容器存在性检查结果异常")
@@ -1034,7 +1034,7 @@ class SSHManager:
 
     def _smart_container_setup_enhanced(self, session_name: str, container_name: str, 
                                       container_image: str, bos_config: dict, env_setup: dict) -> Tuple[bool, str]:
-        """增强版智能容器设置，带详细日志和错误处理"""
+        """增强版智能容器设置，带详细日志和Error处理"""
         try:
             log_output(f"   🔍 检查Docker环境...")
             
@@ -1055,7 +1055,7 @@ class SSHManager:
                 success, msg = self._handle_existing_container_enhanced(session_name, container_name)
                 return success, msg
             else:
-                log_output(f"   🚀 容器不存在，进入创建模式...")
+                log_output(f"   🚀 容器does not exist，进入创建模式...")
                 success, msg = self._handle_new_container_enhanced(session_name, container_name, container_image, bos_config, env_setup)
                 return success, msg
                 
@@ -1084,9 +1084,9 @@ class SSHManager:
                 elif 'cannot connect' in output:
                     return False, "Docker服务未启动，建议: sudo systemctl start docker"
                 else:
-                    return False, f"Docker状态异常: {output[-100:]}"
+                    return False, f"DockerStatus异常: {output[-100:]}"
             else:
-                return False, "无法检查Docker状态"
+                return False, "无法检查DockerStatus"
                 
         except Exception as e:
             return False, f"Docker检查失败: {str(e)}"
@@ -1112,7 +1112,7 @@ class SSHManager:
                 if 'EXISTS_YES' in output:
                     return True, "容器存在"
                 elif 'EXISTS_NO' in output:
-                    return False, "容器不存在"
+                    return False, "容器does not exist"
                 else:
                     return None, f"检查结果不明确: {output[-100:]}"
             else:
@@ -1124,8 +1124,8 @@ class SSHManager:
     def _handle_existing_container_enhanced(self, session_name: str, container_name: str) -> Tuple[bool, str]:
         """增强版现有容器处理"""
         try:
-            # 检查容器运行状态
-            log_output(f"   🔍 检查容器运行状态...")
+            # 检查容器运行Status
+            log_output(f"   🔍 检查容器运行Status...")
             subprocess.run(['tmux', 'send-keys', '-t', session_name, 
                           f'echo "STATUS_CHECK_{container_name}"', 'Enter'], capture_output=True)
             time.sleep(1)
@@ -1208,11 +1208,11 @@ class SSHManager:
         try:
             log_output(f"   🚀 创建新容器: {container_name}")
             
-            # 构建docker run命令
+            # 构建docker runCommand
             docker_cmd = self._build_docker_run_command(container_name, container_image)
-            log_output(f"   🔧 Docker命令: {docker_cmd[:100]}...")
+            log_output(f"   🔧 DockerCommand: {docker_cmd[:100]}...")
             
-            # 执行创建命令
+            # 执行创建Command
             subprocess.run(['tmux', 'send-keys', '-t', session_name, 
                           f'echo "CREATE_START_{container_name}"', 'Enter'], capture_output=True)
             time.sleep(1)
@@ -1239,7 +1239,7 @@ class SSHManager:
                     log_output(f"   ✅ 容器创建成功")
                     break
                 elif 'CREATE_FAILED' in result.stdout:
-                    return False, "容器创建失败，请检查镜像和配置"
+                    return False, "容器创建失败，Please check镜像和配置"
             else:
                 return False, "容器创建超时"
             
@@ -1263,7 +1263,7 @@ class SSHManager:
             return False, f"创建新容器失败: {str(e)}"
 
     def _build_docker_run_command(self, container_name: str, container_image: str, docker_config: dict = None) -> str:
-        """构建Docker run命令 - 支持配置文件自定义参数"""
+        """构建Docker runCommand - 支持配置文件自定义参数"""
         # 使用配置文件中的run_options，如果没有则使用默认值
         if docker_config and docker_config.get('run_options'):
             run_options = docker_config['run_options']
@@ -1281,7 +1281,7 @@ class SSHManager:
     def _handle_existing_container(self, session_name: str, container_name: str) -> bool:
         """处理已存在容器的逻辑"""
         try:
-            log_output(f"🔍 步骤2: 检查容器运行状态...")
+            log_output(f"🔍 步骤2: 检查容器运行Status...")
             subprocess.run(['tmux', 'send-keys', '-t', session_name, 
                           "echo '=== CONTAINER_STATUS_CHECK_START ==='", 'Enter'], capture_output=True)
             subprocess.run(['tmux', 'send-keys', '-t', session_name, 
@@ -1316,7 +1316,7 @@ class SSHManager:
                              capture_output=True)
                 time.sleep(2)
             
-            log_output("✅ 快速连接完成！")
+            log_output("✅ 快速Connection completed！")
             return True
             
         except Exception as e:
@@ -1329,7 +1329,7 @@ class SSHManager:
         try:
             log_output(f"步骤1: 创建Docker容器 {container_name}")
             
-            # 构建docker run命令
+            # 构建docker runCommand
             docker_run_cmd = (
                 f"docker run --privileged --name={container_name} --ulimit core=-1 "
                 f"--security-opt seccomp=unconfined -dti --net=host --uts=host --ipc=host "
@@ -1370,7 +1370,7 @@ class SSHManager:
             if env_setup.get('auto_setup', False):
                 self._setup_full_environment(session_name, bos_config)
             else:
-                log_output("💡 容器已创建，如需配置环境请手动执行相关命令")
+                log_output("💡 容器已创建，如需配置环境请手动执行相关Command")
             
             return True
             
@@ -1440,7 +1440,7 @@ class SSHManager:
                 log_output("━" * 80)
                 log_output(ssh_key)
                 log_output("━" * 80)
-                log_output("💡 请复制上述公钥内容到目标服务器的authorized_keys文件")
+                log_output("💡 请复制上述公钥内容到目标Server的authorized_keys文件")
             else:
                 log_output("⚠️ SSH公钥获取失败，请手动执行: cat /root/.ssh/id_rsa.pub")
             
@@ -1548,12 +1548,12 @@ class SSHManager:
             return False
     
     def test_connection(self, server_name: str) -> Tuple[bool, str]:
-        """测试服务器连接"""
+        """测试Server连接"""
         server = self.servers.get(server_name)
         if not server:
-            return False, f"服务器 {server_name} 不存在"
+            return False, f"Server {server_name} does not exist"
         
-        # 根据服务器类型选择测试方式
+        # 根据Server类型选择测试方式
         if server.type == 'script_based':
             return self._test_script_based_connection(server)
         else:
@@ -1562,7 +1562,7 @@ class SSHManager:
     def _test_ssh_connection(self, server: ServerConfig) -> Tuple[bool, str]:
         """测试SSH连接（原有逻辑）"""
         try:
-            # 使用简单的echo命令测试连接
+            # 使用简单的echoCommand测试连接
             ssh_cmd = self._build_ssh_command(server, 'echo "connection_test"')
             
             start_time = time.time()
@@ -1575,7 +1575,7 @@ class SSHManager:
             
             connection_time = time.time() - start_time
             
-            # 更新连接状态
+            # 更新连接Status
             status = self.connections[server.name]
             status.last_check = time.time()
             status.connection_time = connection_time
@@ -1597,7 +1597,7 @@ class SSHManager:
         except Exception as e:
             self.connections[server.name].connected = False
             self.connections[server.name].error_message = str(e)
-            return False, f"连接错误: {e}"
+            return False, f"连接Error: {e}"
     
     def _test_script_based_connection(self, server: ServerConfig) -> Tuple[bool, str]:
         """测试script_based连接"""
@@ -1611,10 +1611,10 @@ class SSHManager:
                                         capture_output=True)
             
             if check_result.returncode == 0:
-                # 会话存在，检查连接状态
-                log_output(f"🔍 检测会话状态: {session_name}")
+                # 会话存在，检查连接Status
+                log_output(f"🔍 检测会话Status: {session_name}")
                 
-                # 发送简单测试命令
+                # 发送简单测试Command
                 test_cmd = ['tmux', 'send-keys', '-t', session_name, 'echo "connection_test_$(date)"', 'Enter']
                 subprocess.run(test_cmd, capture_output=True)
                 time.sleep(1)
@@ -1642,7 +1642,7 @@ class SSHManager:
                         return False, f"重新连接失败: {msg}"
                 
                 elif 'connection_test_' in output:
-                    # 更新连接状态
+                    # 更新连接Status
                     status = self.connections[server.name]
                     status.connected = True
                     status.last_check = time.time()
@@ -1656,7 +1656,7 @@ class SSHManager:
                 else:
                     return False, "会话无响应"
             else:
-                # 会话不存在，尝试建立连接
+                # 会话does not exist，尝试建立连接
                 success, msg = self._establish_script_based_connection(server)
                 connection_time = time.time() - start_time
                 
@@ -1673,19 +1673,19 @@ class SSHManager:
     def _send_keepalive(self, session_name: str):
         """发送保活信号到远程会话"""
         try:
-            # 发送简单的保活命令（不显示输出）
+            # 发送简单的保活Command（不显示输出）
             subprocess.run(['tmux', 'send-keys', '-t', session_name, '# keepalive', 'Enter'],
                          capture_output=True)
         except Exception:
             pass  # 保活失败不影响主要功能
     
     def get_server_status(self, server_name: str) -> Dict[str, Any]:
-        """获取服务器状态"""
+        """获取ServerStatus"""
         server = self.servers.get(server_name)
         if not server:
-            return {'error': f"服务器 {server_name} 不存在"}
+            return {'error': f"Server {server_name} does not exist"}
         
-        # 执行状态检查命令
+        # 执行Status检查Command
         status_commands = [
             ('hostname', 'hostname'),
             ('uptime', 'uptime'),
@@ -1697,7 +1697,7 @@ class SSHManager:
         if server.specs and server.specs.get('gpu_count', 0) > 0:
             status_commands.append(('gpu_status', 'nvidia-smi --query-gpu=index,name,utilization.gpu,memory.used,memory.total --format=csv,noheader'))
         
-        # 获取连接状态
+        # 获取连接Status
         connection_status = self.connections.get(server_name)
         if not connection_status:
             connection_status = ConnectionStatus(server_name, False, 0, "未初始化")
@@ -1712,7 +1712,7 @@ class SSHManager:
             'info': {}
         }
         
-        # 如果连接正常，获取详细状态
+        # 如果连接正常，获取详细Status
         if connection_status.connected:
             for info_name, cmd in status_commands:
                 success, output = self.execute_command(server_name, cmd)
@@ -1731,11 +1731,11 @@ class SSHManager:
         return server_status
     
     def get_default_server(self) -> Optional[str]:
-        """获取默认服务器"""
+        """获取Default server"""
         return self.global_settings.get('default_server')
     
     def refresh_all_connections(self) -> Dict[str, bool]:
-        """刷新所有服务器连接状态"""
+        """Refresh all server connection status"""
         results = {}
         for server_name in self.servers.keys():
             success, message = self.test_connection(server_name)
@@ -1746,7 +1746,7 @@ class SSHManager:
         """获取连接诊断信息和修复建议"""
         server = self.get_server(server_name)
         if not server:
-            return {"error": f"服务器 {server_name} 不存在"}
+            return {"error": f"Server {server_name} does not exist"}
         
         diagnostics = {
             "server_name": server_name,
@@ -1793,10 +1793,10 @@ class SSHManager:
             result["suggestions"].append("安装tmux: brew install tmux (macOS) 或 sudo apt install tmux (Ubuntu)")
             return result
         
-        # 检查会话状态
+        # 检查会话Status
         session_check = subprocess.run(['tmux', 'has-session', '-t', session_name], capture_output=True)
         if session_check.returncode != 0:
-            result["issues"].append(f"会话 {session_name} 不存在")
+            result["issues"].append(f"会话 {session_name} does not exist")
             result["suggestions"].append(f"运行 test_connection 重新建立连接")
         else:
             # 检查会话连接性
@@ -1835,7 +1835,7 @@ class SSHManager:
         ssh_check = subprocess.run(['which', 'ssh'], capture_output=True)
         if ssh_check.returncode != 0:
             result["status"] = "error"
-            result["issues"].append("ssh命令不可用")
+            result["issues"].append("sshCommand不可用")
             result["suggestions"].append("安装OpenSSH客户端")
             return result
         
@@ -1844,7 +1844,7 @@ class SSHManager:
             key_path = Path(server.private_key_path).expanduser()
             if not key_path.exists():
                 result["status"] = "error"
-                result["issues"].append(f"私钥文件不存在: {key_path}")
+                result["issues"].append(f"私钥文件does not exist: {key_path}")
                 result["suggestions"].append(f"检查私钥路径或生成新的SSH密钥")
         
         return result
@@ -1857,13 +1857,13 @@ class SSHManager:
         log_output("=" * 60)
         
         # 基本信息
-        log_output(f"📋 服务器类型: {diagnostics.get('server_type', 'N/A')}")
+        log_output(f"📋 Server类型: {diagnostics.get('server_type', 'N/A')}")
         log_output(f"⏰ 检查时间: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(diagnostics.get('timestamp', time.time())))}")
         
-        # 状态
+        # Status
         status = diagnostics.get('status', 'unknown')
         status_emoji = {"healthy": "✅", "warning": "⚠️", "error": "❌", "unknown": "❓"}
-        log_output(f"🔋 连接状态: {status_emoji.get(status, '❓')} {status.upper()}")
+        log_output(f"🔋 连接Status: {status_emoji.get(status, '❓')} {status.upper()}")
         
         # 连接信息
         conn_info = diagnostics.get('connection_info', {})
@@ -1888,23 +1888,23 @@ class SSHManager:
         
         # 总结
         if status == "healthy":
-            log_output(f"\n🎉 连接状态良好，无需特别处理")
+            log_output(f"\n🎉 连接Status良好，无需特别处理")
         elif status == "warning":
             log_output(f"\n⚠️ 连接存在轻微问题，建议按照上述建议优化")
         elif status == "error":
             log_output(f"\n🚨 连接存在严重问题，请按照建议修复后重试")
         else:
-            log_output(f"\n❓ 连接状态未知，建议手动检查")
+            log_output(f"\n❓ 连接Status未知，建议手动检查")
         
         log_output("=" * 60)
 
     def _smart_preconnect(self) -> Dict[str, bool]:
-        """智能预连接常用服务器"""
+        """智能预连接常用Server"""
         preconnect_servers = self.global_settings.get('preconnect_servers', ['local-dev'])
         preconnect_timeout = self.global_settings.get('preconnect_timeout', 60)
         max_parallel = self.global_settings.get('preconnect_parallel', 3)
         
-        log_output(f"🚀 启动智能预连接 ({len(preconnect_servers)}个服务器)...")
+        log_output(f"🚀 启动智能预连接 ({len(preconnect_servers)}个Server)...")
         
         results = {}
         start_time = time.time()
@@ -1914,7 +1914,7 @@ class SSHManager:
         
         def connect_server(server_name):
             if server_name not in self.servers:
-                return server_name, False, f"服务器{server_name}不存在"
+                return server_name, False, f"Server{server_name}does not exist"
             
             try:
                 success, msg = self.test_connection(server_name)
@@ -1946,7 +1946,7 @@ class SSHManager:
         
         elapsed_total = time.time() - start_time
         success_count = sum(1 for success in results.values() if success)
-        log_output(f"🎯 预连接完成: {success_count}/{len(preconnect_servers)}个成功 ({elapsed_total:.1f}s)")
+        log_output(f"🎯 预Connection completed: {success_count}/{len(preconnect_servers)}个成功 ({elapsed_total:.1f}s)")
         
         return results
 
@@ -1971,7 +1971,7 @@ class SSHManager:
             log_output("")
             log_output("🔧 或者使用MCP工具:")
             log_output("   • list_tmux_sessions  - 查看所有会话")
-            log_output("   • run_command        - 在会话中执行命令")
+            log_output("   • run_command        - 在会话中Execute command")
             log_output("   • create_tmux_session - 创建新会话")
         else:
             log_output("⚠️  本地tmux会话创建失败")
@@ -1979,25 +1979,25 @@ class SSHManager:
             log_output("      • macOS: brew install tmux")
             log_output("      • Ubuntu: sudo apt install tmux")
         
-        # 显示可用服务器
+        # 显示可用Server
         servers = self.list_servers()
         local_servers = [s for s in servers if s['type'] == 'local_tmux']
         remote_servers = [s for s in servers if s['type'] != 'local_tmux']
         
-        log_output(f"\n📋 服务器配置:")
+        log_output(f"\n📋 Server配置:")
         if local_servers:
             log_output(f"   ✅ 本地会话: {len(local_servers)}个")
         
         if remote_servers:
             configured = len([s for s in remote_servers if s.get('host')])
             total = len(remote_servers)
-            log_output(f"   🌐 远程服务器: {configured}/{total}个已配置")
+            log_output(f"   🌐 远程Server: {configured}/{total}个已配置")
         
         # 显示预连接结果
         if preconnect_results:
             preconnected = sum(1 for success in preconnect_results.values() if success)
             total_preconnect = len(preconnect_results)
-            log_output(f"   🚀 预连接状态: {preconnected}/{total_preconnect}个已就绪")
+            log_output(f"   🚀 预连接Status: {preconnected}/{total_preconnect}个已就绪")
         
         log_output(f"\n🎯 快速开始:")
         log_output("   1️⃣ 立即体验: tmux attach -t dev-session")
@@ -2006,7 +2006,7 @@ class SSHManager:
         log_output("="*50 + "\n")
 
     def _connect_via_double_jump_host(self, session_name: str, connection_config: dict) -> Tuple[bool, str]:
-        """通过双层跳板机连接到目标服务器
+        """通过双层Jump host连接到目标Server
         
         连接序列:
         1. relay-cli -> shell ready
@@ -2024,7 +2024,7 @@ class SSHManager:
             second_jump_password = second_jump.get('password', '')
             
             if not first_jump_host or not second_jump_host:
-                return False, "双层跳板机配置不完整"
+                return False, "双层Jump host配置不完整"
             
             # 步骤1: 等待relay-cli就绪（显示shell提示符）
             log_output(f"   🚀 步骤1: 等待relay-cli就绪 (shell ready)")
@@ -2032,7 +2032,7 @@ class SSHManager:
             for i in range(max_wait):
                 time.sleep(1)
                 capture_cmd = ['tmux', 'capture-pane', '-t', session_name, '-p']
-                debug_log_cmd(capture_cmd, f"检查relay状态(第{i+1}次)")
+                debug_log_cmd(capture_cmd, f"检查relayStatus(第{i+1}次)")
                 result = subprocess.run(capture_cmd, capture_output=True, text=True)
                 
                 if 'bash-' in result.stdout and '$' in result.stdout:
@@ -2041,27 +2041,27 @@ class SSHManager:
             else:
                 return False, "等待relay-cli超时"
             
-            # 步骤2: 连接第一层跳板机
-            log_output(f"   🎯 步骤2: 连接第一层跳板机 {first_jump_host}")
+            # 步骤2: 连接第一层Jump host
+            log_output(f"   🎯 步骤2: 连接第一层Jump host {first_jump_host}")
             first_ssh_cmd = ['tmux', 'send-keys', '-t', session_name, f'ssh {first_jump_host}', 'Enter']
-            debug_log_cmd(first_ssh_cmd, "连接第一层跳板机")
+            debug_log_cmd(first_ssh_cmd, "连接第一层Jump host")
             subprocess.run(first_ssh_cmd, capture_output=True)
             time.sleep(3)
             
             # 检查并输入第一层密码
-            log_output(f"   🔐 输入第一层跳板机密码...")
+            log_output(f"   🔐 输入第一层Jump host密码...")
             pwd_cmd = ['tmux', 'send-keys', '-t', session_name, first_jump_password, 'Enter']
             debug_log_cmd(pwd_cmd, "输入第一层密码")
             subprocess.run(pwd_cmd, capture_output=True)
             time.sleep(4)
             
             # 等待第一层连接成功
-            log_output(f"   ⏳ 验证第一层跳板机连接...")
+            log_output(f"   ⏳ 验证第一层Jump host连接...")
             first_jump_user = first_jump_host.split('@')[0] if '@' in first_jump_host else 'yh'
             for i in range(15):
                 time.sleep(1)
                 capture_cmd = ['tmux', 'capture-pane', '-t', session_name, '-p']
-                debug_log_cmd(capture_cmd, f"检查第一层连接状态(第{i+1}次)")
+                debug_log_cmd(capture_cmd, f"检查第一层连接Status(第{i+1}次)")
                 result = subprocess.run(capture_cmd, capture_output=True, text=True)
                 
                 output = result.stdout.lower()
@@ -2071,26 +2071,26 @@ class SSHManager:
                 first_jump_prompt = f"[{first_jump_user}@"
                 if (first_jump_prompt in result.stdout and 
                     ('~]$' in result.stdout or result.stdout.strip().endswith('$'))):
-                    log_output(f"   ✅ 第一层跳板机连接成功")
+                    log_output(f"   ✅ 第一层Jump host连接成功")
                     time.sleep(1)  # 给系统稳定时间
                     break
                 elif 'Permission denied' in result.stdout or 'Authentication failed' in result.stdout:
-                    return False, f"第一层跳板机认证失败: {result.stdout[-200:]}"
+                    return False, f"第一层Jump host认证失败: {result.stdout[-200:]}"
                 elif 'Connection timed out' in result.stdout:
-                    return False, f"第一层跳板机连接超时: {result.stdout[-200:]}"
+                    return False, f"第一层Jump host连接超时: {result.stdout[-200:]}"
             else:
                 # 最后检查一次，可能已经连接但显示有延迟
                 result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
                                        capture_output=True, text=True)
                 if f"[{first_jump_user}@" in result.stdout and '~]$' in result.stdout:
-                    log_output(f"   ✅ 第一层跳板机连接成功（延迟检测）")
+                    log_output(f"   ✅ 第一层Jump host连接成功（延迟检测）")
                 else:
-                    return False, "第一层跳板机连接超时"
+                    return False, "第一层Jump host连接超时"
             
-            # 步骤3: 从第一层跳板机连接到目标服务器
-            log_output(f"   🎯 步骤3: 从第一层跳板机连接到目标服务器 {second_jump_host}")
+            # 步骤3: 从第一层Jump host连接到目标Server
+            log_output(f"   🎯 步骤3: 从第一层Jump host连接到目标Server {second_jump_host}")
             second_ssh_cmd = ['tmux', 'send-keys', '-t', session_name, f'ssh {second_jump_user}@{second_jump_host}', 'Enter']
-            debug_log_cmd(second_ssh_cmd, "连接目标服务器")
+            debug_log_cmd(second_ssh_cmd, "连接目标Server")
             subprocess.run(second_ssh_cmd, capture_output=True)
             time.sleep(4)
             
@@ -2098,7 +2098,7 @@ class SSHManager:
             for i in range(10):
                 time.sleep(2)
                 capture_cmd = ['tmux', 'capture-pane', '-t', session_name, '-p']
-                debug_log_cmd(capture_cmd, f"检查最终连接状态(第{i+1}次)")
+                debug_log_cmd(capture_cmd, f"检查最终连接Status(第{i+1}次)")
                 result = subprocess.run(capture_cmd, capture_output=True, text=True)
                 
                 output = result.stdout.lower()
@@ -2107,27 +2107,27 @@ class SSHManager:
                 # 检查是否需要输入密码
                 if "password:" in output:
                     if second_jump_password:
-                        log_output(f"   🔐 输入目标服务器密码...")
+                        log_output(f"   🔐 输入目标Server密码...")
                         pwd_cmd = ['tmux', 'send-keys', '-t', session_name, second_jump_password, 'Enter']
-                        debug_log_cmd(pwd_cmd, "输入目标服务器密码")
+                        debug_log_cmd(pwd_cmd, "输入目标Server密码")
                         subprocess.run(pwd_cmd, capture_output=True)
                         time.sleep(3)
                         continue
                     else:
-                        log_output(f"   ℹ️ 目标服务器提示密码但配置为无需密码，等待无密码连接...")
+                        log_output(f"   ℹ️ 目标Server提示密码但配置为无需密码，等待无密码连接...")
                         time.sleep(2)
                         continue
                 
                 # 检查连接成功的标志
                 if any(indicator in result.stdout for indicator in [f'{second_jump_user}@', '$', '#']) and 'password:' not in output:
-                    log_output(f"   ✅ 已成功连接到目标服务器: {second_jump_host}")
-                    return True, f"通过双层跳板机成功连接到 {second_jump_host}"
+                    log_output(f"   ✅ 已成功连接到目标Server: {second_jump_host}")
+                    return True, f"通过双层Jump host成功连接到 {second_jump_host}"
                     
                 # 检查连接失败的标志
                 if any(error in output for error in ['denied', 'failed', 'connection timed out', 'no route to host']):
-                    return False, f"目标服务器连接失败: {result.stdout[-200:]}"
+                    return False, f"目标Server连接失败: {result.stdout[-200:]}"
             
-            return False, f"连接目标服务器超时: {second_jump_host}"
+            return False, f"连接目标Server超时: {second_jump_host}"
             
         except Exception as e:
-            return False, f"双层跳板机连接失败: {str(e)}"
+            return False, f"双层Jump host连接失败: {str(e)}"
