@@ -14,7 +14,7 @@ const os = require('os');
 // 检查是否在MCP运行时（静默模式）
 const isMCPMode = process.env.MCP_QUIET || process.argv.includes('--mcp-mode');
 if (!isMCPMode) {
-    console.log('🚀 正在配置 Remote Terminal MCP...\n');
+    console.log('Configuring Remote Terminal MCP...\n');
 }
 
 // 获取包安装目录
@@ -55,7 +55,7 @@ class PostInstaller {
     }
 
     async checkPython() {
-        this.log('🐍 检查Python环境...');
+        this.log('Checking Python environment...');
         
         const pythonCommands = ['python3', 'python'];
         let pythonCmd = null;
@@ -72,15 +72,15 @@ class PostInstaller {
             return false;
         }
         
-        this.log(`✅ 发现Python: ${pythonCmd}`, 'success');
+        this.log(`Python found: ${pythonCmd}`, 'success');
         return pythonCmd;
     }
 
     async installPythonDeps(pythonCmd) {
-        this.log('📦 安装Python依赖...');
+        this.log('Installing Python dependencies...');
         
         try {
-            // 检查pip
+            // Check pip
             const pipCommands = [`${pythonCmd} -m pip`, 'pip3', 'pip'];
             let pipCmd = null;
             
@@ -97,32 +97,32 @@ class PostInstaller {
                 return false;
             }
             
-            // 安装依赖
+            // Install dependencies
             execSync(`${pipCmd} install -r "${requirementsFile}"`, { 
                 stdio: 'inherit',
                 cwd: packageRoot 
             });
             
-            this.log('✅ Python依赖安装完成', 'success');
+            this.log('Python dependencies installed successfully', 'success');
             return true;
         } catch (error) {
             this.warnings.push(`Python dependency installation failed: ${error.message}`);
-            this.log('⚠️  您可能需要手动运行: pip install -r requirements.txt', 'warning');
+            this.log('You may need to manually run: pip install -r requirements.txt', 'warning');
             return false;
         }
     }
 
     async checkTmux() {
-        this.log('🖥️  检查tmux...');
+        this.log('Checking tmux...');
         
         if (this.checkCommand('tmux')) {
-            this.log('✅ tmux已安装', 'success');
+            this.log('tmux is installed', 'success');
             return true;
         }
         
         const installInstructions = {
             'darwin': 'brew install tmux',
-            'linux': 'sudo apt install tmux  # 或 sudo yum install tmux',
+            'linux': 'sudo apt install tmux  # or sudo yum install tmux',
             'default': 'Please install tmux for your system'
         };
         
@@ -132,10 +132,10 @@ class PostInstaller {
     }
 
     async setPermissions() {
-        this.log('🔐 设置文件权限...');
+        this.log('Setting file permissions...');
         
         try {
-            // 设置shell脚本执行权限
+            // Set shell script execution permissions
             const shellScripts = [
                 path.join(templatesDir, 'connect_cpu_221.sh')
             ];
@@ -146,7 +146,7 @@ class PostInstaller {
                 }
             }
             
-            // 设置Python脚本执行权限
+            // Set Python script execution permissions
             const pythonScripts = [
                 path.join(pythonDir, 'ssh_manager.py'),
                 path.join(packageRoot, 'index.js')
@@ -158,7 +158,7 @@ class PostInstaller {
                 }
             }
             
-            this.log('✅ 文件权限设置完成', 'success');
+            this.log('File permissions set successfully', 'success');
             return true;
         } catch (error) {
             this.warnings.push(`Permission setting failed: ${error.message}`);
@@ -167,49 +167,49 @@ class PostInstaller {
     }
 
     async createUserConfig() {
-        this.log('⚙️  创建用户配置目录...');
+        this.log('Creating user configuration directory...');
         
         const homeDir = os.homedir();
         const configDir = path.join(homeDir, '.remote-terminal-mcp');
         
         if (!fs.existsSync(configDir)) {
             fs.mkdirSync(configDir, { recursive: true });
-            this.log(`✅ 配置目录创建: ${configDir}`, 'success');
+            this.log(`Configuration directory created: ${configDir}`, 'success');
         }
         
-        // 复制配置模板
+        // Copy configuration template
         const configTemplate = path.join(packageRoot, 'config', 'servers.json');
         const userConfig = path.join(configDir, 'servers.json');
         
         if (fs.existsSync(configTemplate) && !fs.existsSync(userConfig)) {
             fs.copyFileSync(configTemplate, userConfig);
-            this.log(`✅ 配置模板复制到: ${userConfig}`, 'success');
+            this.log(`Configuration template copied to: ${userConfig}`, 'success');
         }
         
         return configDir;
     }
 
     async showCompletion() {
-        this.log('\n🎉 安装完成!\n', 'success');
+        this.log('\nInstallation completed!\n', 'success');
         
         if (this.errors.length > 0) {
-            this.log('❌ 错误:', 'error');
+            this.log('Errors:', 'error');
             this.errors.forEach(error => this.log(`   • ${error}`, 'error'));
             this.log('');
         }
         
         if (this.warnings.length > 0) {
-            this.log('⚠️  警告:', 'warning');
+            this.log('Warnings:', 'warning');
             this.warnings.forEach(warning => this.log(`   • ${warning}`, 'warning'));
             this.log('');
         }
         
-        this.log('📖 下一步:', 'info');
-        this.log('   1. 运行: remote-terminal-mcp init', 'info');
-        this.log('   2. 配置服务器信息', 'info');
-        this.log('   3. 在Cursor中配置MCP服务器', 'info');
+        this.log('Next steps:', 'info');
+        this.log('   1. Run: remote-terminal-mcp init', 'info');
+        this.log('   2. Configure server information', 'info');
+        this.log('   3. Configure MCP server in Cursor', 'info');
         this.log('');
-        this.log('📚 详细文档: https://github.com/maricoxu/remote-terminal-mcp', 'info');
+        this.log('Documentation: https://github.com/maricoxu/remote-terminal-mcp', 'info');
     }
 
     async run() {
@@ -226,7 +226,7 @@ class PostInstaller {
             await this.showCompletion();
             
         } catch (error) {
-            this.log(`💥 安装过程中出现错误: ${error.message}`, 'error');
+            this.log(`Installation error: ${error.message}`, 'error');
             process.exit(1);
         }
     }

@@ -26,7 +26,7 @@ def test_mcp_server():
     
     # 启动MCP服务器
     process = subprocess.Popen(
-        ['npx', '-y', '@xuyehua/remote-terminal-mcp@0.2.9'],
+        ['npx', '-y', '@xuyehua/remote-terminal-mcp@0.2.10'],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
