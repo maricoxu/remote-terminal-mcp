@@ -24,9 +24,9 @@ os.environ['MCP_DEBUG'] = '1'
 def test_mcp_server():
     print("🚀 启动MCP服务器进程...")
     
-    # 启动MCP服务器
+    # 启动MCP服务器 - 强制使用最新版本
     process = subprocess.Popen(
-        ['npx', '-y', '@xuyehua/remote-terminal-mcp'],
+        ['npx', '-y', '@xuyehua/remote-terminal-mcp@latest'],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

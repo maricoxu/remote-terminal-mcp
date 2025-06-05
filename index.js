@@ -83,9 +83,16 @@ Examples:
             console.error(`Python script: ${pythonScript}`);
         }
 
+        // 设置环境变量
+        const env = { ...process.env };
+        if (this.args.isDebugMode || process.env.MCP_DEBUG) {
+            env.MCP_DEBUG = '1';
+        }
+
         // 启动Python MCP服务器
         const mcp = spawn('python3', [pythonScript], {
-            stdio: ['pipe', 'pipe', this.args.isDebugMode ? 'inherit' : 'pipe']
+            stdio: ['pipe', 'pipe', this.args.isDebugMode ? 'inherit' : 'pipe'],
+            env: env
         });
 
         // 转发stdio用于MCP通信
