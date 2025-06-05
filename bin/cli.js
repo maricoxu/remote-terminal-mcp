@@ -176,13 +176,20 @@ class RemoteTerminalCLI {
     }
 
     async start() {
-        this.log('🚀 启动MCP服务器...');
+        // 检查是否是从Cursor/MCP调用（通过stdin检测）
+        const isMCPCall = !process.stdin.isTTY;
+        
+        if (!isMCPCall) {
+            this.log('🚀 启动MCP服务器...');
+        }
         
         try {
             const indexPath = path.join(this.packageRoot, 'index.js');
             require(indexPath);
         } catch (error) {
-            this.log(`❌ 启动失败: ${error.message}`, 'error');
+            if (!isMCPCall) {
+                this.log(`❌ 启动失败: ${error.message}`, 'error');
+            }
             process.exit(1);
         }
     }

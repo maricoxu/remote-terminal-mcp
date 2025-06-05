@@ -11,7 +11,11 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-console.log('🚀 正在配置 Remote Terminal MCP...\n');
+// 检查是否在MCP运行时（静默模式）
+const isMCPMode = process.env.MCP_QUIET || process.argv.includes('--mcp-mode');
+if (!isMCPMode) {
+    console.log('🚀 正在配置 Remote Terminal MCP...\n');
+}
 
 // 获取包安装目录
 const packageRoot = path.resolve(__dirname, '..');
@@ -27,6 +31,10 @@ class PostInstaller {
     }
 
     log(message, type = 'info') {
+        // 在MCP运行时保持静默
+        const isMCPMode = process.env.MCP_QUIET || process.argv.includes('--mcp-mode');
+        if (isMCPMode) return;
+        
         const colors = {
             info: '\x1b[36m',      // cyan
             success: '\x1b[32m',   // green
