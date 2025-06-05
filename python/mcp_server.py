@@ -21,8 +21,8 @@ os.environ['MCP_QUIET'] = '1'
 
 from ssh_manager import SSHManager
 
-# 调试模式
-DEBUG = os.getenv('MCP_DEBUG') == '1'
+# 调试模式 - 默认开启以便诊断问题
+DEBUG = os.getenv('MCP_DEBUG', '1') == '1'
 
 # 初始化SSH管理器
 ssh_manager = None
@@ -158,6 +158,12 @@ async def handle_request(request):
     """处理MCP请求"""
     method = request.get("method", "")
     request_id = request.get("id")
+    
+    debug_log(f"=== REQUEST START ===")
+    debug_log(f"Method: {method}")
+    debug_log(f"Request ID: {request_id}")
+    debug_log(f"Full request: {json.dumps(request, indent=2)}")
+    debug_log(f"=== PROCESSING ===")
     
     debug_log(f"Received method: {method}, id: {request_id}")
     
@@ -867,7 +873,16 @@ async def handle_request(request):
 
 async def main():
     """主函数"""
-    debug_log("Starting Remote Terminal MCP server...")
+    debug_log("=" * 50)
+    debug_log("REMOTE TERMINAL MCP SERVER STARTING")
+    debug_log("=" * 50)
+    debug_log(f"Python version: {sys.version}")
+    debug_log(f"Working directory: {os.getcwd()}")
+    debug_log(f"Environment: {dict(os.environ)}")
+    debug_log(f"Script path: {__file__}")
+    debug_log(f"Debug mode: {DEBUG}")
+    debug_log("=" * 50)
+    debug_log("Waiting for MCP requests...")
     
     while True:
         try:
@@ -877,15 +892,24 @@ async def main():
                 break
             
             if line.strip():
-                debug_log(f"Received input: {line.strip()}")
-                request = json.loads(line.strip())
+                debug_log(f"RAW INPUT: {line.strip()}")
+                try:
+                    request = json.loads(line.strip())
+                    debug_log(f"PARSED REQUEST: {json.dumps(request, indent=2)}")
+                except json.JSONDecodeError as e:
+                    debug_log(f"JSON DECODE ERROR: {e}")
+                    debug_log(f"Raw line was: {repr(line)}")
+                    continue
+                    
                 response = await handle_request(request)
                 
                 # 只有当有响应时才输出
                 if response is not None:
                     output = json.dumps(response)
-                    debug_log(f"Sending output: {output}")
+                    debug_log(f"SENDING RESPONSE: {output}")
                     print(output, flush=True)
+                else:
+                    debug_log(f"NO RESPONSE GENERATED FOR REQUEST: {request.get('method')}")
                 
         except Exception as e:
             debug_log(f"Error processing request: {e}")
