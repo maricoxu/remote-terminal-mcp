@@ -106,7 +106,7 @@ class PostInstaller {
             this.log('✅ Python依赖安装完成', 'success');
             return true;
         } catch (error) {
-            this.warnings.push(`Python依赖安装失败: ${error.message}`);
+            this.warnings.push(`Python dependency installation failed: ${error.message}`);
             this.log('⚠️  您可能需要手动运行: pip install -r requirements.txt', 'warning');
             return false;
         }
@@ -161,7 +161,7 @@ class PostInstaller {
             this.log('✅ 文件权限设置完成', 'success');
             return true;
         } catch (error) {
-            this.warnings.push(`权限设置失败: ${error.message}`);
+            this.warnings.push(`Permission setting failed: ${error.message}`);
             return false;
         }
     }

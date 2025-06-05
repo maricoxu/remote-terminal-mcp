@@ -33,7 +33,7 @@ class RemoteTerminalCLI {
 命令:
   init      初始化配置文件
   config    配置服务器信息
-  start     启动MCP服务器
+  start     Start MCP server
   doctor    诊断环境问题
   help      显示帮助信息
 
@@ -126,7 +126,7 @@ class RemoteTerminalCLI {
             try {
                 existingConfig = JSON.parse(fs.readFileSync(cursorMcpFile, 'utf8'));
             } catch (error) {
-                this.log('⚠️  读取现有Cursor配置失败，将创建新配置', 'warning');
+                this.log('Warning: Failed to read existing Cursor config, will create new one', 'warning');
             }
         }
 
@@ -180,7 +180,7 @@ class RemoteTerminalCLI {
         const isMCPCall = !process.stdin.isTTY;
         
         if (!isMCPCall) {
-            this.log('🚀 启动MCP服务器...');
+            this.log('Starting MCP server...');
         }
         
         try {
@@ -188,7 +188,7 @@ class RemoteTerminalCLI {
             require(indexPath);
         } catch (error) {
             if (!isMCPCall) {
-                this.log(`❌ 启动失败: ${error.message}`, 'error');
+                this.log(`Startup failed: ${error.message}`, 'error');
             }
             process.exit(1);
         }
@@ -204,7 +204,7 @@ class RemoteTerminalCLI {
             const nodeVersion = process.version;
             this.log(`✅ Node.js: ${nodeVersion}`, 'success');
         } catch (error) {
-            this.log('❌ Node.js版本检查失败', 'error');
+            this.log('Node.js version check failed', 'error');
             allGood = false;
         }
 
