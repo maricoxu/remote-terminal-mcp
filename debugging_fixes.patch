@@ -1,0 +1,484 @@
+diff --git a/index.js b/index.js
+old mode 100644
+new mode 100755
+index 6438c59..6936d9b
+--- a/index.js
++++ b/index.js
+@@ -88,6 +88,7 @@ Examples:
+         if (this.args.isDebugMode || process.env.MCP_DEBUG) {
+             env.MCP_DEBUG = '1';
+         }
++        env.REMOTE_TERMINAL_MCP_ROOT = this.packageDir;
+ 
+         // 启动Python MCP服务器
+         const mcp = spawn('python3', [pythonScript], {
+@@ -99,17 +100,26 @@ Examples:
+         process.stdin.pipe(mcp.stdin);
+         mcp.stdout.pipe(process.stdout);
+ 
+-        // 处理进程事件
+-        mcp.on('close', (code) => {
++        // 增强日志：监控父进程stdin关闭事件
++        process.stdin.on('close', () => {
+             if (this.args.isDebugMode) {
+-                console.error(`MCP server exited with code: ${code}`);
++                console.error('[DIAGNOSTIC] Parent process stdin stream has been closed.');
+             }
+-            process.exit(code);
+         });
+ 
++        // 增强日志：处理子进程退出事件
++        mcp.on('close', (code, signal) => {
++            if (this.args.isDebugMode) {
++                console.error(`[DIAGNOSTIC] Child process exited. Code: ${code}, Signal: ${signal}`);
++            }
++            // 保持原有逻辑，父进程随子进程退出
++            process.exit(code === null ? 1 : code);
++        });
++
++        // 增强日志：处理子进程错误事件
+         mcp.on('error', (error) => {
+             if (this.args.isDebugMode) {
+-                console.error('MCP server error:', error.message);
++                console.error('[DIAGNOSTIC] Child process error event:', error.message);
+             }
+             process.exit(1);
+         });
+diff --git a/lib/config-manager.js b/lib/config-manager.js
+index 996913b..0045146 100644
+--- a/lib/config-manager.js
++++ b/lib/config-manager.js
+@@ -10,7 +10,7 @@ const chalk = require('chalk');
+  */
+ class ConfigManager {
+     constructor() {
+-        this.configDir = path.join(os.homedir(), '.cursor-bridge');
++        this.configDir = path.join(os.homedir(), '.remote-terminal-mcp');
+         this.configFile = path.join(this.configDir, 'config.yaml');
+         this.serversConfigFile = path.join(this.configDir, 'servers.yaml');
+     }
+diff --git a/package.json b/package.json
+index ac1be9a..d066706 100644
+--- a/package.json
++++ b/package.json
+@@ -4,7 +4,7 @@
+   "description": "Remote Terminal MCP Server - 智能script-based连接系统，完整集成connect_cpu_221.sh逻辑",
+   "main": "index.js",
+   "bin": {
+-    "remote-terminal-mcp": "bin/cli.js"
++    "remote-terminal-mcp": "index.js"
+   },
+   "scripts": {
+     "start": "node index.js",
+@@ -14,9 +14,9 @@
+     "prepublishOnly": "npm test"
+   },
+   "keywords": [
+-    "mcp",
+-    "remote",
+-    "terminal",
++    "mcp", 
++    "remote", 
++    "terminal", 
+     "cursor",
+     "claude",
+     "script-based",
+diff --git a/python/mcp_server.py b/python/mcp_server.py
+index 06aa391..6147df2 100644
+--- a/python/mcp_server.py
++++ b/python/mcp_server.py
+@@ -12,6 +12,8 @@ import os
+ import subprocess
+ import time
+ from pathlib import Path
++import atexit
++import traceback
+ 
+ # 添加当前目录到Python路径
+ sys.path.append(str(Path(__file__).parent))
+@@ -499,8 +501,6 @@ async def handle_request(request):
+                 if default_server:
+                     result_text += f"🌟 Default server: {default_server}\n"
+                 
+-                result_text += "\n💡 Use 'test_server_connection' to test connection status"
+-                
+                 return create_success_response(request_id, result_text)
+                 
+             except Exception as e:
+@@ -515,30 +515,18 @@ async def handle_request(request):
+                 
+                 manager = get_ssh_manager()
+                 if not manager:
+-                    return create_error_response(request_id, "SSH manager initialization failed, please check configuration file")
++                    return create_error_response(request_id, "SSH manager initialization failed")
+                 
+-                success, message = manager.test_connection(server_name)
++                success, msg = manager.test_connection(server_name)
+                 
+                 if success:
+-                    result_text = f"✅ Server connection test successful\n\n"
+-                    result_text += f"🖥️ Server: {server_name}\n"
+-                    result_text += f"📶 Status: {message}\n"
+-                    result_text += f"🔗 Connection normal, can execute remote commands"
++                    return create_success_response(request_id, f"✅ Server {server_name} connection successful: {msg}")
+                 else:
+-                    result_text = f"❌ Server连接测试失败\n\n"
+-                    result_text += f"🖥️ Server: {server_name}\n"
+-                    result_text += f"⚠️ Error: {message}\n"
+-                    result_text += f"\n💡 Please check:\n"
+-                    result_text += f"   • ServerAddress和端口\n"
+-                    result_text += f"   • SSH key configuration\n"
+-                    result_text += f"   • Network connection\n"
+-                    result_text += f"   • Server是否Online"
+-                
+-                return create_success_response(request_id, result_text)
+-                
++                    return create_error_response(request_id, f"❌ Server {server_name} connection failed: {msg}")
++                    
+             except Exception as e:
+                 debug_log(f"Error in test_server_connection: {e}")
+-                return create_error_response(request_id, f"测试Server连接失败: {str(e)}")
++                return create_error_response(request_id, f"Failed to test server connection: {str(e)}")
+         
+         elif tool_name == "execute_remote_command":
+             try:
+@@ -548,24 +536,19 @@ async def handle_request(request):
+                 if not server_name:
+                     return create_error_response(request_id, "Server name不能为空")
+                 if not command:
+-                    return create_error_response(request_id, "Command cannot be empty")
++                    return create_error_response(request_id, "Command不能为空")
+                 
+                 manager = get_ssh_manager()
+                 if not manager:
+-                    return create_error_response(request_id, "SSH manager initialization failed, please check configuration file")
++                    return create_error_response(request_id, "SSH manager initialization failed")
+                 
+                 success, output = manager.execute_command(server_name, command)
+                 
+-                result_text = f"🔧 在远程Server **{server_name}** Execute command\n"
+-                result_text += f"📝 Command: `{command}`\n\n"
+-                
+                 if success:
+-                    result_text += f"✅ Execution successful\n\n{output}"
++                    return create_success_response(request_id, f"✅ Command on {server_name} executed successfully:\n\n{output}")
+                 else:
+-                    result_text += f"❌ Execution failed\n\n{output}"
+-                
+-                return create_success_response(request_id, result_text)
+-                
++                    return create_error_response(request_id, f"❌ Command on {server_name} execution failed:\n\n{output}")
++                    
+             except Exception as e:
+                 debug_log(f"Error in execute_remote_command: {e}")
+                 return create_error_response(request_id, f"Failed to execute remote command: {str(e)}")
+@@ -578,96 +561,46 @@ async def handle_request(request):
+                 
+                 manager = get_ssh_manager()
+                 if not manager:
+-                    return create_error_response(request_id, "SSH manager initialization failed, please check configuration file")
++                    return create_error_response(request_id, "SSH manager initialization failed")
+                 
+                 status = manager.get_server_status(server_name)
+                 
+-                if 'error' in status:
++                if status.get('error'):
+                     return create_error_response(request_id, status['error'])
+                 
+-                result_text = f"🖥️ ServerStatus: **{server_name}**\n\n"
+-                result_text += f"📍 Address: {status['host']}\n"
+-                result_text += f"📝 Description: {status['description']}\n"
+-                
+-                # 显示Server规格
+-                specs = status.get('specs', {})
+-                if specs:
+-                    result_text += f"\n🔧 硬件配置:\n"
+-                    if specs.get('cpu_cores'):
+-                        result_text += f"   🖥️ CPU: {specs['cpu_cores']} 核心\n"
+-                    if specs.get('memory'):
+-                        result_text += f"   💾 Memory: {specs['memory']}\n"
+-                    if specs.get('gpu_count', 0) > 0:
+-                        result_text += f"   🎮 GPU: {specs['gpu_count']}x {specs.get('gpu_type', 'Unknown')}\n"
+-                
+-                # 显示连接Status
+-                status_icon = "🟢" if status['connected'] else "🔴"
+-                result_text += f"\n📶 连接Status: {status_icon} {'Online' if status['connected'] else 'Offline'}\n"
+-                
+-                if status['last_check'] > 0:
+-                    import datetime
+-                    check_time = datetime.datetime.fromtimestamp(status['last_check'])
+-                    result_text += f"⏰ Last check: {check_time.strftime('%Y-%m-%d %H:%M:%S')}\n"
+-                
+-                # 显示详细信息
+-                info = status.get('info', {})
+-                if info:
+-                    result_text += f"\n📊 系统信息:\n"
+-                    
+-                    if 'hostname' in info:
+-                        result_text += f"   🏷️ 主机名: {info['hostname']}\n"
+-                    
+-                    if 'uptime' in info:
+-                        result_text += f"   ⏱️ 运行时间: {info['uptime']}\n"
+-                    
+-                    if 'load' in info:
+-                        result_text += f"   📈 系统负载: {info['load']}\n"
+-                    
+-                    if 'memory' in info:
+-                        result_text += f"   💾 Memory使用:\n{info['memory']}\n"
+-                    
+-                    if 'disk_usage' in info:
+-                        result_text += f"   💿 磁盘使用:\n{info['disk_usage']}\n"
+-                    
+-                    if 'gpu_status' in info:
+-                        result_text += f"   🎮 GPUStatus:\n{info['gpu_status']}\n"
++                # 格式化输出
++                result_text = f"🖥️ Server Status: **{status['name']}**\n"
++                result_text += f"   Host: {status['host']}\n"
++                result_text += f"   Status: {'🟢 Connected' if status['connected'] else '🔴 Disconnected'}\n"
+                 
+-                return create_success_response(request_id, result_text)
++                if status['info']:
++                    result_text += f"\n**System Info:**\n"
++                    for key, value in status['info'].items():
++                        result_text += f"**{key.capitalize()}**:\n```\n{value}\n```\n"
+                 
++                return create_success_response(request_id, result_text)
++
+             except Exception as e:
+                 debug_log(f"Error in get_server_status: {e}")
+-                return create_error_response(request_id, f"获取ServerStatus失败: {str(e)}")
++                return create_error_response(request_id, f"Failed to get server status: {str(e)}")
+         
+         elif tool_name == "refresh_server_connections":
+             try:
+                 manager = get_ssh_manager()
+                 if not manager:
+-                    return create_error_response(request_id, "SSH manager initialization failed, please check configuration file")
++                    return create_error_response(request_id, "SSH manager initialization failed")
+                 
+                 results = manager.refresh_all_connections()
+                 
+-                if not results:
+-                    return create_success_response(request_id, "📭 没有配置任何Server")
+-                
+-                result_text = f"🔄 Refresh all server connection status\n\n"
+-                
+-                online_count = sum(1 for success in results.values() if success)
+-                total_count = len(results)
+-                
+-                result_text += f"📊 Total: {online_count}/{total_count} ServerOnline\n\n"
+-                
+-                for server_name, success in results.items():
+-                    status_icon = "🟢" if success else "🔴"
+-                    status_text = "Online" if success else "Offline"
+-                    result_text += f"{status_icon} {server_name}: {status_text}\n"
+-                
+-                result_text += f"\n⏰ 刷新时间: {time.strftime('%Y-%m-%d %H:%M:%S')}"
++                result_text = "🔄 Connection Status Refresh Results:\n\n"
++                for server, success in results.items():
++                    result_text += f"  {'✅' if success else '❌'} {server}\n"
+                 
+                 return create_success_response(request_id, result_text)
+                 
+             except Exception as e:
+                 debug_log(f"Error in refresh_server_connections: {e}")
+-                return create_error_response(request_id, f"刷新Server连接失败: {str(e)}")
++                return create_error_response(request_id, f"Failed to refresh connections: {str(e)}")
+         
+         elif tool_name == "establish_connection":
+             try:
+@@ -860,64 +793,67 @@ async def handle_request(request):
+             return create_error_response(request_id, f"未知工具: {tool_name}", -32601)
+             
+     else:
+-        response = {
+-            "jsonrpc": "2.0",
+-            "id": request_id,
+-            "error": {
+-                "code": -32601,
+-                "message": "Method not supported"
+-            }
+-        }
+-        debug_log(f"Error response: {json.dumps(response)}")
+-        return response
++        return create_error_response(request_id, "不支持的请求方法", -32601)
++
+ 
+ async def main():
+-    """主函数"""
+-    debug_log("=" * 50)
+-    debug_log("REMOTE TERMINAL MCP SERVER STARTING")
+-    debug_log("=" * 50)
+-    debug_log(f"Python version: {sys.version}")
+-    debug_log(f"Working directory: {os.getcwd()}")
+-    debug_log(f"Environment: {dict(os.environ)}")
+-    debug_log(f"Script path: {__file__}")
+-    debug_log(f"Debug mode: {DEBUG}")
+-    debug_log("=" * 50)
+-    debug_log("Waiting for MCP requests...")
+-    
++    """主事件循环"""
++    debug_log("MCP server started, entering main event loop...")
++    loop = asyncio.get_event_loop()
++
+     while True:
+         try:
+-            line = await asyncio.get_event_loop().run_in_executor(None, sys.stdin.readline)
++            line = await loop.run_in_executor(None, sys.stdin.readline)
++            
+             if not line:
+-                debug_log("No more input, exiting...")
+-                break
++                debug_log("Stdin stream closed. Server will continue running and wait for new connections.")
++                # 当stdin关闭时，不要退出，而是暂停一下再继续循环
++                # 这使得服务在客户端断开后依然保持运行状态
++                await asyncio.sleep(1) 
++                continue
++
++            request = json.loads(line)
+             
+-            if line.strip():
+-                debug_log(f"RAW INPUT: {line.strip()}")
+-                try:
+-                    request = json.loads(line.strip())
+-                    debug_log(f"PARSED REQUEST: {json.dumps(request, indent=2)}")
+-                except json.JSONDecodeError as e:
+-                    debug_log(f"JSON DECODE ERROR: {e}")
+-                    debug_log(f"Raw line was: {repr(line)}")
+-                    continue
+-                    
+-                response = await handle_request(request)
+-                
+-                # 只有当有响应时才输出
+-                if response is not None:
+-                    output = json.dumps(response)
+-                    debug_log(f"SENDING RESPONSE: {output}")
+-                    print(output, flush=True)
+-                else:
+-                    debug_log(f"NO RESPONSE GENERATED FOR REQUEST: {request.get('method')}")
+-                
++            # 使用create_task来并发处理请求，避免阻塞主循环
++            asyncio.create_task(process_and_respond(request))
++
++        except json.JSONDecodeError:
++            debug_log(f"Received invalid JSON, skipping: {line.strip()}")
+         except Exception as e:
+-            debug_log(f"Error processing request: {e}")
+-            continue
++            debug_log(f"An unexpected error occurred in main loop: {e}")
++            # 记录完整的错误堆栈信息，用于深入诊断
++            debug_log(traceback.format_exc())
++            # 出现意外错误时，短暂休眠，避免CPU占用过高
++            await asyncio.sleep(1)
++
++
++async def process_and_respond(request):
++    """处理单个请求并发送响应"""
++    try:
++        response = await handle_request(request)
++        if response:
++            response_str = json.dumps(response)
++            debug_log(f"Sending response: {response_str}")
++            print(response_str, flush=True)
++    except Exception as e:
++        request_id = request.get("id")
++        error_response = create_error_response(request_id, f"Error processing request: {e}")
++        error_str = json.dumps(error_response)
++        debug_log(f"Sending error response: {error_str}")
++        print(error_str, flush=True)
++
++
++def on_exit():
++    """在脚本终止时执行的函数"""
++    debug_log("Python script is now exiting. Goodbye!")
++
++# 注册 '遗言' 函数
++atexit.register(on_exit)
++
+ 
+ if __name__ == "__main__":
+     try:
+         asyncio.run(main())
+     except KeyboardInterrupt:
+-        debug_log("Received interrupt, exiting...")
+-        pass
+\ No newline at end of file
++        debug_log("Server manually interrupted. Exiting.")
++        sys.exit(0)
+\ No newline at end of file
+diff --git a/python/ssh_manager.py b/python/ssh_manager.py
+old mode 100644
+new mode 100755
+index 8c1d398..4fee5ce
+--- a/python/ssh_manager.py
++++ b/python/ssh_manager.py
+@@ -176,10 +176,13 @@ class SSHManager:
+         try:
+             with open(self.config_path, 'r', encoding='utf-8') as f:
+                 config = yaml.safe_load(f)
++        except Exception as e:
++            raise Exception(f"读取或解析YAML配置文件失败: {e}")
+             
+-            # 解析Server配置
++        # 解析Server配置，并对每个服务器进行独立的异常处理
+             servers_config = config.get('servers', {})
+             for server_name, server_config in servers_config.items():
++            try:
+                 # 为script_based类型构建specs字典
+                 specs = server_config.get('specs', {})
+                 
+@@ -213,13 +216,15 @@ class SSHManager:
+                     connected=False,
+                     last_check=0
+                 )
++            except Exception as server_e:
++                log_output(f"⚠️ [警告] 解析服务器 '{server_name}' 的配置失败，已跳过。错误: {server_e}")
+             
+             # 解析全局设置
++        try:
+             self.global_settings = config.get('global_settings', {})
+             self.security_settings = config.get('security', {})
+-            
+         except Exception as e:
+-            raise Exception(f"解析配置文件失败: {e}")
++            log_output(f"⚠️ [警告] 解析全局设置失败: {e}")
+     
+     def list_servers(self) -> List[Dict[str, Any]]:
+         """列出所有Server"""
+@@ -530,7 +535,7 @@ class SSHManager:
+             if connection_mode == 'double_jump_host':
+                 target_host = connection_config.get('second_jump', {}).get('host', server.host)
+             else:
+-                target_host = connection_config.get('target', {}).get('host', server.host)
++            target_host = connection_config.get('target', {}).get('host', server.host)
+             
+             if target_host:
+                 log_output(f"🎯 步骤2: 连接到目标Server ({target_host})")
+diff --git a/scripts/post-install.js b/scripts/post-install.js
+index 6234ba8..3456f1c 100755
+--- a/scripts/post-install.js
++++ b/scripts/post-install.js
+@@ -163,8 +163,8 @@ class PostInstaller {
+         } catch (error) {
+             this.warnings.push(`Permission setting failed: ${error.message}`);
+             return false;
+-        }
+     }
++  }
+ 
+     async createUserConfig() {
+         this.log('Creating user configuration directory...');
+@@ -184,8 +184,8 @@ class PostInstaller {
+         if (fs.existsSync(configTemplate) && !fs.existsSync(userConfig)) {
+             fs.copyFileSync(configTemplate, userConfig);
+             this.log(`Configuration template copied to: ${userConfig}`, 'success');
+-        }
+-        
++}
++
+         return configDir;
+     }
+ 
+diff --git a/templates/connect_cpu_221.sh b/templates/connect_cpu_221.sh
+old mode 100644
+new mode 100755
