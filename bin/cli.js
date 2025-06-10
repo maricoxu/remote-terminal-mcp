@@ -4,6 +4,29 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
+const util = require('util');
+
+// --- Ultimate Debugger ---
+const cliLogFile = '/tmp/cli-debug.log';
+const logStream = fs.createWriteStream(cliLogFile, { flags: 'w' });
+
+function cliLog(message) {
+    if (typeof message === 'object') {
+        logStream.write(util.inspect(message, { showHidden: false, depth: null, colors: false }) + '\n');
+    } else {
+        logStream.write(message + '\n');
+    }
+}
+
+cliLog(`--- CLI Started: ${new Date().toISOString()} ---`);
+cliLog('process.argv:');
+cliLog(process.argv);
+cliLog('\nprocess.stdin.isTTY:');
+cliLog(process.stdin.isTTY);
+cliLog('\nprocess.env:');
+cliLog(process.env);
+cliLog('\n--- End Debug Info ---');
+// --- End Debugger ---
 
 class RemoteTerminalCLI {
     constructor() {
