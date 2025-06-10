@@ -176,7 +176,6 @@ Documentation: https://github.com/maricoxu/remote-terminal-mcp
     }
 
     async start() {
-        // 检查是否是从Cursor/MCP调用（通过stdin检测）
         const isMCPCall = !process.stdin.isTTY;
         
         if (!isMCPCall) {
@@ -185,7 +184,20 @@ Documentation: https://github.com/maricoxu/remote-terminal-mcp
         
         try {
             const indexPath = path.join(this.packageRoot, 'index.js');
-            require(indexPath);
+            const RemoteTerminalMCP = require(indexPath);
+            const terminal = new RemoteTerminalMCP();
+            
+            terminal.main().catch(error => {
+                if (!isMCPCall) {
+                    this.log(`Startup failed: ${error.message}`, 'error');
+                }
+                process.exit(1);
+            });
+
+            // This is the key: return a promise that never resolves.
+            // This keeps the cli.js script (the main process) alive.
+            return new Promise(() => {});
+
         } catch (error) {
             if (!isMCPCall) {
                 this.log(`Startup failed: ${error.message}`, 'error');
@@ -272,39 +284,37 @@ Documentation: https://github.com/maricoxu/remote-terminal-mcp
         this.log('\n' + (allGood ? 'Environment check completed, everything is normal!' : 'Some issues found, please follow the prompts to resolve'));
     }
 
-    run() {
+    async run() {
         const args = process.argv.slice(2);
         const command = args[0];
+        const commands = {
+            init: this.init.bind(this),
+            config: this.config.bind(this),
+            start: this.start.bind(this),
+            doctor: this.doctor.bind(this),
+            help: this.showHelp.bind(this)
+        };
 
-        switch (command) {
-            case 'init':
-                this.init();
-                break;
-            case 'config':
-                this.config();
-                break;
-            case 'start':
-                this.start();
-                break;
-            case 'doctor':
-                this.doctor();
-                break;
-            case 'help':
-            case '--help':
-            case '-h':
+        if (command) {
+            if (commands[command]) {
+                await commands[command]();
+            } else {
+                this.log(`Unknown command: ${command}`, 'error');
                 this.showHelp();
-                break;
-            default:
-                if (!command) {
-                    this.start(); // Default start MCP server
-                } else {
-                    this.log(`Unknown command: ${command}`, 'error');
-                    this.showHelp();
-                    process.exit(1);
-                }
+                process.exit(1);
+            }
+        } else {
+            if (process.stdin.isTTY) {
+                this.showHelp();
+            } else {
+                await this.start();
+            }
         }
     }
 }
 
 const cli = new RemoteTerminalCLI();
-cli.run(); 
+cli.run().catch(error => {
+    console.error(`Unhandled rejection in CLI: ${error.message}`);
+    process.exit(1);
+}); 
