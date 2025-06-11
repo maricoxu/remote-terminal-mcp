@@ -1,6 +1,6 @@
 {
   "name": "@xuyehua/remote-terminal-mcp",
-  "version": "0.4.33",
+  "version": "0.4.34",
   "description": "Remote Terminal MCP Server - 智能script-based连接系统，完整集成connect_cpu_221.sh逻辑",
   "main": "index.js",
   "bin": {
