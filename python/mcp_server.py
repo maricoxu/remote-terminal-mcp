@@ -13,6 +13,19 @@ import traceback
 from pathlib import Path
 from datetime import datetime
 
+# --- Python Worker Logger ---
+log_file_path = os.path.join(os.path.expanduser("~"), ".remote-terminal-mcp-python-worker.log")
+with open(log_file_path, "w") as f:
+    f.write(f"[{__name__}] Log start for Python worker.\n")
+
+def log_to_file(message):
+    with open(log_file_path, "a") as f:
+        f.write(f"[{__name__}] {message}\n")
+
+log_to_file(f"Python version: {sys.version}")
+log_to_file(f"Current working directory: {os.getcwd()}")
+# --- End Logger ---
+
 # -- Robust Startup Logger --
 PY_LOG_FILE = Path.home() / 'mcp_service_debug.log'
 def startup_log(msg):
@@ -70,6 +83,10 @@ def debug_log(msg):
             # This can happen if the parent process closes the pipe before we're done writing.
             # It's safe to ignore in this case, as the process is terminating.
             pass
+
+    if DEBUG:
+        # Also log to our file for guaranteed capture
+        log_to_file(f"DEBUG: {msg}")
 
 def create_success_response(request_id, text_content):
     """创建成功响应"""
@@ -204,7 +221,8 @@ async def handle_request(request):
     request_id = request.get("id")
     params = request.get("params", {})
     
-    debug_log(f"Received request: method='{method}', id='{request_id}'")
+    log_to_file(f"Handling request: method='{method}', id='{request_id}'")
+    debug_log(f"Received request: {method} (id: {request_id})")
     
     if request_id is None:
         return # Notification, no response needed
@@ -293,8 +311,10 @@ async def handle_request(request):
         send_response(response)
 
 async def main():
-    """主循环，读取和处理请求"""
-    debug_log("Main loop started.")
+    """主事件循环"""
+    log_to_file("Starting main event loop.")
+    reader = asyncio.StreamReader()
+    protocol = asyncio.StreamReaderProtocol(reader)
     
     # Send server_ready notification immediately upon startup
     ready_message = {
@@ -305,30 +325,76 @@ async def main():
     send_response(ready_message)
     debug_log("Sent server_ready notification.")
 
+    loop = asyncio.get_event_loop()
+    await loop.connect_read_pipe(lambda: protocol, sys.stdin)
+    
+    log_to_file("Entering main while-loop to process messages.")
+    debug_log("Entering main while-loop to process messages.")
     while True:
-        line = sys.stdin.readline()
-        if not line:
-            debug_log("Stdin closed, exiting main loop.")
-            break
+        try:
+            log_to_file("Waiting for line from reader...")
+            line_bytes = await reader.readline()
+            log_to_file(f"Read {len(line_bytes)} bytes from stdin.")
+            if not line_bytes:
+                log_to_file("EOF received, sleeping for 1s.")
+                await asyncio.sleep(1)
+                continue
 
-        if line.strip().startswith("Content-Length"):
-            try:
-                content_length = int(line.split(":")[1].strip())
-                sys.stdin.readline()  # Skip the blank line
-                
-                request_body = sys.stdin.read(content_length)
-                request = json.loads(request_body)
-                
-                await handle_request(request)
-            except Exception as e:
-                debug_log(f"Error processing request: {e}\\n{traceback.format_exc()}")
+            line = line_bytes.decode('utf-8').strip()
+            log_to_file(f"Decoded line: '{line}'")
+            
+            if line.startswith("Content-Length:"):
+                try:
+                    length = int(line.split(":")[1].strip())
+                    log_to_file(f"Expecting content length: {length}")
+                    
+                    await reader.read(2) # Consume the \r\n
+                    
+                    body_bytes = await reader.read(length)
+                    log_to_file(f"Read body with {len(body_bytes)} bytes.")
+                    
+                    body = body_bytes.decode('utf-8')
+                    log_to_file(f"Decoded body: '{body}'")
+                    
+                    request = json.loads(body)
+                    response = await handle_request(request)
+                    
+                    if response:
+                        response_body = json.dumps(response)
+                        response_message = f"Content-Length: {len(response_body)}\r\n\r\n{response_body}"
+                        
+                        sys.stdout.buffer.write(response_message.encode('utf-8'))
+                        sys.stdout.flush()
+                        log_to_file(f"Sent response for request id {request.get('id')}")
+
+                except json.JSONDecodeError as e:
+                    log_to_file(f"JSON Decode Error: {e}. Body was: '{body}'")
+                    debug_log(f"JSON Decode Error: {e}. Body was: '{body}'")
+                except Exception as e:
+                    tb_str = traceback.format_exc()
+                    log_to_file(f"Error processing message: {e}\n{tb_str}")
+                    debug_log(f"Error processing message: {e}\n{tb_str}")
+
+        except asyncio.CancelledError:
+            log_to_file("Main loop cancelled. Shutting down.")
+            debug_log("Main loop cancelled. Shutting down.")
+            break
+        except Exception as e:
+            tb_str = traceback.format_exc()
+            log_to_file(f"Critical error in main loop: {e}\n{tb_str}")
+            debug_log(f"Critical error in main loop: {e}\n{tb_str}")
+            await asyncio.sleep(1) # prevent fast crash loop
 
 if __name__ == "__main__":
     try:
+        log_to_file("Starting asyncio event loop via __main__.")
         asyncio.run(main())
     except KeyboardInterrupt:
-        debug_log("Script interrupted by user.")
+        log_to_file("Service interrupted by user (KeyboardInterrupt).")
+        debug_log("Service interrupted by user (KeyboardInterrupt).")
     except Exception as e:
-        startup_log(f"FATAL: Unhandled exception in main: {e}\\n{traceback.format_exc()}")
+        tb_str = traceback.format_exc()
+        log_to_file(f"Unhandled exception in top-level: {e}\n{tb_str}")
+        debug_log(f"Unhandled exception in top-level: {e}\n{tb_str}")
     finally:
-        debug_log("Script finished.")
+        log_to_file("Python script is exiting.")
