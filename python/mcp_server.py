@@ -13,6 +13,10 @@ import traceback
 from pathlib import Path
 from datetime import datetime
 
+# 服务器信息
+SERVER_NAME = "remote-terminal-mcp"
+SERVER_VERSION = "0.4.44"
+
 # 设置安静模式，防止SSH Manager显示启动摘要
 os.environ['MCP_QUIET'] = '1'
 
@@ -31,28 +35,24 @@ def debug_log(msg):
         print(f"[DEBUG] {msg}", file=sys.stderr, flush=True)
 
 def create_success_response(request_id, text_content):
-    """创建成功响应"""
+    """创建一个包含文本内容的成功JSON-RPC响应"""
     return {
         "jsonrpc": "2.0",
         "id": request_id,
         "result": {
-            "content": [
-                {
-                    "type": "text",
-                    "text": text_content
-                }
-            ]
+            "contentType": "text/plain",
+            "content": text_content
         }
     }
 
-def create_error_response(request_id, error_message, error_code=-32603):
-    """创建Error响应"""
+def create_error_response(request_id, code, message):
+    """创建一个标准的JSON-RPC错误响应"""
     return {
         "jsonrpc": "2.0",
         "id": request_id,
         "error": {
-            "code": error_code,
-            "message": error_message
+            "code": code,
+            "message": message
         }
     }
 
@@ -160,15 +160,14 @@ def send_response(response_obj):
 async def handle_request(request):
     """处理MCP请求"""
     method = request.get("method", "")
+    params = request.get("params")
     request_id = request.get("id")
-    params = request.get("params", {})
     
     debug_log(f"Received request: method='{method}', id='{request_id}'")
     
     if request_id is None:
         return None
-    
-    response = None
+
     try:
         if method == "initialize":
             debug_log("Handling 'initialize' request.")
@@ -200,8 +199,8 @@ async def handle_request(request):
                 "result": {
                     "capabilities": server_capabilities,
                     "serverInfo": {
-                        "name": "remote-terminal-mcp",
-                        "version": "0.4.43"
+                        "name": SERVER_NAME,
+                        "version": SERVER_VERSION
                     }
                 }
             }
@@ -227,14 +226,14 @@ async def handle_request(request):
             
             manager = SSHManager()
             if not manager:
-                response = create_error_response(request_id, "SSH Manager is not available.")
+                response = create_error_response(request_id, -32000, "SSH Manager is not available.")
             else:
                 try:
                     content = manager.execute_tool(tool_name, tool_input)
                     response = create_success_response(request_id, content)
                 except Exception as e:
                     debug_log(f"Tool execution error: {e}\\n{traceback.format_exc()}")
-                    response = create_error_response(request_id, f"Error executing tool '{tool_name}': {e}")
+                    response = create_error_response(request_id, -32603, f"Error executing tool '{tool_name}': {e}")
 
         elif method == "list_sessions":
             sessions = SSHManager().list_sessions()
@@ -247,28 +246,28 @@ async def handle_request(request):
         elif method == "connect_server":
             server_name = params.get("server_name")
             if not server_name:
-                response = create_error_response(request_id, "Missing parameter: server_name", -32602)
+                response = create_error_response(request_id, -32602, "Missing parameter: server_name")
             else:
                 success, message = SSHManager().simple_connect(server_name)
                 if success:
                     response = create_success_response(request_id, message)
                 else:
-                    response = create_error_response(request_id, message, -32000)
+                    response = create_error_response(request_id, -32000, message)
 
         elif method == "run_command":
             cmd = params.get("cmd")
             cwd = params.get("cwd")
             timeout = params.get("timeout", 30)
             output, success = run_command(cmd, cwd, timeout)
-            response = create_success_response(request_id, output) if success else create_error_response(request_id, output)
+            response = create_success_response(request_id, output) if success else create_error_response(request_id, -32603, output)
 
         else:
-            response = create_error_response(request_id, f"Unknown method: {method}", -32601)
+            response = create_error_response(request_id, -32601, f"Unknown method: {method}")
             
     except Exception as e:
         error_msg = f"An unexpected error occurred: {e}"
         debug_log(f"{error_msg}\\n{traceback.format_exc()}")
-        response = create_error_response(request_id, error_msg)
+        response = create_error_response(request_id, -32603, error_msg)
 
     if response:
         debug_log(f"Sent response for ID {request.get('id')}")
@@ -278,7 +277,7 @@ async def handle_request(request):
 
 async def main():
     """主事件循环"""
-    debug_log("Starting main event loop.")
+    debug_log(f"Starting MCP Python Server v{SERVER_VERSION}")
     
     loop = asyncio.get_event_loop()
 
@@ -301,7 +300,8 @@ async def main():
             "params": {}
         }
         body = json.dumps(ready_notification)
-        message = f"{body}\n"
+        # 协议修复：客户端期望的是以换行符分隔的原始JSON
+        message = f"{body}\\n"
         writer.write(message.encode('utf-8'))
         await writer.drain()
         debug_log("Sent server_ready notification.")
@@ -327,30 +327,33 @@ async def main():
                 
                 if response:
                     response_body = json.dumps(response)
-                    response_message = f"{response_body}\n"
+                    response_message = f"{response_body}\\n"
                     
                     writer.write(response_message.encode('utf-8'))
                     await writer.drain()
+                    # 重新加入这条至关重要的日志，以确认响应已发送
+                    debug_log(f"Sent response for ID {response.get('id')}")
 
             except json.JSONDecodeError as e:
                 debug_log(f"JSON Decode Error: {e}. Body was: '{line}'")
             except Exception as e:
-                tb_str = traceback.format_exc()
-                debug_log(f"Error processing message: {e}\n{tb_str}")
+                debug_log(f"Error processing line: {e}")
+                debug_log(traceback.format_exc())
 
         except asyncio.CancelledError:
-            debug_log("Main loop cancelled. Shutting down.")
+            debug_log("Main loop cancelled.")
             break
         except Exception as e:
-            tb_str = traceback.format_exc()
-            debug_log(f"Critical error in main loop: {e}\n{tb_str}")
-            await asyncio.sleep(1) # prevent fast crash loop
+            debug_log(f"Critical error in main loop: {e}")
+            debug_log(traceback.format_exc())
+            # In case of a critical error, sleep a bit to prevent a tight error loop
+            await asyncio.sleep(1)
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        debug_log("Service interrupted by user (KeyboardInterrupt).")
+        debug_log("Server shut down by KeyboardInterrupt.")
     except Exception as e:
         tb_str = traceback.format_exc()
         debug_log(f"Unhandled exception in top-level: {e}\n{tb_str}")
