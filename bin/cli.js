@@ -12,14 +12,11 @@ const { initialize } = require('../index.js');
 const logFilePath = path.join(os.homedir(), `remote-terminal-mcp-v${process.env.npm_package_version}-debug.log`);
 const logStream = fs.createWriteStream(logFilePath, { flags: 'w' }); // 'w' to overwrite on start
 
-// The process's stdout is connected to the parent (Cursor).
-// We pipe our log stream to stderr so we can see logs in debug mode if needed,
-// but they won't interfere with the MCP communication over stdout.
-logStream.pipe(process.stderr);
-
 const log = (message) => {
     const timestamp = new Date().toISOString();
-    logStream.write(`[${timestamp}] [cli] ${message}\n`);
+    const logMessage = `[${timestamp}] [cli] ${message}\n`;
+    logStream.write(logMessage); // Write to the dedicated log file
+    process.stderr.write(logMessage); // Also write to stderr for real-time viewing in debug context
 };
 
 log(`CLI script started. Node.js version: ${process.version}`);
