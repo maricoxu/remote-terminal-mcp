@@ -14,13 +14,13 @@ from pathlib import Path
 from datetime import datetime
 
 # -- Robust Startup Logger --
-PY_LOG_FILE = os.path.join(os.getcwd(), 'python-startup-v0.4.14-debug.log')
+PY_LOG_FILE = Path.home() / 'mcp_service_debug.log'
 def startup_log(msg):
     """A simple, robust logger that writes to a file immediately."""
     with open(PY_LOG_FILE, 'a') as f:
-        f.write(f"[{datetime.now().isoformat()}] {msg}\\n")
+        f.write(f"[PYTHON] [{datetime.now().isoformat()}] {msg}\\n")
 
-startup_log("--- Python script started ---")
+startup_log("--- Python script started (v0.4.15) ---")
 
 # 设置安静模式，防止SSH Manager显示启动摘要
 os.environ['MCP_QUIET'] = '1'

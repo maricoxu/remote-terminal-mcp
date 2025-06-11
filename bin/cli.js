@@ -3,11 +3,13 @@
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
+const os = require('os');
 
 // --- Supervisor Logger ---
-const logFile = path.join(process.cwd(), 'supervisor-v0.4.14-debug.log');
-fs.writeFileSync(logFile, `[${new Date().toISOString()}] Supervisor starting.\n`);
-const log = (msg) => fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`);
+const logFile = path.join(os.homedir(), 'mcp_service_debug.log');
+// The first logger to write to the file should create/truncate it.
+fs.writeFileSync(logFile, `[SUPERVISOR] [${new Date().toISOString()}] Supervisor starting (v0.4.15).\n`);
+const log = (msg) => fs.appendFileSync(logFile, `[SUPERVISOR] [${new Date().toISOString()}] ${msg}\n`);
 // --- End Logger ---
 
 /**

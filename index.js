@@ -9,12 +9,20 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { spawn } = require('child_process');
 
 // --- Worker Logger ---
-const logFile = path.join(process.cwd(), 'worker-v0.4.14-debug.log');
-fs.writeFileSync(logFile, `[${new Date().toISOString()}] Worker starting.\n`);
-const log = (msg) => fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`);
+const logFile = path.join(os.homedir(), 'mcp_service_debug.log');
+// Subsequent loggers should only append to the file.
+const log = (msg) => {
+    try {
+        fs.appendFileSync(logFile, `[WORKER] [${new Date().toISOString()}] ${msg}\n`);
+    } catch (e) {
+        // If logging fails, there's not much we can do, but we shouldn't crash.
+    }
+};
+log("Worker starting.");
 // --- End Logger ---
 
 class RemoteTerminalMCP {
