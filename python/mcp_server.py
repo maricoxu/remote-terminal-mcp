@@ -173,39 +173,39 @@ async def handle_request(request):
         if method == "initialize":
             debug_log("Handling 'initialize' request.")
             
-            client_params = params or {}
-            client_capabilities = client_params.get("capabilities", {})
-
-            # Defensively check the structure of the 'resources' capability
-            client_resources_cap = client_capabilities.get("resources")
-            list_changed_supported = False
-            if isinstance(client_resources_cap, dict):
-                list_changed_supported = client_resources_cap.get("listChanged", False)
-
-            # Build our capabilities based on what the client supports
-            our_capabilities = {
-                "tools": client_capabilities.get("tools", False),
-                "prompts": client_capabilities.get("prompts", False),
-                "resources": {
-                    "listChanged": list_changed_supported
+            # Per LSP spec, the server responds with its capabilities.
+            # The most critical part is textDocumentSync, which tells the client
+            # how we want to be notified of file changes. Without this, the
+            # client assumes we can't handle files and disconnects.
+            
+            # TextDocumentSyncKind.Full (1) means the client will send the
+            # entire file content on each change.
+            server_capabilities = {
+                "textDocumentSync": {
+                    "openClose": True,
+                    "change": 1,  # 1 means Full sync
                 },
-                "logging": {
-                    "log": True
+                # We can keep our custom capabilities, but they are not part
+                # of the core LSP handshake resolution.
+                "tools": True,
+                "prompts": True,
+                "resources": {
+                    "listChanged": True
                 }
             }
-
+            
             response = {
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "result": {
-                    "protocolVersion": client_params.get("protocolVersion", "2024-11-05"),
-                    "capabilities": our_capabilities,
+                    "capabilities": server_capabilities,
                     "serverInfo": {
                         "name": "remote-terminal-mcp",
-                        "version": "0.4.42"
+                        "version": "0.4.43"
                     }
                 }
             }
+            return response
         
         elif method == "shutdown":
             debug_log("Handling 'shutdown' request.")
