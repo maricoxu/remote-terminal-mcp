@@ -18,7 +18,14 @@ function initialize(logStream) {
         logStream.write(`[${timestamp}] [supervisor] ${message}\n`);
     };
 
-    supervisorLog('Supervisor started.');
+    supervisorLog('Supervisor logic initiated.');
+
+    process.stdin.on('error', (err) => {
+        supervisorLog(`SUPERVISOR STDIN ERROR: ${err.message}`);
+    });
+    process.stdin.on('close', () => {
+        supervisorLog('SUPERVISOR STDIN CLOSED. Worker will be terminated.');
+    });
 
     const pythonScriptPath = path.resolve(__dirname, '..', 'python', 'mcp_server.py');
     supervisorLog(`Resolved Python script path: ${pythonScriptPath}`);
@@ -26,39 +33,47 @@ function initialize(logStream) {
     const startWorker = () => {
         supervisorLog('Attempting to start Python worker process...');
         
-        const pythonProcess = spawn('python3', [ //NOSONAR
-            '-u', // Unbuffered output
+        const pythonProcess = spawn('python3', [
+            '-u', 
             pythonScriptPath
         ], {
-            stdio: ['pipe', 'pipe', 'pipe'], // stdin, stdout, stderr
+            stdio: 'pipe',
             shell: true,
-            env: {
-                ...process.env, // Inherit parent environment
-                // Set/override any specific env vars for the child process here
-            }
+            env: process.env,
         });
 
-        supervisorLog(`Spawned Python process with PID: ${pythonProcess.pid}`);
+        supervisorLog(`Spawned Python process with PID: ${pythonProcess.pid || 'N/A'}`);
 
-        // Connect the supervisor's lifecycle to the worker's
-        process.stdin.pipe(pythonProcess.stdin);
-        pythonProcess.stdout.on('data', (data) => {
-            process.stdout.write(data);
-        });
+        // Full stream connection with diagnostic logging
+        try {
+            process.stdin.pipe(pythonProcess.stdin);
+            supervisorLog('Pipe established: Supervisor stdin -> Worker stdin');
+        } catch (e) {
+            supervisorLog(`FATAL: Failed to pipe stdin: ${e.message}`);
+        }
 
+        try {
+            pythonProcess.stdout.pipe(process.stdout);
+            supervisorLog('Pipe established: Worker stdout -> Supervisor stdout');
+        } catch (e) {
+            supervisorLog(`FATAL: Failed to pipe stdout: ${e.message}`);
+        }
+        
         pythonProcess.stderr.on('data', (data) => {
-            supervisorLog(`Worker stderr: ${data.toString().trim()}`);
+            supervisorLog(`WORKER STDERR: ${data.toString().trim()}`);
         });
         
         pythonProcess.on('close', (code, signal) => {
-            supervisorLog(`Worker process closed with code ${code} and signal ${signal}`);
-            // Optional: implement a restart mechanism here if needed
+            supervisorLog(`Worker process exited. Code: ${code}, Signal: ${signal}. Supervisor will exit.`);
+            process.exit(code === null ? 1 : code);
         });
 
         pythonProcess.on('error', (err) => {
             supervisorLog(`Failed to start worker process. Error: ${err.message}`);
+            process.exit(1);
         });
 
+        supervisorLog('Worker process event listeners are attached.');
         return pythonProcess;
     };
 
