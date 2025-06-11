@@ -10,8 +10,8 @@
     "start": "node index.js",
     "test": "node test.js",
     "build": "echo 'No build step needed for this package'",
-    "postinstall": "node scripts/post-install.js",
-    "prepublishOnly": "chmod +x bin/cli.js && npm test"
+    "prepublishOnly": "npm test",
+    "postinstall": "node scripts/postinstall.js"
   },
   "keywords": [
     "mcp",
