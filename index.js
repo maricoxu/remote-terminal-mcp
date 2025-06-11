@@ -26,16 +26,22 @@ function initialize(logStream) {
     const startWorker = () => {
         supervisorLog('Attempting to start Python worker process...');
         
-        const pythonProcess = spawn('python3', [
+        const pythonProcess = spawn('python3', [ //NOSONAR
             '-u', // Unbuffered output
             pythonScriptPath
         ], {
             stdio: ['pipe', 'pipe', 'pipe'], // stdin, stdout, stderr
-            shell: true
+            shell: true,
+            env: {
+                ...process.env, // Inherit parent environment
+                // Set/override any specific env vars for the child process here
+            }
         });
 
         supervisorLog(`Spawned Python process with PID: ${pythonProcess.pid}`);
 
+        // Connect the supervisor's lifecycle to the worker's
+        process.stdin.pipe(pythonProcess.stdin);
         pythonProcess.stdout.on('data', (data) => {
             process.stdout.write(data);
         });
