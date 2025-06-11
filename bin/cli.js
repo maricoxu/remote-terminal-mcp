@@ -1,55 +1,38 @@
 #!/usr/bin/env node
 
-const path = require('path');
 const os = require('os');
 const fs = require('fs');
-const { spawn } = require('child_process');
+const path = require('path');
+const { initialize } = require('../index.js');
 
-// --- Supervisor Logger (v0.4.17) ---
-const logFile = path.join(os.homedir(), 'supervisor-v0.4.17-debug.log');
-fs.writeFileSync(logFile, `[SUPERVISOR] [${new Date().toISOString()}] Supervisor starting.\n`);
-const log = (msg) => fs.appendFileSync(logFile, `[SUPERVISOR] [${new Date().toISOString()}] ${msg}\n`);
-log(`Received Environment Variables:\n${JSON.stringify(process.env, null, 2)}`);
-// --- End Logger ---
+// This is the main entry point for the CLI.
+// We are setting up a dedicated log file to capture everything that happens
+// from the moment this script starts.
 
-function main() {
-    log('Main function started.');
-    const packageRoot = path.resolve(__dirname, '..');
-    const serverScript = path.join(packageRoot, 'index.js');
-    log(`Resolved server script path: ${serverScript}`);
+const logFilePath = path.join(os.homedir(), `remote-terminal-mcp-v${process.env.npm_package_version}-debug.log`);
+const logStream = fs.createWriteStream(logFilePath, { flags: 'w' }); // 'w' to overwrite on start
 
-    log('Spawning child process (index.js)...');
-    const child = spawn('node', [serverScript], {
-        stdio: ['pipe', 'pipe', 'pipe', 'ipc'], // Inherit stdio and add ipc channel
-        env: process.env, // Pass through the full environment
-    });
+// The process's stdout is connected to the parent (Cursor).
+// We pipe our log stream to stderr so we can see logs in debug mode if needed,
+// but they won't interfere with the MCP communication over stdout.
+logStream.pipe(process.stderr);
 
-    child.on('close', (code, signal) => {
-        log(`Child process closed. Code: ${code}, Signal: ${signal}. Supervisor exiting.`);
-        process.exit(code === null ? 1 : code);
-    });
+const log = (message) => {
+    const timestamp = new Date().toISOString();
+    logStream.write(`[${timestamp}] [cli] ${message}\n`);
+};
 
-    child.on('error', (err) => {
-        log(`[CRITICAL] Failed to start server process: ${err.message}. Supervisor exiting.`);
-        process.exit(1);
-    });
-    
-    // Relay stdout/stderr from child to this process's log file for unified debugging
-    child.stdout.on('data', (data) => log(`[CHILD STDOUT] ${data.toString().trim()}`));
-    child.stderr.on('data', (data) => log(`[CHILD STDERR] ${data.toString().trim()}`));
-
-    const onSignal = (signal) => {
-        child.kill(signal);
-    };
-    process.on('SIGINT', () => onSignal('SIGINT'));
-    process.on('SIGTERM', () => onSignal('SIGTERM'));
-    
-    log('Supervisor setup complete. Waiting for child process to exit.');
-}
+log(`CLI script started. Node.js version: ${process.version}`);
+log(`Log file path: ${logFilePath}`);
+log(`Package version from env: ${process.env.npm_package_version}`);
+log(`Current working directory: ${process.cwd()}`);
+log('Initializing supervisor...');
 
 try {
-    main();
+    initialize(logStream);
+    log('Supervisor initialized successfully.');
 } catch (error) {
-    log(`[CRITICAL] Catastrophic error in supervisor: ${error.message}. Supervisor exiting.`);
+    log(`FATAL: An uncaught error occurred during initialization: ${error.message}`);
+    log(error.stack);
     process.exit(1);
 } 
