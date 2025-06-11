@@ -177,10 +177,19 @@ async def handle_request(request):
                 "id": request_id,
                 "result": {
                     "protocolVersion": "2024-11-05",
-                    "capabilities": {},
+                    "capabilities": {
+                        "tools": True,
+                        "prompts": True,
+                        "resources": {
+                            "listChanged": False
+                        },
+                        "logging": {
+                            "log": True
+                        }
+                    },
                     "serverInfo": {
                         "name": "remote-terminal-mcp",
-                        "version": "0.4.28"
+                        "version": "0.4.40"
                     }
                 }
             }
@@ -249,7 +258,10 @@ async def handle_request(request):
         response = create_error_response(request_id, error_msg)
 
     if response:
-        send_response(response)
+        debug_log(f"Sent response for ID {request.get('id')}")
+        # The main loop now handles sending the response
+        return response
+    return None
 
 async def main():
     """主事件循环"""
