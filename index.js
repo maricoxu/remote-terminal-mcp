@@ -78,11 +78,13 @@ This command starts the MCP server directly.
             env.MCP_DEBUG = '1';
         }
         
-        const pythonExecutable = '/usr/bin/python3';
-        log(`Spawning python process with absolute path: ${pythonExecutable} ${pythonScript}`);
-        const mcp = spawn(pythonExecutable, [pythonScript], {
-            stdio: ['pipe', 'pipe', 'pipe'],
-            env: env
+        // The command to execute. Using `python3` relies on it being in the shell's PATH.
+        const command = `python3 "${pythonScript}"`;
+        log(`Spawning command within a shell: ${command}`);
+        const mcp = spawn(command, {
+            shell: true, // IMPORTANT: Lets the user's shell find python3 via its PATH.
+            stdio: ['pipe', 'pipe', 'pipe'], // Capture stdin, stdout, and stderr.
+            env: { ...process.env, ...env }, // Pass through parent env and add our own.
         });
         log('Python process spawned.');
 
