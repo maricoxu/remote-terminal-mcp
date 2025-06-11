@@ -12,7 +12,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 // --- Worker Logger ---
-const logFile = '/tmp/worker-debug.log';
+const logFile = path.join(__dirname, 'worker-debug.log');
 fs.writeFileSync(logFile, `[${new Date().toISOString()}] Worker starting.\n`);
 const log = (msg) => fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`);
 // --- End Logger ---
