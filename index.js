@@ -99,10 +99,10 @@ This command starts the MCP server directly.
         process.stdin.pipe(mcp.stdin);
         mcp.stdout.pipe(process.stdout);
 
-        mcp.on('close', (code) => {
-            log(`Python process exited with code: ${code}. Worker process will now exit.`);
+        mcp.on('close', (code, signal) => {
+            log(`Python process exited. Code: ${code}, Signal: ${signal}. Worker process will now exit.`);
             if (this.args.isDebugMode) {
-                console.error(`MCP server exited with code: ${code}`);
+                console.error(`MCP server exited. Code: ${code}, Signal: ${signal}`);
             }
             process.exit(code || 1);
         });
