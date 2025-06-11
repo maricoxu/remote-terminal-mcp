@@ -293,28 +293,25 @@ async def main():
 
             line = line_bytes.decode('utf-8').strip()
             
-            if line.startswith("Content-Length:"):
-                try:
-                    length = int(line.split(":")[1].strip())
-                    await reader.read(2) # Consume the \r\n
-                    body_bytes = await reader.read(length)
-                    body = body_bytes.decode('utf-8')
-                    
-                    request = json.loads(body)
-                    response = await handle_request(request)
-                    
-                    if response:
-                        response_body = json.dumps(response)
-                        response_message = f"{response_body}\n"
-                        
-                        writer.write(response_message.encode('utf-8'))
-                        await writer.drain()
+            if not line:
+                continue
 
-                except json.JSONDecodeError as e:
-                    debug_log(f"JSON Decode Error: {e}. Body was: '{body}'")
-                except Exception as e:
-                    tb_str = traceback.format_exc()
-                    debug_log(f"Error processing message: {e}\n{tb_str}")
+            try:
+                request = json.loads(line)
+                response = await handle_request(request)
+                
+                if response:
+                    response_body = json.dumps(response)
+                    response_message = f"{response_body}\n"
+                    
+                    writer.write(response_message.encode('utf-8'))
+                    await writer.drain()
+
+            except json.JSONDecodeError as e:
+                debug_log(f"JSON Decode Error: {e}. Body was: '{line}'")
+            except Exception as e:
+                tb_str = traceback.format_exc()
+                debug_log(f"Error processing message: {e}\n{tb_str}")
 
         except asyncio.CancelledError:
             debug_log("Main loop cancelled. Shutting down.")
