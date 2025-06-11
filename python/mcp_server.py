@@ -172,24 +172,31 @@ async def handle_request(request):
     try:
         if method == "initialize":
             debug_log("Handling 'initialize' request.")
+            
+            client_params = params or {}
+            client_capabilities = client_params.get("capabilities", {})
+
+            # Build our capabilities based on what the client supports
+            our_capabilities = {
+                "tools": client_capabilities.get("tools", False),
+                "prompts": client_capabilities.get("prompts", False),
+                "resources": {
+                    "listChanged": client_capabilities.get("resources", {}).get("listChanged", False)
+                },
+                "logging": {
+                    "log": True
+                }
+            }
+
             response = {
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "result": {
-                    "protocolVersion": "2024-11-05",
-                    "capabilities": {
-                        "tools": True,
-                        "prompts": True,
-                        "resources": {
-                            "listChanged": False
-                        },
-                        "logging": {
-                            "log": True
-                        }
-                    },
+                    "protocolVersion": client_params.get("protocolVersion", "2024-11-05"),
+                    "capabilities": our_capabilities,
                     "serverInfo": {
                         "name": "remote-terminal-mcp",
-                        "version": "0.4.40"
+                        "version": "0.4.41"
                     }
                 }
             }
