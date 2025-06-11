@@ -149,6 +149,46 @@ def check_system_info():
     
     return "\n".join(info)
 
+def send_server_ready(request_id):
+    """主动发送 server_ready 消息"""
+    ready_message = {
+        "jsonrpc": "2.0",
+        "method": "server_ready",
+        "params": {
+            "id": request_id,
+            "result": {
+                "tools": [
+                    {
+                        "name": "system_info",
+                        "description": "Get system information and current status",
+                        "inputSchema": {"type": "object", "properties": {}}
+                    },
+                    {
+                        "name": "run_command",
+                        "description": "Execute local command",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "command": {"type": "string", "description": "Command to execute"},
+                                "working_directory": {"type": "string", "description": "Working directory for command execution"},
+                                "timeout": {"type": "integer", "description": "Command timeout in seconds", "default": 30}
+                            },
+                            "required": ["command"]
+                        }
+                    },
+                    {
+                        "name": "list_tmux_sessions",
+                        "description": "List current tmux sessions",
+                        "inputSchema": {"type": "object", "properties": {}}
+                    }
+                ]
+            }
+        }
+    }
+    message_str = json.dumps(ready_message)
+    print(f"Content-Length: {len(message_str)}\r\n\r\n{message_str}", flush=True)
+    debug_log("Sent server_ready message.")
+
 async def handle_request(request):
     """处理MCP请求"""
     method = request.get("method", "")
@@ -370,58 +410,45 @@ async def handle_request(request):
 
 async def main():
     """主事件循环"""
-    reader = asyncio.StreamReader()
-    protocol = asyncio.StreamReaderProtocol(reader)
+    debug_log("MCP Server is running...")
     
-    loop = asyncio.get_event_loop()
-    await loop.connect_read_pipe(lambda: protocol, sys.stdin)
+    # 在进入主循环之前发送 server_ready
+    # MCP协议中，首次通信通常由客户端发起initialize，但有些环境需要服务器主动声明
+    # 为了兼容性，我们先发一个信号
+    # 注意：这里的 request_id 只是个占位符，因为这不是对某个请求的响应
+    send_server_ready(request_id="initialization")
     
-    debug_log("Entering main while-loop to process messages.")
     while True:
-        try:
-            line_bytes = await reader.readline()
-            if not line_bytes:
-                await asyncio.sleep(1)
-                continue
-
-            line = line_bytes.decode('utf-8').strip()
-            
-            if line.startswith("Content-Length:"):
-                try:
-                    length = int(line.split(":")[1].strip())
-                    await reader.read(2) # Consume the \r\n
-                    body_bytes = await reader.read(length)
-                    body = body_bytes.decode('utf-8')
-                    
-                    request = json.loads(body)
-                    response = await handle_request(request)
-                    
-                    if response:
-                        response_body = json.dumps(response)
-                        response_message = f"Content-Length: {len(response_body)}\r\n\r\n{response_body}"
-                        
-                        sys.stdout.buffer.write(response_message.encode('utf-8'))
-                        sys.stdout.flush()
-
-                except json.JSONDecodeError as e:
-                    debug_log(f"JSON Decode Error: {e}. Body was: '{body}'")
-                except Exception as e:
-                    tb_str = traceback.format_exc()
-                    debug_log(f"Error processing message: {e}\n{tb_str}")
-
-        except asyncio.CancelledError:
-            debug_log("Main loop cancelled. Shutting down.")
+        line = await asyncio.get_event_loop().run_in_executor(
+            None, sys.stdin.readline
+        )
+        if not line:
             break
-        except Exception as e:
-            tb_str = traceback.format_exc()
-            debug_log(f"Critical error in main loop: {e}\n{tb_str}")
-            await asyncio.sleep(1) # prevent fast crash loop
+            
+        if line.strip().startswith('Content-Length:'):
+            content_length = int(line.split(':')[1].strip())
+            # Skip the blank line
+            await asyncio.get_event_loop().run_in_executor(None, sys.stdin.readline)
+            
+            content = await asyncio.get_event_loop().run_in_executor(
+                None, lambda: sys.stdin.read(content_length)
+            )
+            
+            try:
+                request = json.loads(content)
+                response = await handle_request(request)
+                if response:
+                    response_str = json.dumps(response)
+                    print(f'Content-Length: {len(response_str)}\r\n\r\n{response_str}', flush=True)
+            except json.JSONDecodeError:
+                debug_log("Failed to decode JSON from content.")
+            except Exception as e:
+                debug_log(f"Error handling request: {traceback.format_exc()}")
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        debug_log("Service interrupted by user (KeyboardInterrupt).")
-    except Exception as e:
-        tb_str = traceback.format_exc()
-        debug_log(f"Unhandled exception in top-level: {e}\n{tb_str}")
+        debug_log("Server manually interrupted.")
+    finally:
+        debug_log("Server shutting down.")
