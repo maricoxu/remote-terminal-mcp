@@ -170,60 +170,33 @@ def check_system_info():
     
     return "\n".join(info)
 
-def send_server_ready(request_id):
-    """主动发送 server_ready 消息"""
-    ready_message = {
-        "jsonrpc": "2.0",
-        "method": "server_ready",
-        "params": {
-            "id": request_id,
-            "result": {
-                "tools": [
-                    {
-                        "name": "system_info",
-                        "description": "Get system information and current status",
-                        "inputSchema": {"type": "object", "properties": {}}
-                    },
-                    {
-                        "name": "run_command",
-                        "description": "Execute local command",
-                        "inputSchema": {
-                            "type": "object",
-                            "properties": {
-                                "command": {"type": "string", "description": "Command to execute"},
-                                "working_directory": {"type": "string", "description": "Working directory for command execution"},
-                                "timeout": {"type": "integer", "description": "Command timeout in seconds", "default": 30}
-                            },
-                            "required": ["command"]
-                        }
-                    },
-                    {
-                        "name": "list_tmux_sessions",
-                        "description": "List current tmux sessions",
-                        "inputSchema": {"type": "object", "properties": {}}
-                    }
-                ]
-            }
-        }
-    }
-    message_str = json.dumps(ready_message)
-    print(f"Content-Length: {len(message_str)}\r\n\r\n{message_str}", flush=True)
-    debug_log("Sent server_ready message.")
+def send_response(response_obj):
+    """Sends a JSON-RPC response object to stdout."""
+    message_str = json.dumps(response_obj)
+    header = f"Content-Length: {len(message_str)}\\r\\n\\r\\n"
+    
+    # Ensure all parts are sent to stdout
+    sys.stdout.write(header)
+    sys.stdout.write(message_str)
+    sys.stdout.flush()
+    debug_log(f"Sent response for ID {response_obj.get('id')}")
 
 async def handle_request(request):
     """处理MCP请求"""
     method = request.get("method", "")
     request_id = request.get("id")
+    params = request.get("params", {})
     
     debug_log(f"Received request: method='{method}', id='{request_id}'")
     
     if request_id is None:
-        return None
+        return # Notification, no response needed
     
+    response = None
     try:
         if method == "initialize":
             debug_log("Handling 'initialize' request.")
-            return {
+            response = {
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "result": {
@@ -231,250 +204,87 @@ async def handle_request(request):
                     "capabilities": {},
                     "serverInfo": {
                         "name": "remote-terminal-mcp",
-                        "version": "0.2.1" # Version update
+                        "version": "0.4.28"
                     }
                 }
             }
         
         elif method == "shutdown":
             debug_log("Handling 'shutdown' request.")
-            return { "jsonrpc": "2.0", "id": request_id, "result": {} }
+            response = { "jsonrpc": "2.0", "id": request_id, "result": {} }
         
         elif method == "tools/list":
-            return {
+            debug_log("Handling 'tools/list' request.")
+            tools = get_ssh_manager().list_tools() if get_ssh_manager() else []
+            response = {
                 "jsonrpc": "2.0",
                 "id": request_id,
-                "result": { "tools": [
-                {
-                    "name": "system_info",
-                    "description": "Get system information and current status",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {}
-                    }
-                },
-                {
-                    "name": "run_command",
-                    "description": "Execute local command",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "command": {
-                                "type": "string",
-                                "description": "Command to execute"
-                            },
-                            "working_directory": {
-                                "type": "string",
-                                "description": "Working directory for command execution"
-                            },
-                            "timeout": {
-                                "type": "integer",
-                                "description": "Command timeout in seconds",
-                                "default": 30
-                            }
-                        },
-                        "required": ["command"]
-                    }
-                },
-                {
-                    "name": "list_tmux_sessions",
-                    "description": "List current tmux sessions",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {}
-                    }
-                },
-                {
-                    "name": "create_tmux_session",
-                    "description": "Create new tmux session",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "session_name": {
-                                "type": "string",
-                                "description": "Session name"
-                            },
-                            "working_directory": {
-                                "type": "string",
-                                "description": "Working directory for session"
-                            }
-                        },
-                        "required": ["session_name"]
-                    }
-                },
-                {
-                    "name": "list_directory",
-                    "description": "List directory contents",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "path": {
-                                "type": "string",
-                                "description": "Directory path to list",
-                                "default": "."
-                            },
-                            "show_hidden": {
-                                "type": "boolean",
-                                "description": "Whether to show hidden files",
-                                "default": False
-                            }
-                        }
-                    }
-                },
-                {
-                    "name": "list_remote_servers",
-                    "description": "List all configured remote servers",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {}
-                    }
-                },
-                {
-                    "name": "test_server_connection",
-                    "description": "Test remote server connection",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "server_name": {
-                                "type": "string",
-                                "description": "Server name to test"
-                            }
-                        },
-                        "required": ["server_name"]
-                    }
-                },
-                {
-                    "name": "execute_remote_command",
-                    "description": "Execute command on remote server",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "server_name": {
-                                "type": "string",
-                                "description": "Target server name"
-                            },
-                            "command": {
-                                "type": "string",
-                                "description": "Command to execute"
-                            }
-                        },
-                        "required": ["server_name", "command"]
-                    }
-                },
-                {
-                    "name": "get_server_status",
-                    "description": "Get remote server status information",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "server_name": {
-                                "type": "string",
-                                "description": "Server name"
-                            }
-                        },
-                        "required": ["server_name"]
-                    }
-                },
-                {
-                    "name": "refresh_server_connections",
-                    "description": "Refresh all server connection status",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {}
-                    }
-                },
-                {
-                    "name": "establish_connection",
-                    "description": "Establish full connection to remote server with configuration diagnosis, error reporting and intelligent session management",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "server_name": {
-                                "type": "string",
-                                "description": "Server name to connect to"
-                            },
-                            "force_recreate": {
-                                "type": "boolean",
-                                "description": "Force recreate session even if exists",
-                                "default": False
-                            },
-                            "debug_mode": {
-                                "type": "boolean", 
-                                "description": "Enable debug mode to preserve failed sessions for diagnosis",
-                                "default": True
-                            }
-                        },
-                        "required": ["server_name"]
-                    }
-                }
-                ]}
+                "result": { "tools": tools }
             }
+
+        elif method == "tools/execute":
+            tool_name = params.get("name")
+            tool_input = params.get("input", {})
+            debug_log(f"Executing tool '{tool_name}' with input: {tool_input}")
             
-        elif method == "tools/run":
-            tool_name = request.get("params", {}).get("name")
-            tool_input = request.get("params", {}).get("input", {})
-            
-            if tool_name == "connect_to_server":
-                server_name = tool_input.get("server_name")
-                # ... (logic for connect_to_server)
-            # ... (other tools)
+            manager = get_ssh_manager()
+            if not manager:
+                response = create_error_response(request_id, "SSH Manager is not available.")
             else:
-                return create_error_response(request_id, f"Unknown tool: {tool_name}")
+                try:
+                    content = manager.execute_tool(tool_name, tool_input)
+                    response = create_success_response(request_id, content)
+                except Exception as e:
+                    debug_log(f"Tool execution error: {e}\\n{traceback.format_exc()}")
+                    response = create_error_response(request_id, f"Error executing tool '{tool_name}': {e}")
         else:
-            return create_error_response(request_id, f"Unsupported method: {method}")
-        
+            response = create_error_response(request_id, f"Unknown method: {method}", -32601)
+            
     except Exception as e:
-        tb_str = traceback.format_exc()
-        error_msg = f"An unexpected error occurred in handle_request: {e}\n{tb_str}"
-        debug_log(error_msg)
-        return create_error_response(request_id, f"Internal server error: {e}")
+        error_msg = f"An unexpected error occurred: {e}"
+        debug_log(f"{error_msg}\\n{traceback.format_exc()}")
+        response = create_error_response(request_id, error_msg)
+
+    if response:
+        send_response(response)
 
 async def main():
-    """主事件循环"""
-    debug_log("MCP Server is running...")
+    """主循环，读取和处理请求"""
+    debug_log("Main loop started.")
     
-    # 在进入主循环之前发送 server_ready
-    # MCP协议中，首次通信通常由客户端发起initialize，但有些环境需要服务器主动声明
-    # 为了兼容性，我们先发一个信号
-    # 注意：这里的 request_id 只是个占位符，因为这不是对某个请求的响应
-    send_server_ready(request_id="initialization")
-    
+    # Send server_ready notification immediately upon startup
+    ready_message = {
+        "jsonrpc": "2.0",
+        "method": "server_ready",
+        "params": {} # As a notification, it has no ID
+    }
+    send_response(ready_message)
+    debug_log("Sent server_ready notification.")
+
     while True:
-        line = await asyncio.get_event_loop().run_in_executor(
-            None, sys.stdin.readline
-        )
+        line = sys.stdin.readline()
         if not line:
+            debug_log("Stdin closed, exiting main loop.")
             break
-            
-        if line.strip().startswith('Content-Length:'):
-            content_length = int(line.split(':')[1].strip())
-            # Skip the blank line
-            await asyncio.get_event_loop().run_in_executor(None, sys.stdin.readline)
-            
-            content = await asyncio.get_event_loop().run_in_executor(
-                None, lambda: sys.stdin.read(content_length)
-            )
-            
+
+        if line.strip().startswith("Content-Length"):
             try:
-                request = json.loads(content)
-                response = await handle_request(request)
-                if response:
-                    response_str = json.dumps(response)
-                    print(f'Content-Length: {len(response_str)}\r\n\r\n{response_str}', flush=True)
-            except json.JSONDecodeError:
-                debug_log("Failed to decode JSON from content.")
+                content_length = int(line.split(":")[1].strip())
+                sys.stdin.readline()  # Skip the blank line
+                
+                request_body = sys.stdin.read(content_length)
+                request = json.loads(request_body)
+                
+                await handle_request(request)
             except Exception as e:
-                debug_log(f"Error handling request: {traceback.format_exc()}")
+                debug_log(f"Error processing request: {e}\\n{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    startup_log("Entered main execution block (__name__ == '__main__').")
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        debug_log("Server manually interrupted.")
-        startup_log("Server manually interrupted.")
+        debug_log("Script interrupted by user.")
     except Exception as e:
-        startup_log(f"FATAL: Unhandled exception in asyncio.run(main()). Error: {e}\\n{traceback.format_exc()}")
+        startup_log(f"FATAL: Unhandled exception in main: {e}\\n{traceback.format_exc()}")
     finally:
-        debug_log("Server shutting down.")
-        startup_log("--- Python script finished ---")
+        debug_log("Script finished.")
