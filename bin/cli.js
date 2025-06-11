@@ -1,69 +1,47 @@
 #!/usr/bin/env node
 
 const path = require('path');
-const { spawn } = require('child_process');
-const fs = require('fs');
 const os = require('os');
+const fs = require('fs');
 
-// --- Supervisor Logger ---
-const logFile = path.join(os.homedir(), 'mcp_service_debug.log');
-// The first logger to write to the file should create/truncate it.
-fs.writeFileSync(logFile, `[SUPERVISOR] [${new Date().toISOString()}] Supervisor starting (v0.4.15).\n`);
-const log = (msg) => fs.appendFileSync(logFile, `[SUPERVISOR] [${new Date().toISOString()}] ${msg}\n`);
-// --- End Logger ---
-
-/**
- * This script is a long-lived supervisor.
- * Its job is to spawn the actual server process (index.js) and then wait,
- * keeping itself alive as long as the server is running.
- * This is the process that Cursor monitors.
- */
-function main() {
-    log('Main function started.');
-    const packageRoot = path.resolve(__dirname, '..');
-    const serverScript = path.join(packageRoot, 'index.js');
-    log(`Resolved server script path: ${serverScript}`);
-
-    // Spawn the server script as a child process.
-    // It is NOT detached. The parent (this script) will live as long as the child.
-    log('Spawning child process...');
-    const child = spawn('node', [serverScript], {
-        // Use 'inherit' to directly pass through the stdio streams from this
-        // process to the child process. This is the simplest and most robust way
-        // for Cursor to communicate with our actual server.
-        stdio: 'inherit',
-    });
-
-    // When the child process (the server) exits, this supervisor process
-    // should also exit with the same code. This correctly signals the
-    // service status back to Cursor.
-    child.on('close', (code) => {
-        log(`Child process closed with code: ${code}. Supervisor exiting.`);
-        process.exit(code === null ? 1 : code);
-    });
-
-    // Handle errors during the spawn itself (e.g., 'node' not found).
-    child.on('error', (err) => {
-        log(`Failed to start server process: ${err.message}. Supervisor exiting.`);
-        console.error(`[MCP Supervisor] Failed to start server process: ${err.message}`);
-        process.exit(1);
-    });
-
-    // Ensure that if the supervisor is killed, it also kills the child.
-    const onSignal = (signal) => {
-        child.kill(signal);
-    };
-    process.on('SIGINT', () => onSignal('SIGINT'));
-    process.on('SIGTERM', () => onSignal('SIGTERM'));
+function runDiagnostics() {
+    const reportPath = path.join(os.homedir(), 'diagnostic_report.log');
+    let reportContent = `--- Diagnostic Report (v0.4.16) ---\n`;
+    reportContent += `Timestamp: ${new Date().toISOString()}\n\n`;
     
-    log('Supervisor setup complete. Waiting for child process to exit.');
+    // 1. CWD
+    try {
+        reportContent += `process.cwd(): ${process.cwd()}\n`;
+    } catch (e) {
+        reportContent += `Failed to get process.cwd(): ${e.message}\n`;
+    }
+    
+    // 2. Home Directory
+    try {
+        reportContent += `os.homedir(): ${os.homedir()}\n`;
+    } catch (e) {
+        reportContent += `Failed to get os.homedir(): ${e.message}\n`;
+    }
+
+    // 3. __dirname
+    try {
+        reportContent += `__dirname: ${__dirname}\n`;
+    } catch (e) {
+        reportContent += `Failed to get __dirname: ${e.message}\n`;
+    }
+    
+    // 4. Environment Variables
+    reportContent += `\n--- Environment Variables ---\n`;
+    reportContent += JSON.stringify(process.env, null, 2);
+    reportContent += `\n\n--- End of Report ---\n`;
+    
+    try {
+        fs.writeFileSync(reportPath, reportContent);
+    } catch(e) {
+        // If this fails, there's nothing more we can do.
+    }
 }
 
-// Execute the main function.
-try {
-    main();
-} catch (error) {
-    log(`Catastrophic error in supervisor: ${error.message}. Supervisor exiting.`);
-    console.error(`[MCP Supervisor] Catastrophic error: ${error.message}`);
-    process.exit(1);
-} 
+// Run the diagnostics and then exit. Do not start the server.
+runDiagnostics();
+process.exit(0); 
