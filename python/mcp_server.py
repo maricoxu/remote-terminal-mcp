@@ -276,7 +276,7 @@ async def main():
             "params": {}
         }
         body = json.dumps(ready_notification)
-        message = f"Content-Length: {len(body)}\r\n\r\n{body}"
+        message = f"{body}\n"
         writer.write(message.encode('utf-8'))
         await writer.drain()
         debug_log("Sent server_ready notification.")
@@ -305,7 +305,7 @@ async def main():
                     
                     if response:
                         response_body = json.dumps(response)
-                        response_message = f"Content-Length: {len(response_body)}\r\n\r\n{response_body}"
+                        response_message = f"{response_body}\n"
                         
                         writer.write(response_message.encode('utf-8'))
                         await writer.drain()
