@@ -11,15 +11,33 @@ import sys
 import os
 import traceback
 from pathlib import Path
+from datetime import datetime
+
+# -- Robust Startup Logger --
+PY_LOG_FILE = os.path.join(os.getcwd(), 'python-startup-debug.log')
+def startup_log(msg):
+    """A simple, robust logger that writes to a file immediately."""
+    with open(PY_LOG_FILE, 'a') as f:
+        f.write(f"[{datetime.now().isoformat()}] {msg}\\n")
+
+startup_log("--- Python script started ---")
 
 # 设置安静模式，防止SSH Manager显示启动摘要
 os.environ['MCP_QUIET'] = '1'
+startup_log("MCP_QUIET env var set.")
 
 # 延迟导入
-from ssh_manager import SSHManager
+try:
+    startup_log("Attempting to import SSHManager...")
+    from ssh_manager import SSHManager
+    startup_log("SSHManager imported successfully.")
+except Exception as e:
+    startup_log(f"FATAL: Failed to import SSHManager. Error: {e}\\n{traceback.format_exc()}")
+    sys.exit(1)
 
 # 调试模式
 DEBUG = os.getenv('MCP_DEBUG', '0') == '1'
+startup_log(f"Debug mode is {'ON' if DEBUG else 'OFF'}.")
 
 # 初始化SSH管理器
 ssh_manager = None
@@ -29,8 +47,11 @@ def get_ssh_manager():
     global ssh_manager
     if ssh_manager is None:
         try:
+            startup_log("Attempting to initialize SSHManager...")
             ssh_manager = SSHManager()
+            startup_log("SSHManager initialized successfully.")
         except Exception as e:
+            startup_log(f"ERROR: Failed to initialize SSHManager. It will be unavailable. Error: {e}\\n{traceback.format_exc()}")
             ssh_manager = None
     return ssh_manager
 
@@ -446,9 +467,14 @@ async def main():
                 debug_log(f"Error handling request: {traceback.format_exc()}")
 
 if __name__ == "__main__":
+    startup_log("Entered main execution block (__name__ == '__main__').")
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
         debug_log("Server manually interrupted.")
+        startup_log("Server manually interrupted.")
+    except Exception as e:
+        startup_log(f"FATAL: Unhandled exception in asyncio.run(main()). Error: {e}\\n{traceback.format_exc()}")
     finally:
         debug_log("Server shutting down.")
+        startup_log("--- Python script finished ---")
