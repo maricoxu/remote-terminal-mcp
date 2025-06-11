@@ -78,8 +78,9 @@ This command starts the MCP server directly.
             env.MCP_DEBUG = '1';
         }
         
-        log('Spawning python3 process...');
-        const mcp = spawn('python3', [pythonScript], {
+        const pythonExecutable = '/usr/bin/python3';
+        log(`Spawning python process with absolute path: ${pythonExecutable} ${pythonScript}`);
+        const mcp = spawn(pythonExecutable, [pythonScript], {
             stdio: ['pipe', 'pipe', 'pipe'],
             env: env
         });
@@ -87,7 +88,7 @@ This command starts the MCP server directly.
 
         mcp.stderr.on('data', (data) => {
             const message = data.toString();
-            log(`[Python stderr] ${message}`);
+            log(`[CRITICAL] Python stderr: ${message}`);
             if (this.args.isDebugMode) {
                 console.error(`[Python stderr] ${message}`);
             }
@@ -97,15 +98,15 @@ This command starts the MCP server directly.
         mcp.stdout.pipe(process.stdout);
 
         mcp.on('close', (code) => {
-            log(`Python process exited with code: ${code}. Node worker process will now exit.`);
+            log(`Python process exited with code: ${code}. Worker process will now exit.`);
             if (this.args.isDebugMode) {
                 console.error(`MCP server exited with code: ${code}`);
             }
-            process.exit(code || 0);
+            process.exit(code || 1);
         });
 
         mcp.on('error', (error) => {
-            log(`Python process spawn error: ${error.message}. Node worker process will now exit.`);
+            log(`[CRITICAL] Python process spawn ERROR: ${error.message}. Worker process will now exit.`);
             if (this.args.isDebugMode) {
                 console.error('MCP server error:', error.message);
             }
