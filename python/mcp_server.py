@@ -176,12 +176,18 @@ async def handle_request(request):
             client_params = params or {}
             client_capabilities = client_params.get("capabilities", {})
 
+            # Defensively check the structure of the 'resources' capability
+            client_resources_cap = client_capabilities.get("resources")
+            list_changed_supported = False
+            if isinstance(client_resources_cap, dict):
+                list_changed_supported = client_resources_cap.get("listChanged", False)
+
             # Build our capabilities based on what the client supports
             our_capabilities = {
                 "tools": client_capabilities.get("tools", False),
                 "prompts": client_capabilities.get("prompts", False),
                 "resources": {
-                    "listChanged": client_capabilities.get("resources", {}).get("listChanged", False)
+                    "listChanged": list_changed_supported
                 },
                 "logging": {
                     "log": True
@@ -196,7 +202,7 @@ async def handle_request(request):
                     "capabilities": our_capabilities,
                     "serverInfo": {
                         "name": "remote-terminal-mcp",
-                        "version": "0.4.41"
+                        "version": "0.4.42"
                     }
                 }
             }
