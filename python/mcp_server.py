@@ -56,8 +56,20 @@ def get_ssh_manager():
     return ssh_manager
 
 def debug_log(msg):
-    if DEBUG:
-        print(f"[DEBUG] {msg}", file=sys.stderr, flush=True)
+    """Logs a message to the debug log file and stderr if not quiet."""
+    timestamp = datetime.now().isoformat()
+    # Always write to the file
+    with open(PY_LOG_FILE, "a") as f:
+        f.write(f"[PYTHON] [{timestamp}] {msg}\\n")
+
+    # Only write to stderr if MCP_QUIET is not set
+    if os.environ.get("MCP_QUIET") != "1":
+        try:
+            print(f"[DEBUG] {msg}", file=sys.stderr, flush=True)
+        except BrokenPipeError:
+            # This can happen if the parent process closes the pipe before we're done writing.
+            # It's safe to ignore in this case, as the process is terminating.
+            pass
 
 def create_success_response(request_id, text_content):
     """创建成功响应"""
@@ -172,14 +184,19 @@ def check_system_info():
 
 def send_response(response_obj):
     """Sends a JSON-RPC response object to stdout."""
-    message_str = json.dumps(response_obj)
-    header = f"Content-Length: {len(message_str)}\\r\\n\\r\\n"
-    
-    # Ensure all parts are sent to stdout
-    sys.stdout.write(header)
-    sys.stdout.write(message_str)
-    sys.stdout.flush()
-    debug_log(f"Sent response for ID {response_obj.get('id')}")
+    try:
+        message_str = json.dumps(response_obj)
+        header = f"Content-Length: {len(message_str)}\\r\\n\\r\\n"
+        
+        # Ensure all parts are sent to stdout
+        sys.stdout.write(header)
+        sys.stdout.write(message_str)
+        sys.stdout.flush()
+        debug_log(f"Sent response for ID {response_obj.get('id')}")
+    except BrokenPipeError:
+        # Parent process has likely exited, cannot send response.
+        debug_log("Failed to send response: Broken pipe. Parent process likely exited.")
+        pass # Ignore error as we are likely shutting down
 
 async def handle_request(request):
     """处理MCP请求"""
@@ -237,6 +254,33 @@ async def handle_request(request):
                 except Exception as e:
                     debug_log(f"Tool execution error: {e}\\n{traceback.format_exc()}")
                     response = create_error_response(request_id, f"Error executing tool '{tool_name}': {e}")
+
+        elif method == "list_sessions":
+            sessions = get_ssh_manager().list_sessions()
+            response = {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": { "sessions": sessions }
+            }
+
+        elif method == "connect_server":
+            server_name = params.get("server_name")
+            if not server_name:
+                response = create_error_response(request_id, "Missing parameter: server_name", -32602)
+            else:
+                success, message = get_ssh_manager().simple_connect(server_name)
+                if success:
+                    response = create_success_response(request_id, message)
+                else:
+                    response = create_error_response(request_id, message, -32000)
+
+        elif method == "run_command":
+            cmd = params.get("cmd")
+            cwd = params.get("cwd")
+            timeout = params.get("timeout", 30)
+            output, success = run_command(cmd, cwd, timeout)
+            response = create_success_response(request_id, output) if success else create_error_response(request_id, output)
+
         else:
             response = create_error_response(request_id, f"Unknown method: {method}", -32601)
             

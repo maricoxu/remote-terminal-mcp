@@ -2131,3 +2131,41 @@ class SSHManager:
             
         except Exception as e:
             return False, f"双层Jump host连接失败: {str(e)}"
+
+    def simple_connect(self, server_name: str) -> Tuple[bool, str]:
+        """
+        一个更简单、更直接的连接方法，绕过复杂的验证。
+        """
+        server = self.get_server(server_name)
+        if not server:
+            return False, f"Server {server_name} not found."
+
+        session_name = server.session.get('name', f"{server_name}_session") if server.session else f"{server_name}_session"
+        connection_tool = server.specs.get('connection', {}).get('tool', 'ssh') if server.specs else 'ssh'
+
+        try:
+            # 1. 清理旧会话
+            subprocess.run(['tmux', 'kill-session', '-t', session_name], capture_output=True)
+            log_output(f"🧹 Cleared old session (if any): {session_name}")
+            time.sleep(1)
+
+            # 2. 创建新会话并直接启动连接工具
+            # 注意：我们把工具直接作为命令传递给新会话
+            create_cmd = ['tmux', 'new-session', '-d', '-s', session_name, connection_tool]
+            debug_log_cmd(create_cmd, f"Creating new session and running {connection_tool}")
+            result = subprocess.run(create_cmd, check=True, capture_output=True, text=True)
+            
+            log_output(f"🚀 Session {session_name} created and {connection_tool} is starting.")
+            log_output("⏳ Please wait a few seconds for the tool to initialize...")
+            
+            # 3. 提供附加命令给用户
+            # 我们不再自动附加，而是告诉用户如何附加，这更可靠
+            attach_command = f"tmux attach-session -t {session_name}"
+            log_output(f"✅ Connection process started. To attach, run: \\n\\n    {attach_command}\\n")
+
+            return True, f"Connection process for {session_name} started. Please attach manually using: {attach_command}"
+
+        except subprocess.CalledProcessError as e:
+            return False, f"Failed to create tmux session for {session_name}: {e.stderr}"
+        except Exception as e:
+            return False, f"An unexpected error occurred during simple_connect: {str(e)}"
