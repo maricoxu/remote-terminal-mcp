@@ -12,13 +12,11 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 function initialize(log) {
-    log('--- Node.js Supervisor/Worker Initializing (v0.4.6) ---');
+    log('--- Node.js Supervisor/Worker Initializing ---');
 
     function startWorker() {
         const pythonScriptPath = path.resolve(__dirname, 'python', 'mcp_server.py');
-        log(`Resolved Python script path: ${pythonScriptPath}`);
-        
-        log('Attempting to start Python worker process...');
+        log(`Attempting to start Python worker at: ${pythonScriptPath}`);
         
         const pythonProcess = spawn('python3', [
             '-u', // Unbuffered stdout/stderr
@@ -33,17 +31,17 @@ function initialize(log) {
         process.stdin.pipe(pythonProcess.stdin);
         pythonProcess.stdout.pipe(process.stdout);
         pythonProcess.stderr.on('data', (data) => {
-            log(`WORKER STDERR: ${data.toString().trim()}`);
+            log(`[Python stderr] ${data.toString().trim()}`);
         });
 
         const onProcessExit = (code, signal) => {
-            log(`Worker process exited. Code: ${code}, Signal: ${signal}. Supervisor will exit.`);
+            log(`Python worker exited. Code: ${code}, Signal: ${signal}. Supervisor will exit.`);
             process.exit(code === null ? 1 : code);
         };
         
         pythonProcess.on('close', onProcessExit);
         pythonProcess.on('error', (err) => {
-            log(`FATAL: Failed to start worker process. Error: ${err.message}`);
+            log(`FATAL: Failed to start Python worker. Error: ${err.message}`);
             process.exit(1);
         });
 
@@ -52,13 +50,13 @@ function initialize(log) {
              pythonProcess.kill();
         });
 
-        log('Supervisor is now proxying I/O to the worker process.');
+        log('Supervisor is now proxying I/O to the Python worker.');
     }
 
     try {
         startWorker();
     } catch (e) {
-        log(`FATAL: An unhandled error occurred in the supervisor. ${e.message}`);
+        log(`FATAL: An unhandled error occurred during worker startup. ${e.message}`);
         process.exit(1);
     }
 }
