@@ -268,6 +268,21 @@ async def main():
     )
     writer = asyncio.StreamWriter(writer_transport, writer_protocol, None, loop)
 
+    # 发送一个 "server_ready" 通知，这可能是某些客户端需要的
+    try:
+        ready_notification = {
+            "jsonrpc": "2.0",
+            "method": "server_ready",
+            "params": {}
+        }
+        body = json.dumps(ready_notification)
+        message = f"Content-Length: {len(body)}\r\n\r\n{body}"
+        writer.write(message.encode('utf-8'))
+        await writer.drain()
+        debug_log("Sent server_ready notification.")
+    except Exception as e:
+        debug_log(f"Failed to send server_ready notification: {e}")
+
     debug_log("Entering main while-loop to process messages.")
     while True:
         try:
