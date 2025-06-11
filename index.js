@@ -27,7 +27,7 @@ function initialize(logStream) {
         supervisorLog('SUPERVISOR STDIN CLOSED. Worker will be terminated.');
     });
 
-    const pythonScriptPath = path.resolve(__dirname, '..', 'python', 'mcp_server.py');
+    const pythonScriptPath = path.resolve(__dirname, 'python', 'mcp_server.py');
     supervisorLog(`Resolved Python script path: ${pythonScriptPath}`);
 
     const startWorker = () => {
