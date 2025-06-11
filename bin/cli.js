@@ -5,7 +5,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 
 // --- Supervisor Logger ---
-const logFile = path.join(process.cwd(), 'supervisor-debug.log');
+const logFile = path.join(process.cwd(), 'supervisor-v0.4.14-debug.log');
 fs.writeFileSync(logFile, `[${new Date().toISOString()}] Supervisor starting.\n`);
 const log = (msg) => fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`);
 // --- End Logger ---

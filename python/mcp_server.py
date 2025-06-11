@@ -14,7 +14,7 @@ from pathlib import Path
 from datetime import datetime
 
 # -- Robust Startup Logger --
-PY_LOG_FILE = os.path.join(os.getcwd(), 'python-startup-debug.log')
+PY_LOG_FILE = os.path.join(os.getcwd(), 'python-startup-v0.4.14-debug.log')
 def startup_log(msg):
     """A simple, robust logger that writes to a file immediately."""
     with open(PY_LOG_FILE, 'a') as f:
