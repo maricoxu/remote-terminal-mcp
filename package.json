@@ -11,7 +11,7 @@
     "test": "node test.js",
     "build": "echo 'No build step needed for this package'",
     "postinstall": "node scripts/post-install.js",
-    "prepublishOnly": "npm test"
+    "prepublishOnly": "chmod +x bin/cli.js && npm test"
   },
   "keywords": [
     "mcp",
