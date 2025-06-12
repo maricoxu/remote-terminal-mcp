@@ -15,7 +15,7 @@ from datetime import datetime
 
 # 服务器信息
 SERVER_NAME = "remote-terminal-mcp"
-SERVER_VERSION = "0.4.44"
+SERVER_VERSION = "0.4.45"
 
 # 设置安静模式，防止SSH Manager显示启动摘要
 os.environ['MCP_QUIET'] = '1'
@@ -260,6 +260,16 @@ async def handle_request(request):
             timeout = params.get("timeout", 30)
             output, success = run_command(cmd, cwd, timeout)
             response = create_success_response(request_id, output) if success else create_error_response(request_id, -32603, output)
+
+        elif method == "ListOfferings":
+            debug_log("Handling 'ListOfferings' request.")
+            return {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {
+                    "offerings": []
+                }
+            }
 
         else:
             response = create_error_response(request_id, -32601, f"Unknown method: {method}")
