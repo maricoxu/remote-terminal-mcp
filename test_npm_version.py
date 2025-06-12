@@ -222,7 +222,7 @@ class NPMVersionTester:
             self.process.wait()
 
 def main():
-    tester = NPMVersionTester("0.5.0")
+    tester = NPMVersionTester("0.5.1")
     
     try:
         if tester.start_service():
