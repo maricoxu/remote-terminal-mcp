@@ -30,7 +30,7 @@ class NPMVersionTester:
         try:
             # 使用npx启动服务，就像Cursor一样
             self.process = subprocess.Popen(
-                ["npx", "-y", self.package_name],
+                ["npx", "-y", "-p", self.package_name, "node", "bin/cli.js"],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -222,7 +222,7 @@ class NPMVersionTester:
             self.process.wait()
 
 def main():
-    tester = NPMVersionTester("0.5.1")
+    tester = NPMVersionTester("0.5.2")
     
     try:
         if tester.start_service():
