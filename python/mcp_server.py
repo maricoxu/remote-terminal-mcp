@@ -15,7 +15,7 @@ from datetime import datetime
 
 # 服务器信息
 SERVER_NAME = "remote-terminal-mcp"
-SERVER_VERSION = "0.4.46"
+SERVER_VERSION = "0.4.47"
 
 # 设置安静模式，防止SSH Manager显示启动摘要
 os.environ['MCP_QUIET'] = '1'
@@ -299,28 +299,15 @@ async def main():
     protocol = asyncio.StreamReaderProtocol(reader)
     await loop.connect_read_pipe(lambda: protocol, sys.stdin)
 
-    # 2. 设置异步写入器 (stdout) - 这是架构正确的做法
+    # 2. 设置异步写入器 (stdout)
     writer_transport, writer_protocol = await loop.connect_write_pipe(
         lambda: asyncio.streams.FlowControlMixin(loop=loop), sys.stdout
     )
     writer = asyncio.StreamWriter(writer_transport, writer_protocol, None, loop)
 
-    # 发送一个 "server_ready" 通知，这可能是某些客户端需要的
-    try:
-        ready_notification = {
-            "jsonrpc": "2.0",
-            "method": "server_ready",
-            "params": {}
-        }
-        body = json.dumps(ready_notification)
-        # 协议修复：客户端期望的是以换行符分隔的原始JSON
-        message = f"{body}\\n"
-        writer.write(message.encode('utf-8'))
-        await writer.drain()
-        debug_log("Sent server_ready notification.")
-    except Exception as e:
-        debug_log(f"Failed to send server_ready notification: {e}")
-
+    # 关键修复：移除所有非标准的初始通知，严格遵循LSP时序
+    # 客户端发送initialize后，必须首先收到initialize的响应
+    
     debug_log("Entering main while-loop to process messages.")
     while True:
         try:
