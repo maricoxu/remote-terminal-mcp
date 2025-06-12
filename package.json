@@ -4,7 +4,7 @@
   "description": "A remote terminal MCP for Cursor",
   "main": "index.js",
   "bin": {
-    "remote-terminal-mcp": "bin/cli.js"
+    "remote-terminal-mcp": "bin/remote-terminal-mcp"
   },
   "files": [
     "index.js",
