@@ -15,7 +15,7 @@ from datetime import datetime
 
 # 服务器信息
 SERVER_NAME = "remote-terminal-mcp"
-SERVER_VERSION = "0.4.45"
+SERVER_VERSION = "0.4.46"
 
 # 设置安静模式，防止SSH Manager显示启动摘要
 os.environ['MCP_QUIET'] = '1'
@@ -169,7 +169,10 @@ async def handle_request(request):
         return None
 
     try:
-        if method == "initialize":
+        # Normalize method name to be case-insensitive
+        method_lower = method.lower()
+
+        if method_lower == "initialize":
             debug_log("Handling 'initialize' request.")
             
             # Per LSP spec, the server responds with its capabilities.
@@ -206,11 +209,11 @@ async def handle_request(request):
             }
             return response
         
-        elif method == "shutdown":
+        elif method_lower == "shutdown":
             debug_log("Handling 'shutdown' request.")
             response = { "jsonrpc": "2.0", "id": request_id, "result": {} }
         
-        elif method == "tools/list":
+        elif method_lower == "tools/list":
             debug_log("Handling 'tools/list' request.")
             tools = SSHManager().list_tools()
             response = {
@@ -219,7 +222,7 @@ async def handle_request(request):
                 "result": { "tools": tools }
             }
 
-        elif method == "tools/execute":
+        elif method_lower == "tools/execute":
             tool_name = params.get("name")
             tool_input = params.get("input", {})
             debug_log(f"Executing tool '{tool_name}' with input: {tool_input}")
@@ -235,7 +238,7 @@ async def handle_request(request):
                     debug_log(f"Tool execution error: {e}\\n{traceback.format_exc()}")
                     response = create_error_response(request_id, -32603, f"Error executing tool '{tool_name}': {e}")
 
-        elif method == "list_sessions":
+        elif method_lower == "list_sessions":
             sessions = SSHManager().list_sessions()
             response = {
                 "jsonrpc": "2.0",
@@ -243,7 +246,7 @@ async def handle_request(request):
                 "result": { "sessions": sessions }
             }
 
-        elif method == "connect_server":
+        elif method_lower == "connect_server":
             server_name = params.get("server_name")
             if not server_name:
                 response = create_error_response(request_id, -32602, "Missing parameter: server_name")
@@ -254,15 +257,15 @@ async def handle_request(request):
                 else:
                     response = create_error_response(request_id, -32000, message)
 
-        elif method == "run_command":
+        elif method_lower == "run_command":
             cmd = params.get("cmd")
             cwd = params.get("cwd")
             timeout = params.get("timeout", 30)
             output, success = run_command(cmd, cwd, timeout)
             response = create_success_response(request_id, output) if success else create_error_response(request_id, -32603, output)
 
-        elif method == "ListOfferings":
-            debug_log("Handling 'ListOfferings' request.")
+        elif method_lower == "listofferings":
+            debug_log("Handling 'listOfferings' request.")
             return {
                 "jsonrpc": "2.0",
                 "id": request_id,
