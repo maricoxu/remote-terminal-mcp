@@ -5,5 +5,7 @@
  * 这是NPM包的入口点
  */
 
-// 直接使用cli.js，它已经包含了完整的启动逻辑
-require('./cli.js');
+const path = require('path');
+
+// 使用绝对路径来引用cli.js
+require(path.join(__dirname, 'cli.js'));
