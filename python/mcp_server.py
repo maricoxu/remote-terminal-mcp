@@ -90,7 +90,12 @@ def create_tools_list():
     return [
         {
             "name": "list_servers",
-            "description": "List all available remote servers configured in the system"
+            "description": "List all available remote servers configured in the system",
+            "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
         },
         {
             "name": "connect_server", 
@@ -134,7 +139,8 @@ def create_tools_list():
                         "type": "string", 
                         "description": "Server name (optional, gets all if not specified)"
                     }
-                }
+                },
+                "required": []
             }
         },
         {
@@ -181,7 +187,12 @@ async def handle_request(request):
     
     debug_log(f"Received request: method='{method}', id='{request_id}'")
     
+    # 处理通知（没有id的请求）
     if request_id is None:
+        if method.lower() == "initialized":
+            debug_log("Received 'initialized' notification - handshake complete")
+            return None
+        # 其他通知也直接返回None（不需要响应）
         return None
 
     try:
@@ -191,18 +202,26 @@ async def handle_request(request):
         if method_lower == "initialize":
             debug_log("Handling 'initialize' request.")
             
+            # 完全符合LSP和MCP规范的capabilities
             server_capabilities = {
-                "tools": True,
-                "prompts": True,
-                "resources": {
+                "tools": {
                     "listChanged": True
-                }
+                },
+                "resources": {
+                    "subscribe": True,
+                    "listChanged": True
+                },
+                "prompts": {
+                    "listChanged": True
+                },
+                "sampling": {}
             }
             
             response = {
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "result": {
+                    "protocolVersion": "2024-11-05",
                     "capabilities": server_capabilities,
                     "serverInfo": {
                         "name": SERVER_NAME,
@@ -224,6 +243,17 @@ async def handle_request(request):
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "result": { "tools": tools }
+            }
+            return response
+
+        elif method_lower == "listofferings":
+            debug_log("Handling 'ListOfferings' request.")
+            response = {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {
+                    "offerings": []
+                }
             }
             return response
 

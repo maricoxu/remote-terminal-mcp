@@ -15,7 +15,7 @@ function initialize(log) {
     log('--- Node.js Supervisor/Worker Initializing ---');
 
     function startWorker() {
-        const pythonScriptPath = path.resolve(__dirname, 'python', 'mcp_server_fixed.py');
+        const pythonScriptPath = path.resolve(__dirname, 'python', 'mcp_server.py');
         log(`Attempting to start Python worker at: ${pythonScriptPath}`);
         
         const pythonProcess = spawn('python3', [
