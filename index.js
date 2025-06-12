@@ -15,7 +15,7 @@ function initialize(log) {
     log('--- Node.js Supervisor/Worker Initializing ---');
 
     function startWorker() {
-        const pythonScriptPath = path.resolve(__dirname, 'python', 'mcp_server.py');
+        const pythonScriptPath = path.resolve(__dirname, 'python', 'mcp_server_fixed.py');
         log(`Attempting to start Python worker at: ${pythonScriptPath}`);
         
         const pythonProcess = spawn('python3', [
@@ -23,7 +23,7 @@ function initialize(log) {
             pythonScriptPath
         ], {
             stdio: 'pipe',
-            env: { ...process.env }
+            env: { ...process.env, MCP_DEBUG: '1' }
         });
 
         log(`Spawned Python process with PID: ${pythonProcess.pid || 'N/A'}`);

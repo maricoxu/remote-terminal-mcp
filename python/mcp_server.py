@@ -9,13 +9,14 @@ import asyncio
 import json
 import sys
 import os
+import subprocess
 import traceback
 from pathlib import Path
 from datetime import datetime
 
 # 服务器信息
 SERVER_NAME = "remote-terminal-mcp"
-SERVER_VERSION = "0.4.47"
+SERVER_VERSION = "0.4.47-cursor-compatible"
 
 # 设置安静模式，防止SSH Manager显示启动摘要
 os.environ['MCP_QUIET'] = '1'
@@ -24,7 +25,7 @@ os.environ['MCP_QUIET'] = '1'
 try:
     from ssh_manager import SSHManager
 except Exception as e:
-    print(f"FATAL: Failed to import SSHManager. Error: {e}\\n{traceback.format_exc()}")
+    print(f"FATAL: Failed to import SSHManager. Error: {e}\n{traceback.format_exc()}")
     sys.exit(1)
 
 # 调试模式
@@ -84,78 +85,93 @@ def run_command(cmd, cwd=None, timeout=30):
     except Exception as e:
         return f"Command execution failed: {str(e)}", False
 
-def list_tmux_sessions():
-    """列出tmux会话"""
-    try:
-        result = subprocess.run(
-            ['tmux', 'list-sessions'], 
-            capture_output=True, 
-            text=True
-        )
-        
-        if result.returncode == 0:
-            sessions = []
-            for line in result.stdout.strip().split('\n'):
-                if line.strip():
-                    sessions.append(line)
-            
-            if sessions:
-                return "Current tmux sessions:\n" + '\n'.join(f"  • {session}" for session in sessions)
-            else:
-                return "No active tmux sessions"
-        else:
-            return "Cannot access tmux (not installed or not running)"
-            
-    except FileNotFoundError:
-        return "tmux not installed"
-    except Exception as e:
-        return f"Failed to list tmux sessions: {str(e)}"
-
-def check_system_info():
-    """检查系统信息"""
-    info = []
-    
-    # 操作系统信息
-    try:
-        import platform
-        info.append(f"System: {platform.system()} {platform.release()}")
-        info.append(f"Hostname: {platform.node()}")
-        info.append(f"Architecture: {platform.machine()}")
-    except Exception as e:
-        info.append(f"Cannot get system info: {e}")
-    
-    # 当前目录
-    try:
-        cwd = os.getcwd()
-        info.append(f"Current directory: {cwd}")
-    except Exception as e:
-        info.append(f"Cannot get current directory: {e}")
-    
-    # 用户信息
-    try:
-        import getpass
-        user = getpass.getuser()
-        info.append(f"Current user: {user}")
-    except Exception as e:
-        info.append(f"Cannot get user info: {e}")
-    
-    return "\n".join(info)
+def create_tools_list():
+    """创建工具列表，基于SSH Manager的实际功能"""
+    return [
+        {
+            "name": "list_servers",
+            "description": "List all available remote servers configured in the system"
+        },
+        {
+            "name": "connect_server", 
+            "description": "Connect to a remote server by name",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "server_name": {
+                        "type": "string",
+                        "description": "Name of the server to connect to"
+                    }
+                },
+                "required": ["server_name"]
+            }
+        },
+        {
+            "name": "execute_command",
+            "description": "Execute a command on a server",
+            "inputSchema": {
+                "type": "object", 
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": "Command to execute"
+                    },
+                    "server": {
+                        "type": "string",
+                        "description": "Server name (optional, uses default if not specified)"
+                    }
+                },
+                "required": ["command"]
+            }
+        },
+        {
+            "name": "get_server_status",
+            "description": "Get connection status of servers",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "server_name": {
+                        "type": "string", 
+                        "description": "Server name (optional, gets all if not specified)"
+                    }
+                }
+            }
+        },
+        {
+            "name": "run_local_command",
+            "description": "Execute a command on the local system",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "cmd": {
+                        "type": "string",
+                        "description": "Command to execute locally"
+                    },
+                    "cwd": {
+                        "type": "string",
+                        "description": "Working directory (optional)"
+                    },
+                    "timeout": {
+                        "type": "number",
+                        "description": "Timeout in seconds (default: 30)"
+                    }
+                },
+                "required": ["cmd"]
+            }
+        }
+    ]
 
 def send_response(response_obj):
-    """Sends a JSON-RPC response object to stdout."""
+    """发送纯JSON响应（兼容Cursor）"""
     try:
         message_str = json.dumps(response_obj)
-        header = f"Content-Length: {len(message_str)}\\r\\n\\r\\n"
-        
-        # Ensure all parts are sent to stdout
-        sys.stdout.write(header)
-        sys.stdout.write(message_str)
+        # 直接输出JSON，不使用Content-Length头部
+        sys.stdout.write(message_str + '\n')
         sys.stdout.flush()
-        debug_log(f"Sent response for ID {response_obj.get('id')}")
+        debug_log(f"Sent JSON response for ID {response_obj.get('id')}")
     except BrokenPipeError:
-        # Parent process has likely exited, cannot send response.
         debug_log("Failed to send response: Broken pipe. Parent process likely exited.")
-        pass # Ignore error as we are likely shutting down
+        pass
 
 async def handle_request(request):
     """处理MCP请求"""
@@ -175,20 +191,7 @@ async def handle_request(request):
         if method_lower == "initialize":
             debug_log("Handling 'initialize' request.")
             
-            # Per LSP spec, the server responds with its capabilities.
-            # The most critical part is textDocumentSync, which tells the client
-            # how we want to be notified of file changes. Without this, the
-            # client assumes we can't handle files and disconnects.
-            
-            # TextDocumentSyncKind.Full (1) means the client will send the
-            # entire file content on each change.
             server_capabilities = {
-                "textDocumentSync": {
-                    "openClose": True,
-                    "change": 1,  # 1 means Full sync
-                },
-                # We can keep our custom capabilities, but they are not part
-                # of the core LSP handshake resolution.
                 "tools": True,
                 "prompts": True,
                 "resources": {
@@ -212,81 +215,102 @@ async def handle_request(request):
         elif method_lower == "shutdown":
             debug_log("Handling 'shutdown' request.")
             response = { "jsonrpc": "2.0", "id": request_id, "result": {} }
+            return response
         
         elif method_lower == "tools/list":
             debug_log("Handling 'tools/list' request.")
-            tools = SSHManager().list_tools()
+            tools = create_tools_list()
             response = {
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "result": { "tools": tools }
             }
+            return response
 
-        elif method_lower == "tools/execute":
+        elif method_lower == "tools/call":
             tool_name = params.get("name")
-            tool_input = params.get("input", {})
-            debug_log(f"Executing tool '{tool_name}' with input: {tool_input}")
+            tool_arguments = params.get("arguments", {})
+            debug_log(f"Executing tool '{tool_name}' with arguments: {tool_arguments}")
             
-            manager = SSHManager()
-            if not manager:
-                response = create_error_response(request_id, -32000, "SSH Manager is not available.")
-            else:
-                try:
-                    content = manager.execute_tool(tool_name, tool_input)
-                    response = create_success_response(request_id, content)
-                except Exception as e:
-                    debug_log(f"Tool execution error: {e}\\n{traceback.format_exc()}")
-                    response = create_error_response(request_id, -32603, f"Error executing tool '{tool_name}': {e}")
-
-        elif method_lower == "list_sessions":
-            sessions = SSHManager().list_sessions()
-            response = {
-                "jsonrpc": "2.0",
-                "id": request_id,
-                "result": { "sessions": sessions }
-            }
-
-        elif method_lower == "connect_server":
-            server_name = params.get("server_name")
-            if not server_name:
-                response = create_error_response(request_id, -32602, "Missing parameter: server_name")
-            else:
-                success, message = SSHManager().simple_connect(server_name)
-                if success:
-                    response = create_success_response(request_id, message)
+            try:
+                manager = SSHManager()
+                content = ""
+                
+                if tool_name == "list_servers":
+                    servers = manager.list_servers()
+                    simple_servers = []
+                    for server in servers:
+                        simple_servers.append({
+                            'name': server.get('name', ''),
+                            'description': server.get('description', ''),
+                            'connected': server.get('connected', False),
+                            'type': server.get('type', '')
+                        })
+                    content = json.dumps(simple_servers, ensure_ascii=False, indent=2)
+                    
+                elif tool_name == "connect_server":
+                    server_name = tool_arguments.get("server_name")
+                    if server_name:
+                        success, message = manager.simple_connect(server_name)
+                        content = message
+                    else:
+                        content = "Error: server_name parameter is required"
+                        
+                elif tool_name == "execute_command":
+                    command = tool_arguments.get("command")
+                    server = tool_arguments.get("server")
+                    if command:
+                        result = manager.execute_command(command, server)
+                        content = str(result)
+                    else:
+                        content = "Error: command parameter is required"
+                        
+                elif tool_name == "get_server_status":
+                    server_name = tool_arguments.get("server_name")
+                    status = manager.get_server_status(server_name)
+                    content = str(status)
+                    
+                elif tool_name == "run_local_command":
+                    cmd = tool_arguments.get("cmd")
+                    cwd = tool_arguments.get("cwd")
+                    timeout = tool_arguments.get("timeout", 30)
+                    if cmd:
+                        output, success = run_command(cmd, cwd, timeout)
+                        content = output
+                    else:
+                        content = "Error: cmd parameter is required"
+                    
                 else:
-                    response = create_error_response(request_id, -32000, message)
-
-        elif method_lower == "run_command":
-            cmd = params.get("cmd")
-            cwd = params.get("cwd")
-            timeout = params.get("timeout", 30)
-            output, success = run_command(cmd, cwd, timeout)
-            response = create_success_response(request_id, output) if success else create_error_response(request_id, -32603, output)
-
-        elif method_lower == "listofferings":
-            debug_log("Handling 'listOfferings' request.")
-            return {
-                "jsonrpc": "2.0",
-                "id": request_id,
-                "result": {
-                    "offerings": []
+                    content = f"Unknown tool: {tool_name}"
+                
+                response = {
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": content
+                            }
+                        ]
+                    }
                 }
-            }
+                
+            except Exception as e:
+                debug_log(f"Tool execution error: {e}\n{traceback.format_exc()}")
+                response = create_error_response(request_id, -32603, f"Error executing tool '{tool_name}': {e}")
+            
+            return response
 
         else:
             response = create_error_response(request_id, -32601, f"Unknown method: {method}")
+            return response
             
     except Exception as e:
         error_msg = f"An unexpected error occurred: {e}"
-        debug_log(f"{error_msg}\\n{traceback.format_exc()}")
+        debug_log(f"{error_msg}\n{traceback.format_exc()}")
         response = create_error_response(request_id, -32603, error_msg)
-
-    if response:
-        debug_log(f"Sent response for ID {request.get('id')}")
-        # The main loop now handles sending the response
         return response
-    return None
 
 async def main():
     """主事件循环"""
@@ -299,15 +323,6 @@ async def main():
     protocol = asyncio.StreamReaderProtocol(reader)
     await loop.connect_read_pipe(lambda: protocol, sys.stdin)
 
-    # 2. 设置异步写入器 (stdout)
-    writer_transport, writer_protocol = await loop.connect_write_pipe(
-        lambda: asyncio.streams.FlowControlMixin(loop=loop), sys.stdout
-    )
-    writer = asyncio.StreamWriter(writer_transport, writer_protocol, None, loop)
-
-    # 关键修复：移除所有非标准的初始通知，严格遵循LSP时序
-    # 客户端发送initialize后，必须首先收到initialize的响应
-    
     debug_log("Entering main while-loop to process messages.")
     while True:
         try:
@@ -326,13 +341,8 @@ async def main():
                 response = await handle_request(request)
                 
                 if response:
-                    response_body = json.dumps(response)
-                    response_message = f"{response_body}\\n"
-                    
-                    writer.write(response_message.encode('utf-8'))
-                    await writer.drain()
-                    # 重新加入这条至关重要的日志，以确认响应已发送
-                    debug_log(f"Sent response for ID {response.get('id')}")
+                    # 发送纯JSON响应
+                    send_response(response)
 
             except json.JSONDecodeError as e:
                 debug_log(f"JSON Decode Error: {e}. Body was: '{line}'")

@@ -3,19 +3,25 @@
 const fs = require('fs');
 const path = require('path');
 
-// This script runs after the package is installed.
-// Its purpose is to ensure the main CLI script is executable,
-// which is the root cause of the "Permission denied" error.
+// This script is executed after the package is installed.
+// Its purpose is to programmatically ensure that our CLI entry point
+// has the necessary execute permissions. This is a robust way to
+// solve "Permission denied" errors that can occur when npm/npx
+// fail to properly set the executable bit during installation.
 
-const cliScriptPath = path.resolve(__dirname, '..', 'bin', 'cli.js');
+const cliScriptPath = path.join(__dirname, '..', 'bin', 'cli.js');
 
 try {
-    // Set permission to rwxr-xr-x (755)
-    fs.chmodSync(cliScriptPath, '755');
-    // We can't rely on file logging, but a console log might appear in install logs.
-    console.log(`[postinstall] Successfully set executable permission on ${cliScriptPath}`);
-} catch (err) {
-    console.error(`[postinstall] Failed to set executable permission on ${cliScriptPath}:`, err);
-    // If this fails, the install will likely still succeed, but the error
-    // will be logged, and the "Permission denied" issue will persist.
+  // Set permissions to rwxr-xr-x (755)
+  fs.chmodSync(cliScriptPath, 0o755);
+  // We don't log on success to keep installation clean,
+  // but you could add a console.log here for debugging.
+} catch (error) {
+  // If we fail, log the error clearly. This is critical for debugging.
+  console.error(
+    `[postinstall.js] FATAL: Failed to set execute permission on ${cliScriptPath}`
+  );
+  console.error(error);
+  // Exit with a non-zero code to indicate failure.
+  process.exit(1);
 } 

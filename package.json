@@ -1,16 +1,25 @@
 {
   "name": "@xuyehua/remote-terminal-mcp",
-  "version": "0.4.46",
-  "description": "Remote Terminal MCP Server - 智能script-based连接系统，完整集成connect_cpu_221.sh逻辑",
+  "version": "0.4.57",
+  "description": "A remote terminal MCP for Cursor",
   "main": "index.js",
   "bin": {
     "remote-terminal-mcp": "bin/cli.js"
   },
+  "files": [
+    "index.js",
+    "python/",
+    "bin/",
+    "config/",
+    "templates/",
+    "scripts/",
+    "requirements.txt",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "start": "node index.js",
     "test": "node test.js",
-    "build": "echo 'No build step needed for this package'",
-    "prepublishOnly": "npm test",
     "postinstall": "node scripts/postinstall.js"
   },
   "keywords": [
@@ -37,18 +46,6 @@
   "engines": {
     "node": ">=14.0.0"
   },
-  "files": [
-    "index.js",
-    "bin/",
-    "python/",
-    "config/",
-    "templates/",
-    "scripts/",
-    "ssh_manager.py",
-    "requirements.txt",
-    "README.md",
-    "LICENSE"
-  ],
   "publishConfig": {
     "access": "public"
   },
