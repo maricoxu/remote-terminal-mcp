@@ -1,10 +1,12 @@
 {
   "name": "@xuyehua/remote-terminal-mcp",
-  "version": "0.5.4",
+  "version": "0.6.4",
   "description": "A remote terminal MCP for Cursor",
   "main": "index.js",
   "bin": {
-    "remote-terminal-mcp": "bin/remote-terminal-mcp"
+    "remote-terminal-mcp": "./bin/remote-terminal-mcp",
+    "mcp-server-remote-terminal": "./bin/remote-terminal-mcp",
+    "remote-mcp": "./bin/remote-terminal-mcp"
   },
   "files": [
     "index.js",

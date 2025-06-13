@@ -2,10 +2,61 @@
 
 /**
  * Remote Terminal MCP 可执行文件
- * 这是NPM包的入口点
+ * 这是NPM包的入口点 - 修复版本
  */
 
 const path = require('path');
+const fs = require('fs');
 
-// 使用绝对路径来引用cli.js
-require(path.join(__dirname, 'cli.js'));
+// 创建调试日志函数
+function debugLog(message) {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] [bin/remote-terminal-mcp] ${message}`;
+    console.error(logMessage);
+}
+
+debugLog('=== NPM Bin Entry Point Starting ===');
+debugLog(`Process ID: ${process.pid}`);
+debugLog(`Working directory: ${process.cwd()}`);
+debugLog(`Script directory: ${__dirname}`);
+debugLog(`Script filename: ${__filename}`);
+
+// 尝试多种路径解析策略
+const possiblePaths = [
+    // 策略1: 相对于当前bin目录
+    path.join(__dirname, 'cli.js'),
+    // 策略2: 相对于包根目录
+    path.join(__dirname, '..', 'bin', 'cli.js'),
+    // 策略3: 直接使用index.js
+    path.join(__dirname, '..', 'index.js')
+];
+
+let foundPath = null;
+for (const testPath of possiblePaths) {
+    debugLog(`Testing path: ${testPath}`);
+    if (fs.existsSync(testPath)) {
+        foundPath = testPath;
+        debugLog(`✅ Found valid path: ${testPath}`);
+        break;
+    } else {
+        debugLog(`❌ Path not found: ${testPath}`);
+    }
+}
+
+if (!foundPath) {
+    debugLog('❌ FATAL: Could not find any valid entry point');
+    process.exit(1);
+}
+
+// 根据找到的路径类型执行不同逻辑
+if (foundPath.endsWith('cli.js')) {
+    debugLog('Using cli.js entry point');
+    require(foundPath);
+} else if (foundPath.endsWith('index.js')) {
+    debugLog('Using index.js entry point directly');
+    const { initialize } = require(foundPath);
+    initialize(debugLog);
+} else {
+    debugLog('❌ FATAL: Unknown entry point type');
+    process.exit(1);
+}
