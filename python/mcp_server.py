@@ -16,7 +16,7 @@ from datetime import datetime
 
 # 服务器信息
 SERVER_NAME = "remote-terminal-mcp"
-SERVER_VERSION = "0.4.47-cursor-compatible"
+SERVER_VERSION = "0.7.0-mcp-integrated-config"
 
 # 设置安静模式，防止SSH Manager显示启动摘要
 os.environ['MCP_QUIET'] = '1'
@@ -24,8 +24,9 @@ os.environ['MCP_QUIET'] = '1'
 # 延迟导入
 try:
     from ssh_manager import SSHManager
+    from mcp_config_manager import MCPConfigManager
 except Exception as e:
-    print(f"FATAL: Failed to import SSHManager. Error: {e}\n{traceback.format_exc()}")
+    print(f"FATAL: Failed to import required modules. Error: {e}\n{traceback.format_exc()}")
     sys.exit(1)
 
 # 调试模式
@@ -164,6 +165,144 @@ def create_tools_list():
                 },
                 "required": ["cmd"]
             }
+        },
+        # 新增配置管理工具
+        {
+            "name": "interactive_config_wizard",
+            "description": "Launch interactive configuration wizard to set up a new server. Supports SSH, Relay, and Docker server types with guided setup.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "server_type": {
+                        "type": "string",
+                        "enum": ["ssh", "relay", "docker", "custom"],
+                        "description": "Type of server to configure: ssh (direct SSH), relay (via relay-cli), docker (with Docker environment), custom (full configuration)"
+                    },
+                    "quick_mode": {
+                        "type": "boolean",
+                        "description": "Use quick configuration mode with smart defaults (default: true)",
+                        "default": True
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "manage_server_config",
+            "description": "Manage server configurations: view, edit, delete, test, import, or export server configurations",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": ["list", "view", "edit", "delete", "test", "export", "import"],
+                        "description": "Action to perform on server configurations"
+                    },
+                    "server_name": {
+                        "type": "string",
+                        "description": "Name of the server (required for view, edit, delete, test actions)"
+                    },
+                    "config_data": {
+                        "type": "object",
+                        "description": "Configuration data (for edit or import actions)"
+                    },
+                    "export_path": {
+                        "type": "string",
+                        "description": "Path to export configuration file (for export action)"
+                    },
+                    "import_path": {
+                        "type": "string",
+                        "description": "Path to import configuration file (for import action)"
+                    }
+                },
+                "required": ["action"]
+            }
+        },
+        {
+            "name": "create_server_config",
+            "description": "Create a new server configuration with detailed parameters. Alternative to interactive wizard for programmatic configuration.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Server name (unique identifier)"
+                    },
+                    "host": {
+                        "type": "string",
+                        "description": "Server hostname or IP address"
+                    },
+                    "username": {
+                        "type": "string",
+                        "description": "Username for SSH connection"
+                    },
+                    "port": {
+                        "type": "integer",
+                        "description": "SSH port (default: 22)",
+                        "default": 22
+                    },
+                    "connection_type": {
+                        "type": "string",
+                        "enum": ["ssh", "relay"],
+                        "description": "Connection type: ssh (direct) or relay (via relay-cli)",
+                        "default": "ssh"
+                    },
+                    "relay_target_host": {
+                        "type": "string",
+                        "description": "Target host when using relay connection"
+                    },
+                    "docker_enabled": {
+                        "type": "boolean",
+                        "description": "Enable Docker container support",
+                        "default": False
+                    },
+                    "docker_container": {
+                        "type": "string",
+                        "description": "Docker container name"
+                    },
+                    "docker_image": {
+                        "type": "string",
+                        "description": "Docker image for auto-creation"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Server description"
+                    },
+                    "bos_bucket": {
+                        "type": "string",
+                        "description": "BOS bucket path for file sync"
+                    },
+                    "tmux_session_prefix": {
+                        "type": "string",
+                        "description": "Tmux session name prefix"
+                    }
+                },
+                "required": ["name", "host", "username"]
+            }
+        },
+        {
+            "name": "diagnose_connection",
+            "description": "Diagnose connection issues and provide troubleshooting suggestions for a specific server",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "server_name": {
+                        "type": "string",
+                        "description": "Name of the server to diagnose"
+                    },
+                    "include_network_test": {
+                        "type": "boolean",
+                        "description": "Include network connectivity tests (ping, SSH)",
+                        "default": True
+                    },
+                    "include_config_validation": {
+                        "type": "boolean",
+                        "description": "Include configuration validation",
+                        "default": True
+                    }
+                },
+                "required": ["server_name"]
+            }
         }
     ]
 
@@ -264,6 +403,7 @@ async def handle_request(request):
             
             try:
                 manager = SSHManager()
+                config_manager = MCPConfigManager()
                 content = ""
                 
                 if tool_name == "list_servers":
@@ -309,6 +449,113 @@ async def handle_request(request):
                         content = output
                     else:
                         content = "Error: cmd parameter is required"
+                
+                # 新增配置管理工具处理
+                elif tool_name == "interactive_config_wizard":
+                    server_type = tool_arguments.get("server_type", "ssh")
+                    quick_mode = tool_arguments.get("quick_mode", True)
+                    
+                    try:
+                        result = config_manager.run_quick_setup_wizard(server_type)
+                        content = f"✅ 配置向导完成！\n\n{result}"
+                    except Exception as e:
+                        content = f"❌ 配置向导失败: {str(e)}"
+                
+                elif tool_name == "manage_server_config":
+                    action = tool_arguments.get("action")
+                    server_name = tool_arguments.get("server_name")
+                    config_data = tool_arguments.get("config_data")
+                    export_path = tool_arguments.get("export_path")
+                    import_path = tool_arguments.get("import_path")
+                    
+                    try:
+                        if action == "list":
+                            configs = config_manager.list_server_configs()
+                            content = json.dumps(configs, ensure_ascii=False, indent=2)
+                        elif action == "view":
+                            if not server_name:
+                                content = "Error: server_name is required for view action"
+                            else:
+                                config = config_manager.get_server_config(server_name)
+                                content = json.dumps(config, ensure_ascii=False, indent=2)
+                        elif action == "edit":
+                            if not server_name:
+                                content = "Error: server_name is required for edit action"
+                            else:
+                                result = config_manager.update_server_config(server_name, config_data or {})
+                                content = f"✅ 配置已更新: {result}"
+                        elif action == "delete":
+                            if not server_name:
+                                content = "Error: server_name is required for delete action"
+                            else:
+                                result = config_manager.delete_server_config(server_name)
+                                content = f"✅ 配置已删除: {result}"
+                        elif action == "test":
+                            if not server_name:
+                                content = "Error: server_name is required for test action"
+                            else:
+                                result = config_manager.test_server_connection(server_name)
+                                content = f"🔍 连接测试结果:\n{result}"
+                        elif action == "export":
+                            result = config_manager.export_configs(export_path)
+                            content = f"📤 配置已导出: {result}"
+                        elif action == "import":
+                            if not import_path:
+                                content = "Error: import_path is required for import action"
+                            else:
+                                result = config_manager.import_configs(import_path)
+                                content = f"📥 配置已导入: {result}"
+                        else:
+                            content = f"Error: Unknown action '{action}'"
+                    except Exception as e:
+                        content = f"❌ 配置管理操作失败: {str(e)}"
+                
+                elif tool_name == "create_server_config":
+                    try:
+                        # 提取所有配置参数
+                        config_data = {
+                            'name': tool_arguments.get('name'),
+                            'host': tool_arguments.get('host'),
+                            'username': tool_arguments.get('username'),
+                            'port': tool_arguments.get('port', 22),
+                            'connection_type': tool_arguments.get('connection_type', 'ssh'),
+                            'relay_target_host': tool_arguments.get('relay_target_host'),
+                            'docker_enabled': tool_arguments.get('docker_enabled', False),
+                            'docker_container': tool_arguments.get('docker_container'),
+                            'docker_image': tool_arguments.get('docker_image'),
+                            'description': tool_arguments.get('description'),
+                            'bos_bucket': tool_arguments.get('bos_bucket'),
+                            'tmux_session_prefix': tool_arguments.get('tmux_session_prefix')
+                        }
+                        
+                        # 移除None值
+                        config_data = {k: v for k, v in config_data.items() if v is not None}
+                        
+                        if not all([config_data.get('name'), config_data.get('host'), config_data.get('username')]):
+                            content = "Error: name, host, and username are required parameters"
+                        else:
+                            result = config_manager.create_server_config(config_data)
+                            content = f"✅ 服务器配置已创建: {result}"
+                    except Exception as e:
+                        content = f"❌ 创建配置失败: {str(e)}"
+                
+                elif tool_name == "diagnose_connection":
+                    server_name = tool_arguments.get("server_name")
+                    include_network_test = tool_arguments.get("include_network_test", True)
+                    include_config_validation = tool_arguments.get("include_config_validation", True)
+                    
+                    if not server_name:
+                        content = "Error: server_name is required for diagnosis"
+                    else:
+                        try:
+                            result = config_manager.diagnose_connection_issues(
+                                server_name, 
+                                include_network_test, 
+                                include_config_validation
+                            )
+                            content = f"🔍 连接诊断结果:\n{result}"
+                        except Exception as e:
+                            content = f"❌ 连接诊断失败: {str(e)}"
                     
                 else:
                     content = f"Unknown tool: {tool_name}"

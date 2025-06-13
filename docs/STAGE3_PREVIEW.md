@@ -71,7 +71,7 @@ tools = {
         }
     },
     "configure_bos_storage": {
-        "description": "配置百度云BOS存储",
+        "description": "配置云存储",
         "inputSchema": {
             "server_id": "目标服务器",
             "access_key": "BOS访问密钥",

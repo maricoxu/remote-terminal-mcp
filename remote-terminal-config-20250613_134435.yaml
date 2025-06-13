@@ -1,0 +1,15 @@
+test:
+  description: aa
+  host: test.com
+  port: 22
+  specs:
+    connection:
+      target:
+        host: test.com
+      tool: relay
+    docker:
+      container: xyh_pytorch
+    environment:
+      BOS_BUCKET: bos:/klx-pytorch-work-bd-bj/xuyehua/template
+      TMUX_SESSION_PREFIX: test_dev
+  username: xuyehua
