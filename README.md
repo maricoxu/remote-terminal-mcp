@@ -10,6 +10,7 @@
 - **🛠️ 完整管理**：配置创建、编辑、测试、导入导出
 - **🔒 安全可靠**：支持SSH密钥、跳板机认证等安全连接
 - **📱 用户友好**：渐进式复杂度，从新手到专家
+- **🎨 增强用户体验**：四种配置方式，满足不同用户需求
 
 ## 📦 安装
 
@@ -34,7 +35,19 @@ npm install remote-terminal-mcp
 
 ## 🎯 快速开始
 
-### 1. 快速配置向导
+### 1. 增强版配置管理器 (推荐)
+
+```bash
+python3 enhanced_config_manager.py
+```
+
+提供四种配置方式：
+- **⚡ 快速配置**：5分钟完成，适合新手
+- **🎯 向导配置**：详细步骤指导，适合复杂需求
+- **📋 模板配置**：基于预设模板，快速创建
+- **✏️ 手动配置**：直接编辑YAML，专家模式
+
+### 2. 传统配置向导
 
 ```bash
 python3 config-helper.py --quick
@@ -46,7 +59,7 @@ python3 config-helper.py --quick
 - 🐳 带Docker环境的开发服务器
 - 🎯 自定义配置
 
-### 2. 完整配置管理
+### 3. 完整配置管理
 
 ```bash
 python3 config-helper.py
@@ -109,6 +122,7 @@ remote-terminal-mcp/
 │   ├── ssh_manager.py             # SSH连接管理
 │   ├── interactive_config.py      # 交互式配置管理器
 │   └── enhanced_ssh_manager.py    # 增强SSH管理器
+├── enhanced_config_manager.py     # 增强版配置管理器 (推荐)
 ├── config-helper.py               # 配置助手工具
 ├── package.json                   # NPM配置
 ├── README.md                      # 项目文档
@@ -195,9 +209,26 @@ python3 config-helper.py --list
 
 ## 📚 文档
 
+- [配置工具用户体验设计](CONFIG_UX_DESIGN.md) - **新增**
 - [交互式配置指南](INTERACTIVE_CONFIG_GUIDE.md)
 - [开发规划](DEVELOPMENT_ROADMAP.md)
 - [开发进度](PROGRESS.md)
+
+## 🎨 用户体验设计
+
+我们专门为配置工具设计了四种不同的使用方式，以满足不同技能水平用户的需求：
+
+### 配置方式选择矩阵
+
+```
+                  简单 ←————————————————→ 复杂
+新手用户     │  快速配置    │  向导配置    │
+           │  (5分钟)     │  (详细步骤)   │
+熟练用户     │  模板配置    │  手动配置    │
+           │  (基于模板)   │  (直接编辑)   │
+```
+
+详细设计思路请参考：[CONFIG_UX_DESIGN.md](CONFIG_UX_DESIGN.md)
 
 ## 🛠️ 开发
 
