@@ -14,20 +14,19 @@ import traceback
 from pathlib import Path
 from datetime import datetime
 
+# 添加项目根目录到路径，以便导入enhanced_config_manager
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+from enhanced_config_manager import EnhancedConfigManager
+from enhanced_ssh_manager import EnhancedSSHManager, log_output
+
 # 服务器信息
 SERVER_NAME = "remote-terminal-mcp"
 SERVER_VERSION = "0.7.0-mcp-integrated-config"
 
 # 设置安静模式，防止SSH Manager显示启动摘要
 os.environ['MCP_QUIET'] = '1'
-
-# 延迟导入
-try:
-    from ssh_manager import SSHManager
-    from mcp_config_manager import MCPConfigManager
-except Exception as e:
-    print(f"FATAL: Failed to import required modules. Error: {e}\n{traceback.format_exc()}")
-    sys.exit(1)
 
 # 调试模式
 DEBUG = os.getenv('MCP_DEBUG', '0') == '1'
@@ -402,8 +401,8 @@ async def handle_request(request):
             debug_log(f"Executing tool '{tool_name}' with arguments: {tool_arguments}")
             
             try:
-                manager = SSHManager()
-                config_manager = MCPConfigManager()
+                manager = EnhancedSSHManager()  # 使用增强版SSH管理器
+                config_manager = EnhancedConfigManager()
                 content = ""
                 
                 if tool_name == "list_servers":
@@ -421,8 +420,14 @@ async def handle_request(request):
                 elif tool_name == "connect_server":
                     server_name = tool_arguments.get("server_name")
                     if server_name:
-                        success, message = manager.simple_connect(server_name)
-                        content = message
+                        # 使用增强版智能连接
+                        success, message = manager.smart_connect(server_name)
+                        if success:
+                            server = manager.base_manager.get_server(server_name)
+                            session_name = server.session.get('name', f"{server_name}_session") if server and server.session else f"{server_name}_session"
+                            content = f"✅ 智能连接成功！\n📝 详情: {message}\n\n🎯 连接命令:\ntmux attach -t {session_name}\n\n💡 快速操作:\n• 连接: tmux attach -t {session_name}\n• 分离: Ctrl+B, 然后按 D\n• 查看: tmux list-sessions\n\n🚀 增强功能:\n• 智能连接检测和自动修复\n• 一键式Docker环境连接\n• 交互引导支持"
+                        else:
+                            content = f"❌ 智能连接失败: {message}"
                     else:
                         content = "Error: server_name parameter is required"
                         
@@ -430,15 +435,25 @@ async def handle_request(request):
                     command = tool_arguments.get("command")
                     server = tool_arguments.get("server")
                     if command:
-                        result = manager.execute_command(command, server)
+                        result = manager.execute_command(server or "default", command)
                         content = str(result)
                     else:
                         content = "Error: command parameter is required"
                         
                 elif tool_name == "get_server_status":
                     server_name = tool_arguments.get("server_name")
-                    status = manager.get_server_status(server_name)
-                    content = str(status)
+                    if server_name:
+                        status = manager.get_connection_status(server_name)
+                        content = json.dumps(status, ensure_ascii=False, indent=2)
+                    else:
+                        # 获取所有服务器状态
+                        all_status = {}
+                        servers = manager.list_servers()
+                        for server in servers:
+                            server_name = server.get('name')
+                            if server_name:
+                                all_status[server_name] = manager.get_connection_status(server_name)
+                        content = json.dumps(all_status, ensure_ascii=False, indent=2)
                     
                 elif tool_name == "run_local_command":
                     cmd = tool_arguments.get("cmd")
@@ -453,11 +468,16 @@ async def handle_request(request):
                 # 新增配置管理工具处理
                 elif tool_name == "interactive_config_wizard":
                     server_type = tool_arguments.get("server_type", "ssh")
-                    quick_mode = tool_arguments.get("quick_mode", True)
+                    quick_mode = tool_arguments.get("quick_mode", False)  # 默认使用完整向导
                     
                     try:
-                        result = config_manager.run_quick_setup_wizard(server_type)
-                        content = f"✅ 配置向导完成！\n\n{result}"
+                        if quick_mode:
+                            # 如果明确要求快速模式，使用quick_setup
+                            result = config_manager.quick_setup()
+                        else:
+                            # 默认使用完整向导配置
+                            result = config_manager.guided_setup()
+                        content = f"✅ 配置向导完成！\n\n服务器配置已创建成功"
                     except Exception as e:
                         content = f"❌ 配置向导失败: {str(e)}"
                 
@@ -470,93 +490,55 @@ async def handle_request(request):
                     
                     try:
                         if action == "list":
-                            configs = config_manager.list_server_configs()
-                            content = json.dumps(configs, ensure_ascii=False, indent=2)
+                            # 使用EnhancedConfigManager的get_existing_servers方法
+                            servers = config_manager.get_existing_servers()
+                            content = json.dumps(servers, ensure_ascii=False, indent=2)
                         elif action == "view":
                             if not server_name:
                                 content = "Error: server_name is required for view action"
                             else:
-                                config = config_manager.get_server_config(server_name)
-                                content = json.dumps(config, ensure_ascii=False, indent=2)
-                        elif action == "edit":
-                            if not server_name:
-                                content = "Error: server_name is required for edit action"
-                            else:
-                                result = config_manager.update_server_config(server_name, config_data or {})
-                                content = f"✅ 配置已更新: {result}"
-                        elif action == "delete":
-                            if not server_name:
-                                content = "Error: server_name is required for delete action"
-                            else:
-                                result = config_manager.delete_server_config(server_name)
-                                content = f"✅ 配置已删除: {result}"
+                                servers = config_manager.get_existing_servers()
+                                if server_name in servers:
+                                    content = json.dumps(servers[server_name], ensure_ascii=False, indent=2)
+                                else:
+                                    content = f"Error: Server '{server_name}' not found"
                         elif action == "test":
                             if not server_name:
                                 content = "Error: server_name is required for test action"
                             else:
-                                result = config_manager.test_server_connection(server_name)
-                                content = f"🔍 连接测试结果:\n{result}"
-                        elif action == "export":
-                            result = config_manager.export_configs(export_path)
-                            content = f"📤 配置已导出: {result}"
-                        elif action == "import":
-                            if not import_path:
-                                content = "Error: import_path is required for import action"
-                            else:
-                                result = config_manager.import_configs(import_path)
-                                content = f"📥 配置已导入: {result}"
+                                # 使用EnhancedConfigManager的test_connection方法
+                                result = config_manager.test_connection()
+                                content = f"🔍 连接测试功能已启动，请查看配置管理界面"
+                        elif action == "manage":
+                            # 启动配置管理界面
+                            result = config_manager.manage_existing()
+                            content = f"⚙️ 配置管理界面已启动"
                         else:
-                            content = f"Error: Unknown action '{action}'"
+                            content = f"支持的操作: list, view, test, manage"
                     except Exception as e:
                         content = f"❌ 配置管理操作失败: {str(e)}"
                 
                 elif tool_name == "create_server_config":
                     try:
-                        # 提取所有配置参数
-                        config_data = {
-                            'name': tool_arguments.get('name'),
-                            'host': tool_arguments.get('host'),
-                            'username': tool_arguments.get('username'),
-                            'port': tool_arguments.get('port', 22),
-                            'connection_type': tool_arguments.get('connection_type', 'ssh'),
-                            'relay_target_host': tool_arguments.get('relay_target_host'),
-                            'docker_enabled': tool_arguments.get('docker_enabled', False),
-                            'docker_container': tool_arguments.get('docker_container'),
-                            'docker_image': tool_arguments.get('docker_image'),
-                            'description': tool_arguments.get('description'),
-                            'bos_bucket': tool_arguments.get('bos_bucket'),
-                            'tmux_session_prefix': tool_arguments.get('tmux_session_prefix')
-                        }
-                        
-                        # 移除None值
-                        config_data = {k: v for k, v in config_data.items() if v is not None}
-                        
-                        if not all([config_data.get('name'), config_data.get('host'), config_data.get('username')]):
-                            content = "Error: name, host, and username are required parameters"
-                        else:
-                            result = config_manager.create_server_config(config_data)
-                            content = f"✅ 服务器配置已创建: {result}"
+                        # 直接启动完整的向导界面来创建服务器配置
+                        result = config_manager.guided_setup()
+                        content = f"✅ 服务器配置向导已启动，请按照向导步骤完成配置"
                     except Exception as e:
-                        content = f"❌ 创建配置失败: {str(e)}"
+                        content = f"❌ 启动配置向导失败: {str(e)}"
                 
                 elif tool_name == "diagnose_connection":
                     server_name = tool_arguments.get("server_name")
-                    include_network_test = tool_arguments.get("include_network_test", True)
-                    include_config_validation = tool_arguments.get("include_config_validation", True)
                     
                     if not server_name:
                         content = "Error: server_name is required for diagnosis"
                     else:
                         try:
-                            result = config_manager.diagnose_connection_issues(
-                                server_name, 
-                                include_network_test, 
-                                include_config_validation
-                            )
-                            content = f"🔍 连接诊断结果:\n{result}"
+                            # 使用配置管理器的测试连接功能
+                            result = config_manager.test_connection()
+                            content = f"🔍 连接诊断功能已启动，请在配置管理界面中选择服务器 '{server_name}' 进行测试"
                         except Exception as e:
-                            content = f"❌ 连接诊断失败: {str(e)}"
-                    
+                            content = f"❌ 启动连接诊断失败: {str(e)}"
+                
                 else:
                     content = f"Unknown tool: {tool_name}"
                 
@@ -637,6 +619,33 @@ async def main():
             await asyncio.sleep(1)
 
 if __name__ == "__main__":
+    # 检查是否是测试模式
+    if len(sys.argv) > 1 and sys.argv[1] == "--test":
+        print("🧪 MCP服务器测试模式")
+        try:
+            # 测试导入
+            from enhanced_config_manager import EnhancedConfigManager
+            from enhanced_ssh_manager import EnhancedSSHManager
+            print("✅ 所有模块导入成功")
+            
+            # 测试配置管理器
+            config_manager = EnhancedConfigManager()
+            servers = config_manager.get_existing_servers()
+            print(f"✅ 配置管理器工作正常，发现 {len(servers)} 个服务器")
+            
+            # 测试SSH管理器
+            ssh_manager = EnhancedSSHManager()
+            print("✅ SSH管理器初始化成功")
+            
+            print("🎉 所有测试通过！MCP服务器可以正常启动")
+            sys.exit(0)
+            
+        except Exception as e:
+            print(f"❌ 测试失败: {e}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
+    
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

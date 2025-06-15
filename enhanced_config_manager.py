@@ -123,8 +123,8 @@ class EnhancedConfigManager:
             server_name = self.smart_input(f"🏷️ {server_type}名称", 
                                          validator=lambda x: bool(x and len(x) > 0),
                                          show_suggestions=False)
-            if not server_name:
-                return None
+        if not server_name:
+            return None
         
         # 支持user@host格式
         user_host_input = self.smart_input("👤 用户名@服务器地址 (或只输入服务器地址)", 
@@ -625,9 +625,9 @@ class EnhancedConfigManager:
                                 "volumes": latest_config.get('volumes', [])
                             }
                             self.colored_print(f"✅ 已应用新Docker配置: {latest_config['container_name']}", Fore.GREEN)
-                    else:
-                        # 用户取消了Docker配置，继续当前流程
-                        self.colored_print("⚠️ Docker配置被取消，将继续不使用Docker", Fore.YELLOW)
+                        else:
+                            # 用户取消了Docker配置，继续当前流程
+                            self.colored_print("⚠️ Docker配置被取消，将继续不使用Docker", Fore.YELLOW)
                     
             else:
                 # 没有现有配置，直接创建新配置
@@ -653,9 +653,9 @@ class EnhancedConfigManager:
                             "volumes": latest_config.get('volumes', [])
                         }
                         self.colored_print(f"✅ 已应用Docker配置: {latest_config['container_name']}", Fore.GREEN)
-                else:
-                    # 用户取消了Docker配置，继续当前流程
-                    self.colored_print("⚠️ Docker配置被取消，将继续不使用Docker", Fore.YELLOW)
+                    else:
+                        # 用户取消了Docker配置，继续当前流程
+                        self.colored_print("⚠️ Docker配置被取消，将继续不使用Docker", Fore.YELLOW)
         
         self.show_progress(4, 4, "完成配置")
         
@@ -1199,7 +1199,7 @@ servers:
             # 给用户选择是否继续的机会
             self.colored_print("\n📋 操作选项:", Fore.CYAN)
             self.colored_print("  1. 继续创建新的Docker配置", Fore.GREEN)
-            self.colored_print("  2. 管理现有Docker配置", Fore.BLUE)
+            self.colored_print("  2. 管理现有Docker配置", Fore.BLUE) 
             if called_from_wizard:
                 self.colored_print("  0. 返回上一级", Fore.WHITE)
             else:

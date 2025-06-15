@@ -175,12 +175,149 @@ class EnhancedSSHManager:
         self.connection_timeout = 60  # 增加超时时间
         self.interactive_guides: Dict[str, InteractiveGuide] = {}
         
-        # 继承原有的配置加载逻辑
-        from ssh_manager import SSHManager
-        self.base_manager = SSHManager(config_path)
+        # 直接集成配置加载逻辑，不再依赖base_manager
+        self.servers: Dict[str, Any] = {}
+        self.global_settings: Dict[str, Any] = {}
+        self.security_settings: Dict[str, Any] = {}
+        
+        # 查找并加载配置文件
+        self.config_path = self._find_config_file() if config_path is None else config_path
+        self._load_config()
         
         log_output("🚀 Enhanced SSH Manager 已启动", "SUCCESS")
         log_output("💡 新功能: 智能连接检测、自动Docker环境、一键恢复、交互引导", "INFO")
+    
+    def _find_config_file(self) -> str:
+        """查找配置文件"""
+        # 1. 用户目录配置
+        user_config_dir = Path.home() / ".remote-terminal-mcp"
+        user_config_file = user_config_dir / "config.yaml"
+        
+        if user_config_file.exists():
+            return str(user_config_file)
+        
+        # 2. 项目本地配置
+        script_dir = Path(__file__).parent
+        project_dir = script_dir.parent
+        local_config = project_dir / "config" / "servers.local.yaml"
+        if local_config.exists():
+            return str(local_config)
+        
+        # 3. 模板配置
+        template_config = project_dir / "config" / "servers.template.yaml"
+        if template_config.exists():
+            return str(template_config)
+        
+        raise FileNotFoundError("未找到配置文件")
+    
+    def _load_config(self):
+        """加载配置文件"""
+        if not os.path.exists(self.config_path):
+            raise FileNotFoundError(f"配置文件不存在: {self.config_path}")
+        
+        try:
+            with open(self.config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            
+            # 解析服务器配置
+            servers_config = config.get('servers', {})
+            for server_name, server_config in servers_config.items():
+                # 构建specs字典
+                specs = server_config.get('specs', {})
+                
+                # 如果是script_based类型，将connection、docker等配置放入specs
+                if server_config.get('type') == 'script_based':
+                    if 'connection' in server_config:
+                        specs['connection'] = server_config['connection']
+                    if 'docker' in server_config:
+                        specs['docker'] = server_config['docker']
+                    if 'bos' in server_config:
+                        specs['bos'] = server_config['bos']
+                    if 'environment_setup' in server_config:
+                        specs['environment_setup'] = server_config['environment_setup']
+                
+                # 创建服务器对象
+                server_obj = type('ServerConfig', (), {
+                    'name': server_name,
+                    'type': server_config.get('type', 'direct_ssh'),
+                    'host': server_config.get('host', ''),
+                    'port': server_config.get('port', 22),
+                    'username': server_config.get('username', ''),
+                    'private_key_path': server_config.get('private_key_path', ''),
+                    'description': server_config.get('description', ''),
+                    'specs': specs,
+                    'session': server_config.get('session'),
+                    'jump_host': server_config.get('jump_host'),
+                    'password': server_config.get('password')
+                })()
+                
+                self.servers[server_name] = server_obj
+            
+            # 加载全局设置
+            self.global_settings = config.get('global_settings', {})
+            self.security_settings = config.get('security_settings', {})
+            
+        except Exception as e:
+            raise Exception(f"配置文件解析失败: {str(e)}")
+    
+    def get_server(self, server_name: str):
+        """获取服务器配置"""
+        return self.servers.get(server_name)
+    
+    def list_servers_internal(self) -> List[Dict[str, Any]]:
+        """列出所有服务器"""
+        servers_info = []
+        for server_name, server in self.servers.items():
+            server_info = {
+                'name': server_name,
+                'host': server.host,
+                'description': server.description,
+                'type': server.type,
+                'specs': server.specs or {}
+            }
+            
+            if hasattr(server, 'jump_host') and server.jump_host:
+                server_info['jump_host'] = server.jump_host['host']
+            
+            servers_info.append(server_info)
+        
+        return servers_info
+    
+    def execute_command_internal(self, server_name: str, command: str) -> Tuple[bool, str]:
+        """执行命令的内部实现"""
+        server = self.get_server(server_name)
+        if not server:
+            return False, f"服务器 {server_name} 不存在"
+        
+        # 对于script_based类型，使用tmux会话执行
+        if server.type == 'script_based':
+            session_name = server.session.get('name', f"{server_name}_session") if server.session else f"{server_name}_session"
+            
+            try:
+                # 检查会话是否存在
+                check_result = subprocess.run(['tmux', 'has-session', '-t', session_name], 
+                                            capture_output=True)
+                
+                if check_result.returncode != 0:
+                    return False, f"会话 {session_name} 不存在，请先建立连接"
+                
+                # 发送命令
+                subprocess.run(['tmux', 'send-keys', '-t', session_name, command, 'Enter'], 
+                             capture_output=True)
+                
+                # 等待执行完成
+                time.sleep(2)
+                
+                # 获取输出
+                result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
+                                      capture_output=True, text=True)
+                
+                return True, result.stdout if result.returncode == 0 else "命令执行完成"
+                
+            except Exception as e:
+                return False, f"命令执行失败: {str(e)}"
+        else:
+            return False, f"不支持的服务器类型: {server.type}"
     
     def smart_connect(self, server_name: str, force_recreate: bool = False) -> Tuple[bool, str]:
         """
@@ -192,7 +329,7 @@ class EnhancedSSHManager:
         3. 渐进式错误恢复
         4. 实时进度反馈
         """
-        server = self.base_manager.get_server(server_name)
+        server = self.get_server(server_name)
         if not server:
             return False, f"服务器 {server_name} 不存在"
         
@@ -310,7 +447,7 @@ class EnhancedSSHManager:
             time.sleep(1)
             
             # 重新建立连接
-            server = self.base_manager.get_server(server_name)
+            server = self.get_server(server_name)
             if not server:
                 return False
             
@@ -620,13 +757,13 @@ class EnhancedSSHManager:
     
     def list_servers(self) -> List[Dict[str, Any]]:
         """列出所有服务器（继承原有功能）"""
-        return self.base_manager.list_servers()
+        return self.list_servers_internal()
     
     def execute_command(self, server_name: str, command: str) -> Tuple[bool, str]:
         """执行命令（继承原有功能，但增加智能重连）"""
         try:
             # 先尝试执行
-            success, output = self.base_manager.execute_command(server_name, command)
+            success, output = self.execute_command_internal(server_name, command)
             
             if success:
                 return True, output
@@ -639,7 +776,7 @@ class EnhancedSSHManager:
                 if reconnect_success:
                     # 重连成功，重新执行命令
                     time.sleep(2)
-                    return self.base_manager.execute_command(server_name, command)
+                    return self.execute_command_internal(server_name, command)
                 else:
                     return False, f"自动重连失败: {msg}"
             

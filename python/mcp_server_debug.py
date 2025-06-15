@@ -31,7 +31,7 @@ logger.info(f"Script path: {__file__}")
 
 try:
     logger.info("尝试导入SSH Manager...")
-    from ssh_manager import SSHManager
+    from enhanced_ssh_manager import EnhancedSSHManager
     logger.info("SSH Manager导入成功")
 except ImportError as e:
     logger.error(f"无法导入SSH Manager: {e}")
@@ -43,7 +43,7 @@ class MCPServerDebug:
     def __init__(self):
         logger.info("初始化MCP服务器...")
         try:
-            self.ssh_manager = SSHManager()
+            self.ssh_manager = EnhancedSSHManager()
             logger.info("SSH Manager初始化成功")
         except Exception as e:
             logger.error(f"初始化SSH Manager失败: {e}")
@@ -238,7 +238,8 @@ class MCPServerDebug:
                         }
                     else:
                         try:
-                            result = self.ssh_manager.simple_connect(server_name)
+                            success, message = self.ssh_manager.smart_connect(server_name)
+                            result = f"成功: {success}, 消息: {message}"
                             response = {
                                 "jsonrpc": "2.0",
                                 "id": request_id,
@@ -307,7 +308,7 @@ class MCPServerDebug:
                         }
                     else:
                         try:
-                            status = self.ssh_manager.get_server_status(server_name)
+                            status = self.ssh_manager.get_connection_status(server_name)
                             response = {
                                 "jsonrpc": "2.0",
                                 "id": request_id,
