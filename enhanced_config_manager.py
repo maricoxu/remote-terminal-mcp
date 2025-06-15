@@ -49,8 +49,8 @@ class ConfigError:
 class EnhancedConfigManager:
     def __init__(self, config_path: str = None):
         if config_path is None:
-            # 使用用户家目录下的.remote-terminal-mcp文件夹
-            self.config_dir = Path.home() / ".remote-terminal-mcp"
+            # 使用用户家目录下的.remote-terminal文件夹
+            self.config_dir = Path.home() / ".remote-terminal"
             self.config_path = self.config_dir / "config.yaml"
         else:
             self.config_path = Path(config_path)
@@ -294,16 +294,20 @@ class EnhancedConfigManager:
         self.colored_print("  2. 手动配置 (Manual Setup) - 直接编辑配置文件", Fore.BLUE)
         self.colored_print("  3. 🐳 创建docker容器环境配置", Fore.CYAN)
         
+        self.colored_print("\n✏️ 编辑功能:", Fore.YELLOW, Style.BRIGHT)
+        self.colored_print("  4. 📝 编辑服务器配置", Fore.YELLOW)
+        self.colored_print("  5. 🐳 编辑Docker环境配置", Fore.YELLOW)
+        
         self.colored_print("\n⚙️ 管理功能:", Fore.MAGENTA, Style.BRIGHT)
-        self.colored_print("  4. 管理现有配置", Fore.MAGENTA)
-        self.colored_print("  5. 测试连接", Fore.MAGENTA)
+        self.colored_print("  6. 管理现有配置", Fore.MAGENTA)
+        self.colored_print("  7. 测试连接", Fore.MAGENTA)
         self.colored_print("  0. 退出", Fore.WHITE)
         
         self.colored_print("=" * 50, Fore.CYAN)
         
         while True:
             choice = self.smart_input("\n请选择操作", 
-                                    validator=lambda x: x in ['0', '1', '2', '3', '4', '5'],
+                                    validator=lambda x: x in ['0', '1', '2', '3', '4', '5', '6', '7'],
                                     show_suggestions=False)
             
             if choice is None:  # 用户取消
@@ -315,8 +319,12 @@ class EnhancedConfigManager:
             elif choice == "3":
                 return self.docker_wizard_setup()
             elif choice == "4":
-                return self.manage_existing()
+                return self.edit_server_config()
             elif choice == "5":
+                return self.edit_docker_config()
+            elif choice == "6":
+                return self.manage_existing()
+            elif choice == "7":
                 return self.test_connection()
             elif choice == "0":
                 self.colored_print("👋 再见！", Fore.CYAN)
@@ -1238,16 +1246,19 @@ servers:
     def get_existing_docker_configs(self) -> dict:
         """获取现有Docker配置"""
         try:
-            docker_templates_dir = self.config_dir / "docker_templates"
-            if not docker_templates_dir.exists():
+            if not self.config_path.exists():
+                return {}
+            
+            with open(self.config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            
+            if not config or 'servers' not in config:
                 return {}
             
             docker_configs = {}
-            for config_file in docker_templates_dir.glob("*.yaml"):
-                with open(config_file, 'r', encoding='utf-8') as f:
-                    config = yaml.safe_load(f)
-                    if config and 'docker' in config:
-                        docker_configs[config_file.stem] = config['docker']
+            for server_name, server_config in config['servers'].items():
+                if 'docker' in server_config:
+                    docker_configs[server_config['docker'].get('container_name', server_name)] = server_config['docker']
             
             return docker_configs
         except Exception:
@@ -1344,50 +1355,63 @@ servers:
         if not docker_image:
             return False
         
-        # 步骤2: BOS环境配置  
-        self.show_progress(2, 3, "BOS环境配置")
+        # 步骤2: Shell环境配置
+        self.show_progress(2, 3, "Shell环境配置")
         
-        self.colored_print("\n☁️ BOS (百度对象存储)环境配置", Fore.BLUE)
-        self.colored_print("💡 配置BOS环境可以方便地同步你的配置文件到容器中", Fore.YELLOW)
-        self.colored_print("   例如: .zshrc, .p10k.zsh, .vimrc 等个人配置文件", Fore.YELLOW)
+        self.colored_print("\n🐚 Shell环境配置", Fore.BLUE)
+        self.colored_print("💡 选择你的Shell环境，配置文件将从.remote-terminal目录复制", Fore.YELLOW)
         
-        setup_bos = self.smart_input("是否配置BOS环境", 
-                                   validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
-                                   suggestions=['y', 'n'],
-                                   default='n')
-        if not setup_bos:
+        # 显示Shell选项
+        self.colored_print("\n📋 可选Shell类型:", Fore.CYAN)
+        self.colored_print("  1. Bash (默认) - 简单可靠", Fore.WHITE)
+        self.colored_print("  2. Zsh - 功能强大，支持主题和插件", Fore.WHITE)
+        
+        shell_options = {
+            '1': {'name': 'bash', 'path': '/bin/bash', 'config_file': '.bashrc', 'config_dir': 'bash'},
+            '2': {'name': 'zsh', 'path': '/bin/zsh', 'config_file': '.zshrc', 'config_dir': 'zsh'}
+        }
+        
+        # Shell类型选择
+        shell_type = self.smart_input("选择Shell类型", 
+                                    validator=lambda x: x in ['1', '2'],
+                                    suggestions=['1', '2'],
+                                    default='1')
+        if not shell_type:
             return False
-            
-        use_bos = setup_bos.lower() in ['y', 'yes']
         
-        bos_config = {}
-        if use_bos:
-            self.colored_print("\n请输入BOS配置信息:", Fore.BLUE)
-            
-            bos_ak = self.smart_input("BOS AccessKey (AK)", 
-                                    validator=lambda x: bool(x and len(x) > 0),
-                                    suggestions=["your-access-key"])
-            if not bos_ak:
-                return False
-                
-            bos_sk = self.smart_input("BOS SecretKey (SK)", 
-                                    validator=lambda x: bool(x and len(x) > 0),
-                                    suggestions=["your-secret-key"])
-            if not bos_sk:
-                return False
-                
-            bos_template_path = self.smart_input("BOS配置文件模板存放路径 (远端BOS路径)", 
-                                             default="bos://your-bucket/username/templates/",
-                                             suggestions=["bos://your-bucket/username/templates/", "bos://work-bucket/user/config/"])
-            if not bos_template_path:
-                return False
-                
-            bos_config = {
-                "access_key": bos_ak,
-                "secret_key": bos_sk,
-                "template_path": bos_template_path,
-                "local_config_path": "/root/.bos/config"
-            }
+        selected_shell = shell_options[shell_type]
+        
+        # 检查配置文件是否存在 (优先级: 用户配置 > 项目模板)
+        user_config_dir = Path.home() / '.remote-terminal' / 'configs' / selected_shell['config_dir']
+        project_template_dir = Path.cwd() / 'templates' / 'configs' / selected_shell['config_dir']
+        
+        config_source = None
+        config_files = []
+        
+        # 优先检查用户配置目录
+        if user_config_dir.exists():
+            config_files = list(user_config_dir.glob('*'))
+            if config_files:
+                config_source = user_config_dir
+                self.colored_print(f"\n📁 使用用户配置: {user_config_dir}", Fore.GREEN)
+        
+        # 如果用户配置不存在，检查项目模板
+        if not config_files and project_template_dir.exists():
+            config_files = list(project_template_dir.glob('*'))
+            if config_files:
+                config_source = project_template_dir
+                self.colored_print(f"\n📁 使用项目模板: {project_template_dir}", Fore.CYAN)
+        
+        # 显示找到的配置文件
+        if config_files:
+            self.colored_print("✅ 发现以下配置文件:", Fore.GREEN)
+            for file in config_files:
+                self.colored_print(f"  • {file.name}", Fore.WHITE)
+        else:
+            self.colored_print("\nℹ️ 未找到配置文件，将使用系统默认配置", Fore.BLUE)
+            self.colored_print(f"💡 提示: 你可以将配置文件放在以下位置:", Fore.YELLOW)
+            self.colored_print(f"  • 用户配置: {user_config_dir}", Fore.WHITE)
+            self.colored_print(f"  • 项目模板: {project_template_dir}", Fore.WHITE)
         
         # 步骤3: 生成配置
         self.show_progress(3, 3, "生成Docker配置")
@@ -1408,7 +1432,12 @@ servers:
             "network_mode": "bridge",
             "restart_policy": "unless-stopped",
             "environment": {},
-            "setup_commands": []
+            "setup_commands": [],
+            "shell_config": {
+                "type": selected_shell['name'],
+                "path": selected_shell['path'],
+                "config_file": selected_shell['config_file']
+            }
         }
         
         # 添加基础开发工具
@@ -1417,27 +1446,49 @@ servers:
             "apt-get install -y curl git vim wget"
         ])
         
-        # 添加BOS配置
-        if use_bos and bos_config:
-            bos_setup_commands = [
-                "pip install boscli",
-                f"mkdir -p {os.path.dirname(bos_config['local_config_path'])}",
-                f"echo '[Credentials]' > {bos_config['local_config_path']}",
-                f"echo 'bos_access_key_id = {bos_config['access_key']}' >> {bos_config['local_config_path']}",
-                f"echo 'bos_secret_access_key = {bos_config['secret_key']}' >> {bos_config['local_config_path']}",
-                f"# 同步配置文件模板: bos sync {bos_config['template_path']} /root/",
-                "echo '# 使用 bos sync 命令同步你的配置文件模板到容器' >> /root/.bashrc"
-            ]
-            docker_config["setup_commands"].extend(bos_setup_commands)
-            docker_config["environment"]["BOS_CONFIG_PATH"] = bos_config["local_config_path"]
-            docker_config["environment"]["BOS_TEMPLATE_PATH"] = bos_config["template_path"]
+        # 添加Shell相关的安装命令
+        if selected_shell['name'] == 'zsh':
+            docker_config["setup_commands"].extend([
+                "apt-get install -y zsh",
+                "chsh -s /bin/zsh"
+            ])
+        
+        # 添加配置文件复制命令
+        if config_source and config_files:
+            # 添加配置文件复制命令
+            docker_config["setup_commands"].append("# 复制Shell配置文件")
+            for config_file in config_files:
+                docker_config["setup_commands"].append(f"cp /host-configs/{selected_shell['config_dir']}/{config_file.name} ~/")
+            
+            # 添加配置目录挂载
+            if "volumes" not in docker_config:
+                docker_config["volumes"] = []
+            docker_config["volumes"].append(f"{config_source}:/host-configs/{selected_shell['config_dir']}:ro")
+            
+            # 记录配置文件信息
+            docker_config["shell_config"]["custom_configs"] = [f.name for f in config_files]
+            docker_config["shell_config"]["config_source"] = str(config_source)
+        else:
+            # 使用默认配置
+            docker_config["shell_config"]["custom_configs"] = []
+            docker_config["shell_config"]["config_source"] = "system_default"
+            if selected_shell['name'] == 'zsh':
+                docker_config["setup_commands"].append("# 使用默认zsh配置")
+        
+
         
         # 显示配置预览
         self.colored_print("\n✅ Docker配置生成完成！", Fore.GREEN, Style.BRIGHT)
         self.colored_print("=" * 50, Fore.GREEN)
         self.colored_print(f"容器名称: {container_name}", Fore.WHITE)
         self.colored_print(f"镜像: {docker_image}", Fore.WHITE)
-        self.colored_print(f"BOS环境: {'已配置' if use_bos else '未配置'}", Fore.WHITE)
+        self.colored_print(f"Shell环境: {selected_shell['name']} ({selected_shell['path']})", Fore.WHITE)
+        if docker_config["shell_config"]["custom_configs"]:
+            self.colored_print(f"自定义配置: {', '.join(docker_config['shell_config']['custom_configs'])}", Fore.WHITE)
+            config_source_type = "用户配置" if "/.remote-terminal/" in docker_config["shell_config"]["config_source"] else "项目模板"
+            self.colored_print(f"配置来源: {config_source_type}", Fore.WHITE)
+        else:
+            self.colored_print("配置文件: 使用系统默认配置", Fore.WHITE)
         self.colored_print(f"端口映射: {', '.join(ports) if ports else '无'}", Fore.WHITE)
         self.colored_print(f"目录挂载: {', '.join(volumes) if volumes else '无'}", Fore.WHITE)
         
@@ -1511,7 +1562,7 @@ servers:
                          "session": {
                  "name": f"{server_name}_session",
                  "working_directory": docker_config.get("working_directory", "/workspace"),
-                 "shell": "/bin/bash"
+                 "shell": docker_config["shell_config"]["path"]
              }
         }}}
         
@@ -1874,10 +1925,238 @@ servers:
         
         return {}
 
+    def edit_server_config(self):
+        """编辑现有服务器配置"""
+        self.colored_print("\n📝 编辑服务器配置", Fore.YELLOW, Style.BRIGHT)
+        self.colored_print("=" * 50, Fore.YELLOW)
+        
+        # 获取现有服务器配置
+        existing_servers = self.get_existing_servers()
+        if not existing_servers:
+            self.colored_print("❌ 没有找到现有的服务器配置", Fore.RED)
+            self.colored_print("💡 请先使用向导配置创建服务器配置", Fore.YELLOW)
+            return
+        
+        # 显示现有服务器列表
+        self.colored_print("\n📋 现有服务器配置:", Fore.CYAN)
+        server_list = list(existing_servers.keys())
+        for i, server_name in enumerate(server_list, 1):
+            server_info = existing_servers[server_name]
+            host = server_info.get('host', 'N/A')
+            user = server_info.get('user', server_info.get('username', 'N/A'))
+            conn_type = server_info.get('type', 'ssh')
+            self.colored_print(f"  {i}. {server_name} - {user}@{host} ({conn_type})", Fore.WHITE)
+        
+        # 选择要编辑的服务器
+        choice = self.smart_input("选择要编辑的服务器 (输入序号)", 
+                                validator=lambda x: x.isdigit() and 1 <= int(x) <= len(server_list),
+                                suggestions=[str(i) for i in range(1, len(server_list) + 1)])
+        if not choice:
+            return
+        
+        selected_server = server_list[int(choice) - 1]
+        current_config = existing_servers[selected_server]
+        
+        self.colored_print(f"\n✏️ 编辑服务器: {selected_server}", Fore.CYAN, Style.BRIGHT)
+        self.colored_print("-" * 40, Fore.CYAN)
+        
+        # 显示当前配置并允许编辑
+        self.colored_print("\n💡 当前配置如下，按回车保持不变，输入新值进行修改:", Fore.YELLOW)
+        
+        # 编辑基本信息
+        new_host = self.smart_input(f"服务器地址", 
+                                  default=current_config.get('host', ''),
+                                  validator=self.validate_hostname)
+        if new_host is None:
+            return
+        
+        new_user = self.smart_input(f"用户名", 
+                                  default=current_config.get('user', current_config.get('username', '')),
+                                  validator=self.validate_username)
+        if new_user is None:
+            return
+        
+        new_port = self.smart_input(f"端口", 
+                                  default=str(current_config.get('port', 22)),
+                                  validator=self.validate_port)
+        if new_port is None:
+            return
+        
+        # 编辑连接类型
+        current_type = current_config.get('type', 'ssh')
+        self.colored_print(f"\n当前连接类型: {current_type}", Fore.CYAN)
+        self.colored_print("1. SSH直连", Fore.WHITE)
+        self.colored_print("2. Relay连接", Fore.WHITE)
+        
+        type_choice = self.smart_input("连接类型", 
+                                     default='1' if current_type == 'ssh' else '2',
+                                     validator=lambda x: x in ['1', '2'])
+        if type_choice is None:
+            return
+        
+        new_type = 'ssh' if type_choice == '1' else 'script_based'
+        
+        # 构建新配置
+        updated_config = {
+            "host": new_host or current_config.get('host'),
+            "user": new_user or current_config.get('user', current_config.get('username')),
+            "port": int(new_port) if new_port else current_config.get('port', 22),
+            "type": new_type,
+            "description": current_config.get('description', f"编辑的配置: {selected_server}")
+        }
+        
+        # 保留其他配置项
+        for key, value in current_config.items():
+            if key not in ['host', 'user', 'username', 'port', 'type']:
+                updated_config[key] = value
+        
+        # 如果是relay连接，处理relay相关配置
+        if new_type == 'script_based':
+            updated_config['connection_type'] = 'relay'
+            if 'specs' not in updated_config:
+                updated_config['specs'] = {
+                    "connection": {
+                        "tool": "relay-cli",
+                        "target": {"host": updated_config['host']}
+                    }
+                }
+        
+        # 显示更新预览
+        self.colored_print("\n📋 配置更新预览:", Fore.GREEN, Style.BRIGHT)
+        self.colored_print(f"服务器名称: {selected_server}", Fore.WHITE)
+        self.colored_print(f"地址: {updated_config['host']}", Fore.WHITE)
+        self.colored_print(f"用户: {updated_config['user']}", Fore.WHITE)
+        self.colored_print(f"端口: {updated_config['port']}", Fore.WHITE)
+        self.colored_print(f"连接类型: {updated_config['type']}", Fore.WHITE)
+        
+        # 确认保存
+        confirm = self.smart_input("确认保存更改 (y/n)", 
+                                 validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
+                                 default='y')
+        if confirm and confirm.lower() in ['y', 'yes']:
+            # 保存配置
+            full_config = {"servers": {selected_server: updated_config}}
+            self.save_config(full_config, merge_mode=True)
+            self.colored_print(f"\n✅ 服务器配置已更新: {selected_server}", Fore.GREEN, Style.BRIGHT)
+        else:
+            self.colored_print("\n❌ 取消更新", Fore.YELLOW)
+
+    def edit_docker_config(self):
+        """编辑现有Docker配置"""
+        self.colored_print("\n🐳 编辑Docker环境配置", Fore.YELLOW, Style.BRIGHT)
+        self.colored_print("=" * 50, Fore.YELLOW)
+        
+        # 获取现有Docker配置
+        existing_dockers = self.get_existing_docker_configs()
+        if not existing_dockers:
+            self.colored_print("❌ 没有找到现有的Docker配置", Fore.RED)
+            self.colored_print("💡 请先使用Docker向导创建Docker配置", Fore.YELLOW)
+            return
+        
+        # 显示现有Docker配置列表
+        self.colored_print("\n📋 现有Docker配置:", Fore.CYAN)
+        docker_list = list(existing_dockers.keys())
+        for i, docker_name in enumerate(docker_list, 1):
+            docker_info = existing_dockers[docker_name]
+            image = docker_info.get('image', 'N/A')
+            ports = docker_info.get('ports', [])
+            port_str = ', '.join(ports) if ports else '无'
+            self.colored_print(f"  {i}. {docker_name} - {image} [{port_str}]", Fore.WHITE)
+        
+        # 选择要编辑的Docker配置
+        choice = self.smart_input("选择要编辑的Docker配置 (输入序号)", 
+                                validator=lambda x: x.isdigit() and 1 <= int(x) <= len(docker_list),
+                                suggestions=[str(i) for i in range(1, len(docker_list) + 1)])
+        if not choice:
+            return
+        
+        selected_docker = docker_list[int(choice) - 1]
+        current_config = existing_dockers[selected_docker]
+        
+        self.colored_print(f"\n✏️ 编辑Docker配置: {selected_docker}", Fore.CYAN, Style.BRIGHT)
+        self.colored_print("-" * 40, Fore.CYAN)
+        
+        # 显示当前配置并允许编辑
+        self.colored_print("\n💡 当前配置如下，按回车保持不变，输入新值进行修改:", Fore.YELLOW)
+        
+        # 编辑基本信息
+        new_image = self.smart_input("Docker镜像", 
+                                   default=current_config.get('image', ''),
+                                   suggestions=["ubuntu:20.04", "pytorch/pytorch:latest", "node:18-alpine"])
+        if new_image is None:
+            return
+        
+        # 保持现有端口映射配置（不提供编辑选项）
+        new_ports = current_config.get('ports', [])
+        
+        # 编辑目录挂载
+        current_volumes = current_config.get('volumes', [])
+        current_volumes_str = ', '.join(current_volumes) if current_volumes else ''
+        new_volumes_str = self.smart_input("目录挂载 (格式: /host:/container,/data:/data)", 
+                                         default=current_volumes_str,
+                                         suggestions=["/home:/home,/data:/data"])
+        if new_volumes_str is None:
+            return
+        
+        new_volumes = [v.strip() for v in new_volumes_str.split(',') if v.strip()] if new_volumes_str else []
+        
+        # 编辑Shell配置
+        current_shell = current_config.get('shell_config', {}).get('type', 'bash')
+        self.colored_print(f"\n当前Shell: {current_shell}", Fore.CYAN)
+        self.colored_print("1. Bash", Fore.WHITE)
+        self.colored_print("2. Zsh", Fore.WHITE)
+        
+        shell_choice = self.smart_input("Shell类型", 
+                                      default='1' if current_shell == 'bash' else '2',
+                                      validator=lambda x: x in ['1', '2'])
+        if shell_choice is None:
+            return
+        
+        new_shell = 'bash' if shell_choice == '1' else 'zsh'
+        
+        # 构建新配置
+        updated_config = current_config.copy()
+        updated_config.update({
+            "image": new_image or current_config.get('image'),
+            "ports": new_ports,
+            "volumes": new_volumes,
+            "shell_config": {
+                "type": new_shell,
+                "path": "/bin/bash" if new_shell == 'bash' else "/bin/zsh",
+                "config_file": ".bashrc" if new_shell == 'bash' else ".zshrc"
+            }
+        })
+        
+        # 显示更新预览
+        self.colored_print("\n📋 配置更新预览:", Fore.GREEN, Style.BRIGHT)
+        self.colored_print(f"容器名称: {selected_docker}", Fore.WHITE)
+        self.colored_print(f"镜像: {updated_config['image']}", Fore.WHITE)
+        self.colored_print(f"Shell: {updated_config['shell_config']['type']}", Fore.WHITE)
+        self.colored_print(f"端口映射: {', '.join(updated_config['ports']) if updated_config['ports'] else '无'}", Fore.WHITE)
+        self.colored_print(f"目录挂载: {', '.join(updated_config['volumes']) if updated_config['volumes'] else '无'}", Fore.WHITE)
+        
+        # 确认保存
+        confirm = self.smart_input("确认保存更改 (y/n)", 
+                                 validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
+                                 default='y')
+        if confirm and confirm.lower() in ['y', 'yes']:
+            # 保存Docker配置
+            self.save_docker_wizard_config(updated_config)
+            self.colored_print(f"\n✅ Docker配置已更新: {selected_docker}", Fore.GREEN, Style.BRIGHT)
+        else:
+            self.colored_print("\n❌ 取消更新", Fore.YELLOW)
+
 def main():
     """主函数"""
-    config_manager = EnhancedConfigManager()
-    config_manager.main_menu()
+    try:
+        config_manager = EnhancedConfigManager()
+        config_manager.main_menu()
+    except KeyboardInterrupt:
+        print("\n\n👋 用户取消操作，再见！")
+    except Exception as e:
+        print(f"\n❌ 发生错误: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
     main()

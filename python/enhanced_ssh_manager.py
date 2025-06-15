@@ -189,8 +189,8 @@ class EnhancedSSHManager:
     
     def _find_config_file(self) -> str:
         """查找配置文件"""
-        # 1. 用户目录配置
-        user_config_dir = Path.home() / ".remote-terminal-mcp"
+        # 1. 用户目录配置（修复：使用正确的目录名）
+        user_config_dir = Path.home() / ".remote-terminal"
         user_config_file = user_config_dir / "config.yaml"
         
         if user_config_file.exists():
@@ -219,6 +219,7 @@ class EnhancedSSHManager:
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 config = yaml.safe_load(f)
             
+
             # 解析服务器配置
             servers_config = config.get('servers', {})
             for server_name, server_config in servers_config.items():
@@ -236,6 +237,9 @@ class EnhancedSSHManager:
                     if 'environment_setup' in server_config:
                         specs['environment_setup'] = server_config['environment_setup']
                 
+                # 保存docker配置的副本，确保server.docker始终可用
+                docker_config = server_config.get('docker', {})
+                
                 # 创建服务器对象
                 server_obj = type('ServerConfig', (), {
                     'name': server_name,
@@ -248,7 +252,8 @@ class EnhancedSSHManager:
                     'specs': specs,
                     'session': server_config.get('session'),
                     'jump_host': server_config.get('jump_host'),
-                    'password': server_config.get('password')
+                    'password': server_config.get('password'),
+                    'docker': docker_config  # 修复：使用保存的docker配置
                 })()
                 
                 self.servers[server_name] = server_obj
@@ -597,7 +602,8 @@ class EnhancedSSHManager:
     def _setup_docker_environment(self, server, session_name: str) -> Tuple[bool, str]:
         """智能Docker环境设置"""
         try:
-            docker_config = server.specs.get('docker', {})
+            # 修复：从server.docker获取配置
+            docker_config = server.docker
             container_name = docker_config.get('container_name')
             
             if not container_name:
@@ -629,7 +635,7 @@ class EnhancedSSHManager:
             return False, f"Docker设置异常: {str(e)}"
     
     def _smart_container_connect(self, session_name: str, container_name: str, docker_config: dict) -> bool:
-        """智能容器连接 - 自动检测和创建"""
+        """智能容器连接 - 自动检测和创建，配置本地环境"""
         try:
             # 检查容器是否存在
             subprocess.run(['tmux', 'send-keys', '-t', session_name, 
@@ -661,6 +667,8 @@ class EnhancedSSHManager:
                 
                 if '@' in result.stdout or '#' in result.stdout:
                     log_output("🚀 已进入现有容器", "SUCCESS")
+                    # 设置本地配置环境
+                    self._setup_local_config_environment(session_name, docker_config)
                     return True
                 else:
                     log_output("⚠️ 进入容器失败，手动操作可能需要", "WARNING")
@@ -684,10 +692,223 @@ class EnhancedSSHManager:
                 time.sleep(2)
                 
                 log_output("🎉 新容器已创建并进入", "SUCCESS")
+                # 设置本地配置环境
+                self._setup_local_config_environment(session_name, docker_config)
                 return True
                 
         except Exception as e:
             log_output(f"容器连接异常: {str(e)}", "ERROR")
+            return False
+    
+    def _setup_local_config_environment(self, session_name: str, docker_config: dict) -> bool:
+        """设置本地配置环境 - 只有zsh时才复制配置"""
+        try:
+            log_output("🔧 开始设置本地配置环境...", "INFO")
+            
+            # 获取shell类型
+            shell_type = docker_config.get('shell', 'bash')
+            log_output(f"📋 配置Shell类型: {shell_type}", "INFO")
+            
+            # 只有选择zsh时才进行配置复制
+            if shell_type == 'zsh':
+                log_output("🐚 检测到zsh，开始配置复制...", "INFO")
+                
+                # 检测配置文件来源
+                config_source = self._detect_config_source(shell_type)
+                if not config_source:
+                    log_output("⚠️ 未找到zsh配置文件，使用默认配置", "WARNING")
+                    return self._setup_default_config(session_name, shell_type)
+                
+                log_output(f"📁 配置来源: {config_source['type']} - {config_source['path']}", "INFO")
+                
+                # 复制配置文件到容器
+                success = self._copy_config_files_to_container(session_name, config_source, shell_type)
+                if not success:
+                    log_output("❌ zsh配置文件复制失败，使用默认配置", "ERROR")
+                    return self._setup_default_config(session_name, shell_type)
+                
+                # 应用zsh配置
+                self._apply_shell_config(session_name, shell_type)
+                log_output("✅ zsh配置环境设置完成", "SUCCESS")
+                
+            else:
+                # bash使用系统默认配置，不进行复制
+                log_output("🐚 检测到bash，使用系统默认配置", "INFO")
+                self._setup_default_config(session_name, shell_type)
+                log_output("✅ bash环境设置完成（使用系统默认）", "SUCCESS")
+            
+            return True
+            
+        except Exception as e:
+            log_output(f"本地配置环境设置异常: {str(e)}", "ERROR")
+            return False
+    
+    def _detect_config_source(self, shell_type: str) -> dict:
+        """检测配置文件来源"""
+        from pathlib import Path
+        
+        # 优先级1: 用户配置目录
+        user_config_dir = Path.home() / ".remote-terminal" / "configs" / shell_type
+        if user_config_dir.exists() and any(user_config_dir.glob(".*")):
+            return {
+                "type": "用户配置",
+                "path": str(user_config_dir),
+                "priority": 1
+            }
+        
+        # 优先级2: 项目模板目录
+        project_template_dir = Path(__file__).parent.parent / "templates" / "configs" / shell_type
+        if project_template_dir.exists() and any(project_template_dir.glob(".*")):
+            return {
+                "type": "项目模板",
+                "path": str(project_template_dir),
+                "priority": 2
+            }
+        
+        return None
+    
+    def _copy_config_files_to_container(self, session_name: str, config_source: dict, shell_type: str) -> bool:
+        """复制zsh配置文件到容器"""
+        try:
+            source_path = config_source['path']
+            log_output(f"📋 复制{shell_type}配置文件从: {source_path}", "INFO")
+            
+            # 简化方案：直接在容器内创建配置文件内容
+            # 这样避免了复杂的容器名称获取和docker cp操作
+            import os
+            
+            # 读取配置文件内容并在容器内创建
+            for config_file in os.listdir(source_path):
+                if config_file.startswith('.'):  # 只处理隐藏配置文件
+                    source_file = os.path.join(source_path, config_file)
+                    if os.path.isfile(source_file):
+                        try:
+                            # 读取配置文件内容
+                            with open(source_file, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                            
+                            # 在容器内创建配置文件
+                            # 使用cat命令创建文件，避免特殊字符问题
+                            log_output(f"📝 创建配置文件: {config_file}", "INFO")
+                            
+                            # 创建文件的命令
+                            create_cmd = f"cat > ~/{config_file} << 'EOF_CONFIG_FILE'\n{content}\nEOF_CONFIG_FILE"
+                            
+                            # 发送命令到容器
+                            subprocess.run(['tmux', 'send-keys', '-t', session_name, create_cmd, 'Enter'],
+                                         capture_output=True)
+                            time.sleep(1)
+                            
+                            log_output(f"✅ 已创建: {config_file}", "INFO")
+                            
+                        except Exception as e:
+                            log_output(f"⚠️ 处理配置文件失败: {config_file} - {str(e)}", "WARNING")
+            
+            return True
+            
+        except Exception as e:
+            log_output(f"配置文件复制异常: {str(e)}", "ERROR")
+            return False
+    
+    def _get_current_container_name(self, session_name: str) -> str:
+        """获取当前容器名称"""
+        try:
+            # 在容器内执行hostname命令获取容器ID
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, 
+                          'echo "CONTAINER_ID_START"; hostname; echo "CONTAINER_ID_END"', 'Enter'],
+                         capture_output=True)
+            time.sleep(2)
+            
+            result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
+                                  capture_output=True, text=True)
+            
+            # 解析容器ID
+            lines = result.stdout.split('\n')
+            container_id = None
+            capture = False
+            for line in lines:
+                if 'CONTAINER_ID_START' in line:
+                    capture = True
+                    continue
+                elif 'CONTAINER_ID_END' in line:
+                    break
+                elif capture and line.strip():
+                    container_id = line.strip()
+                    break
+            
+            if container_id:
+                # 通过容器ID获取容器名称
+                result = subprocess.run(['docker', 'ps', '--format', '{{.Names}}', '--filter', f'id={container_id}'],
+                                      capture_output=True, text=True)
+                if result.returncode == 0 and result.stdout.strip():
+                    return result.stdout.strip()
+            
+            return None
+            
+        except Exception as e:
+            log_output(f"获取容器名称异常: {str(e)}", "ERROR")
+            return None
+    
+    def _apply_shell_config(self, session_name: str, shell_type: str):
+        """应用Shell配置"""
+        try:
+            log_output(f"🔄 应用{shell_type}配置...", "INFO")
+            
+            if shell_type == 'zsh':
+                # 启动zsh并应用配置
+                subprocess.run(['tmux', 'send-keys', '-t', session_name, 'zsh', 'Enter'],
+                             capture_output=True)
+                time.sleep(2)
+                
+                # 重新加载zsh配置
+                subprocess.run(['tmux', 'send-keys', '-t', session_name, 'source ~/.zshrc', 'Enter'],
+                             capture_output=True)
+                time.sleep(1)
+                
+            elif shell_type == 'bash':
+                # 重新加载bash配置
+                subprocess.run(['tmux', 'send-keys', '-t', session_name, 'source ~/.bashrc', 'Enter'],
+                             capture_output=True)
+                time.sleep(1)
+            
+            log_output(f"✅ {shell_type}配置已应用", "SUCCESS")
+            
+        except Exception as e:
+            log_output(f"应用Shell配置异常: {str(e)}", "ERROR")
+    
+    def _setup_default_config(self, session_name: str, shell_type: str) -> bool:
+        """设置默认配置"""
+        try:
+            log_output("🔧 设置默认配置...", "INFO")
+            
+            # 设置基本环境变量
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, 
+                          'export TERM=xterm-256color', 'Enter'],
+                         capture_output=True)
+            time.sleep(0.5)
+            
+            if shell_type == 'zsh':
+                # 基本zsh配置
+                subprocess.run(['tmux', 'send-keys', '-t', session_name, 
+                              'echo "export TERM=xterm-256color" >> ~/.zshrc', 'Enter'],
+                             capture_output=True)
+                time.sleep(0.5)
+                subprocess.run(['tmux', 'send-keys', '-t', session_name, 'zsh', 'Enter'],
+                             capture_output=True)
+            else:
+                # 基本bash配置
+                subprocess.run(['tmux', 'send-keys', '-t', session_name, 
+                              'echo "export TERM=xterm-256color" >> ~/.bashrc', 'Enter'],
+                             capture_output=True)
+                time.sleep(0.5)
+                subprocess.run(['tmux', 'send-keys', '-t', session_name, 'source ~/.bashrc', 'Enter'],
+                             capture_output=True)
+            
+            log_output("✅ 默认配置设置完成", "SUCCESS")
+            return True
+            
+        except Exception as e:
+            log_output(f"默认配置设置异常: {str(e)}", "ERROR")
             return False
     
     def _verify_environment(self, session_name: str) -> bool:
