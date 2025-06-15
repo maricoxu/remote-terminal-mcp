@@ -381,6 +381,14 @@ class EnhancedSSHManager:
                     log_output(f"Docker设置失败: {msg}", "WARNING")
                     log_output("💡 继续使用主机环境", "INFO")
             
+            # 阶段3.5: 同步环境设置
+            if hasattr(server, 'sync') and server.sync and server.sync.get('enabled'):
+                self._update_progress(server_name, 75, "设置同步环境...")
+                success, msg = self._setup_sync_environment(server, session_name)
+                if not success:
+                    log_output(f"同步设置失败: {msg}", "WARNING")
+                    log_output("💡 继续使用普通连接", "INFO")
+            
             # 阶段4: 环境验证
             self._update_progress(server_name, 90, "验证环境...")
             success = self._verify_environment(session_name)
@@ -633,6 +641,262 @@ class EnhancedSSHManager:
             
         except Exception as e:
             return False, f"Docker设置异常: {str(e)}"
+    
+    def _setup_sync_environment(self, server, session_name: str) -> Tuple[bool, str]:
+        """设置同步环境 - 部署proftpd并配置VSCode"""
+        try:
+            sync_config = server.sync
+            remote_workspace = sync_config.get('remote_workspace', '/home/Code')
+            ftp_port = sync_config.get('ftp_port', 8021)
+            ftp_user = sync_config.get('ftp_user', 'ftpuser')
+            ftp_password = sync_config.get('ftp_password', 'your_ftp_password')
+            
+            log_output(f"🔄 开始设置同步环境...", "INFO")
+            log_output(f"   远程工作目录: {remote_workspace}", "INFO")
+            log_output(f"   FTP端口: {ftp_port}", "INFO")
+            
+            # 步骤1: 创建远程工作目录
+            success = self._create_remote_workspace(session_name, remote_workspace)
+            if not success:
+                return False, "创建远程工作目录失败"
+            
+            # 步骤2: 部署proftpd
+            success = self._deploy_proftpd(session_name, remote_workspace)
+            if not success:
+                return False, "部署proftpd失败"
+            
+            # 步骤3: 配置并启动proftpd
+            success = self._configure_and_start_proftpd(session_name, remote_workspace, ftp_port, ftp_user, ftp_password)
+            if not success:
+                return False, "配置proftpd失败"
+            
+            # 步骤4: 配置本地VSCode
+            success = self._configure_vscode_sync(server.name, sync_config)
+            if not success:
+                log_output("⚠️ VSCode配置失败，但同步服务器已启动", "WARNING")
+                log_output("💡 请手动配置VSCode SFTP插件", "INFO")
+            
+            log_output("✅ 同步环境设置完成", "SUCCESS")
+            return True, "同步环境设置成功"
+            
+        except Exception as e:
+            return False, f"同步环境设置异常: {str(e)}"
+    
+    def _create_remote_workspace(self, session_name: str, remote_workspace: str) -> bool:
+        """创建远程工作目录"""
+        try:
+            log_output(f"📁 创建远程工作目录: {remote_workspace}", "INFO")
+            
+            # 创建目录命令
+            create_cmd = f"mkdir -p {remote_workspace}"
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, create_cmd, 'Enter'],
+                         capture_output=True)
+            time.sleep(1)
+            
+            # 验证目录创建
+            check_cmd = f"ls -la {remote_workspace} && echo 'WORKSPACE_CREATED'"
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, check_cmd, 'Enter'],
+                         capture_output=True)
+            time.sleep(2)
+            
+            result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
+                                  capture_output=True, text=True)
+            
+            if 'WORKSPACE_CREATED' in result.stdout:
+                log_output("✅ 远程工作目录创建成功", "SUCCESS")
+                return True
+            else:
+                log_output("❌ 远程工作目录创建失败", "ERROR")
+                return False
+                
+        except Exception as e:
+            log_output(f"创建远程工作目录异常: {str(e)}", "ERROR")
+            return False
+    
+    def _deploy_proftpd(self, session_name: str, remote_workspace: str) -> bool:
+        """部署proftpd到远程服务器"""
+        try:
+            log_output("📦 部署proftpd到远程服务器...", "INFO")
+            
+            # 获取proftpd.tar.gz的路径
+            from pathlib import Path
+            proftpd_source = Path.home() / ".remote-terminal" / "templates" / "proftpd.tar.gz"
+            
+            if not proftpd_source.exists():
+                log_output(f"❌ 未找到proftpd.tar.gz: {proftpd_source}", "ERROR")
+                return False
+            
+            # 使用scp上传proftpd.tar.gz到远程工作目录
+            # 这里需要获取当前连接的主机信息
+            upload_cmd = f"cd {remote_workspace}"
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, upload_cmd, 'Enter'],
+                         capture_output=True)
+            time.sleep(1)
+            
+            # 由于我们已经在远程会话中，我们需要通过其他方式传输文件
+            # 这里使用base64编码的方式传输小文件
+            log_output("📤 使用base64编码传输proftpd.tar.gz...", "INFO")
+            
+            # 读取proftpd.tar.gz并base64编码
+            import base64
+            with open(proftpd_source, 'rb') as f:
+                file_content = f.read()
+            
+            encoded_content = base64.b64encode(file_content).decode('utf-8')
+            
+            # 分块传输（避免命令行长度限制）
+            chunk_size = 1000
+            chunks = [encoded_content[i:i+chunk_size] for i in range(0, len(encoded_content), chunk_size)]
+            
+            # 清空目标文件
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, 'rm -f proftpd.tar.gz.b64', 'Enter'],
+                         capture_output=True)
+            time.sleep(1)
+            
+            # 逐块写入
+            for i, chunk in enumerate(chunks):
+                if i == 0:
+                    cmd = f"echo '{chunk}' > proftpd.tar.gz.b64"
+                else:
+                    cmd = f"echo '{chunk}' >> proftpd.tar.gz.b64"
+                
+                subprocess.run(['tmux', 'send-keys', '-t', session_name, cmd, 'Enter'],
+                             capture_output=True)
+                time.sleep(0.1)
+            
+            # 解码文件
+            decode_cmd = "base64 -d proftpd.tar.gz.b64 > proftpd.tar.gz && rm proftpd.tar.gz.b64"
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, decode_cmd, 'Enter'],
+                         capture_output=True)
+            time.sleep(2)
+            
+            # 验证文件传输
+            check_cmd = "ls -la proftpd.tar.gz && echo 'PROFTPD_UPLOADED'"
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, check_cmd, 'Enter'],
+                         capture_output=True)
+            time.sleep(2)
+            
+            result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
+                                  capture_output=True, text=True)
+            
+            if 'PROFTPD_UPLOADED' in result.stdout:
+                log_output("✅ proftpd.tar.gz上传成功", "SUCCESS")
+                
+                # 解压文件
+                extract_cmd = "tar -xzf proftpd.tar.gz && echo 'PROFTPD_EXTRACTED'"
+                subprocess.run(['tmux', 'send-keys', '-t', session_name, extract_cmd, 'Enter'],
+                             capture_output=True)
+                time.sleep(3)
+                
+                result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
+                                      capture_output=True, text=True)
+                
+                if 'PROFTPD_EXTRACTED' in result.stdout:
+                    log_output("✅ proftpd解压成功", "SUCCESS")
+                    return True
+                else:
+                    log_output("❌ proftpd解压失败", "ERROR")
+                    return False
+            else:
+                log_output("❌ proftpd.tar.gz上传失败", "ERROR")
+                return False
+                
+        except Exception as e:
+            log_output(f"部署proftpd异常: {str(e)}", "ERROR")
+            return False
+    
+    def _configure_and_start_proftpd(self, session_name: str, remote_workspace: str, ftp_port: int, ftp_user: str, ftp_password: str) -> bool:
+        """配置并启动proftpd服务"""
+        try:
+            log_output("⚙️ 配置并启动proftpd服务...", "INFO")
+            
+            # 执行初始化脚本
+            init_cmd = f"bash ./init.sh {remote_workspace}"
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, init_cmd, 'Enter'],
+                         capture_output=True)
+            time.sleep(5)
+            
+            # 检查初始化结果
+            result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
+                                  capture_output=True, text=True)
+            
+            log_output("📋 初始化脚本输出:", "INFO")
+            log_output(result.stdout[-500:], "DEBUG")  # 显示最后500字符
+            
+            # 启动proftpd服务
+            start_cmd = f"./proftpd -n -c ./proftpd.conf &"
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, start_cmd, 'Enter'],
+                         capture_output=True)
+            time.sleep(3)
+            
+            # 验证服务启动
+            check_cmd = f"netstat -tlnp | grep {ftp_port} && echo 'PROFTPD_RUNNING'"
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, check_cmd, 'Enter'],
+                         capture_output=True)
+            time.sleep(2)
+            
+            result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
+                                  capture_output=True, text=True)
+            
+            if 'PROFTPD_RUNNING' in result.stdout or str(ftp_port) in result.stdout:
+                log_output(f"✅ proftpd服务已启动，监听端口: {ftp_port}", "SUCCESS")
+                log_output(f"   FTP用户: {ftp_user}", "INFO")
+                log_output(f"   工作目录: {remote_workspace}", "INFO")
+                return True
+            else:
+                log_output("❌ proftpd服务启动失败", "ERROR")
+                return False
+                
+        except Exception as e:
+            log_output(f"配置proftpd异常: {str(e)}", "ERROR")
+            return False
+    
+    def _configure_vscode_sync(self, server_name: str, sync_config: dict) -> bool:
+        """配置VSCode同步"""
+        try:
+            log_output("🔧 配置VSCode同步...", "INFO")
+            
+            # 导入VSCode同步管理器
+            import sys
+            import os
+            sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+            
+            from vscode_sync_manager import create_vscode_sync_manager
+            
+            # 创建同步管理器
+            local_workspace = sync_config.get('local_workspace', os.getcwd())
+            sync_manager = create_vscode_sync_manager(local_workspace)
+            
+            # 验证工作目录
+            if not sync_manager.validate_workspace():
+                log_output("⚠️ 当前目录可能不是项目根目录", "WARNING")
+            
+            # 准备同步配置
+            vscode_sync_config = {
+                'host': 'localhost',  # 通过SSH隧道连接
+                'ftp_port': sync_config.get('ftp_port', 8021),
+                'ftp_user': sync_config.get('ftp_user', 'ftpuser'),
+                'ftp_password': sync_config.get('ftp_password'),
+                'remote_workspace': sync_config.get('remote_workspace', '/home/Code')
+            }
+            
+            # 添加或更新profile
+            success = sync_manager.add_or_update_profile(server_name, vscode_sync_config)
+            if not success:
+                return False
+            
+            # 尝试设置为活动profile
+            profile_name = f"remote-terminal-{server_name}"
+            sync_manager.set_active_profile(profile_name)
+            
+            log_output("✅ VSCode同步配置完成", "SUCCESS")
+            log_output(f"💡 请在VSCode中使用SFTP插件连接到profile: {profile_name}", "INFO")
+            
+            return True
+            
+        except Exception as e:
+            log_output(f"配置VSCode同步异常: {str(e)}", "ERROR")
+            return False
     
     def _smart_container_connect(self, session_name: str, container_name: str, docker_config: dict) -> bool:
         """智能容器连接 - 自动检测和创建，配置本地环境"""

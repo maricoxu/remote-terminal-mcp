@@ -5,3 +5,11 @@ servers:
     port: 22
     type: ssh
     user: your-username
+    # 同步功能配置
+    sync:
+      enabled: false
+      remote_workspace: "/home/Code"
+      local_workspace: ""  # 将自动检测当前工作目录
+      ftp_port: 8021
+      ftp_user: "ftpuser"
+      ftp_password: "your_ftp_password"

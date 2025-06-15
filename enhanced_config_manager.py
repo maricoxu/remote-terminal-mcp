@@ -12,7 +12,7 @@ import json
 import subprocess
 import tempfile
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
 from docker_config_manager import DockerConfigManager, DockerEnvironmentConfig
 
@@ -174,13 +174,93 @@ class EnhancedConfigManager:
         else:
             self.colored_print("✅ 将使用SSH密钥认证", Fore.GREEN)
         
-        return {
+        # 同步功能配置
+        sync_config = self._configure_sync(server_name)
+        
+        server_config = {
             "name": server_name,
             "host": server_host,
             "user": username,
             "port": port,
             "password": password
         }
+        
+        if sync_config:
+            server_config["sync"] = sync_config
+        
+        return server_config
+    
+    def _configure_sync(self, server_name: str) -> Optional[Dict[str, Any]]:
+        """配置同步功能"""
+        self.colored_print(f"\n🔄 配置同步功能 (可选)", Fore.CYAN)
+        self.colored_print("同步功能可以让您在本地VSCode中直接编辑远程文件", Fore.CYAN)
+        
+        # 询问是否启用同步
+        enable_sync_input = self.smart_input("是否启用文件同步功能", 
+                                           validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
+                                           suggestions=['y (推荐)', 'n'],
+                                           default='n')
+        if not enable_sync_input or enable_sync_input.lower() in ['n', 'no']:
+            self.colored_print("⏭️ 跳过同步配置", Fore.YELLOW)
+            return None
+        
+        self.colored_print("✅ 启用同步功能", Fore.GREEN)
+        
+        # 配置远程工作目录
+        remote_workspace = self.smart_input("远程工作目录", 
+                                          validator=lambda x: bool(x and x.startswith('/')),
+                                          default="/home/Code",
+                                          suggestions=["/home/Code", "/workspace", "/opt/workspace"])
+        if not remote_workspace:
+            return None
+        
+        # 检测本地工作目录
+        current_dir = os.getcwd()
+        self.colored_print(f"📁 当前本地目录: {current_dir}", Fore.CYAN)
+        
+        local_workspace = self.smart_input("本地工作目录 (回车使用当前目录)", 
+                                         default=current_dir,
+                                         show_suggestions=False)
+        if not local_workspace:
+            local_workspace = current_dir
+        
+        # FTP配置
+        self.colored_print("\n🌐 FTP服务器配置", Fore.CYAN)
+        
+        ftp_port = self.smart_input("FTP端口", 
+                                   validator=self.validate_port,
+                                   default="8021",
+                                   show_suggestions=False)
+        if not ftp_port:
+            ftp_port = "8021"
+        
+        ftp_user = self.smart_input("FTP用户名", 
+                                   default="ftpuser",
+                                   show_suggestions=False)
+        if not ftp_user:
+            ftp_user = "ftpuser"
+        
+        ftp_password = self.smart_input("FTP密码", 
+                                       default="your_ftp_password",
+                                       show_suggestions=False)
+        if not ftp_password:
+            ftp_password = "your_ftp_password"
+        
+        sync_config = {
+            "enabled": True,
+            "remote_workspace": remote_workspace,
+            "local_workspace": local_workspace,
+            "ftp_port": int(ftp_port),
+            "ftp_user": ftp_user,
+            "ftp_password": ftp_password
+        }
+        
+        self.colored_print("✅ 同步配置完成", Fore.GREEN)
+        self.colored_print(f"   远程目录: {remote_workspace}", Fore.GREEN)
+        self.colored_print(f"   本地目录: {local_workspace}", Fore.GREEN)
+        self.colored_print(f"   FTP端口: {ftp_port}", Fore.GREEN)
+        
+        return sync_config
     
     def validate_hostname(self, hostname: str) -> bool:
         """验证主机名格式"""

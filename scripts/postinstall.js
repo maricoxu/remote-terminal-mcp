@@ -26,9 +26,35 @@ try {
   process.exit(1);
 }
 
+// Copy sync tools to user config directory
+function copySyncTools() {
+  const userConfigDir = path.join(os.homedir(), '.remote-terminal');
+  const templatesDir = path.join(userConfigDir, 'templates');
+  const proftpdSource = path.join(__dirname, '..', 'templates', 'proftpd.tar.gz');
+  const proftpdTarget = path.join(templatesDir, 'proftpd.tar.gz');
+  
+  // Create templates directory if it doesn't exist
+  if (!fs.existsSync(templatesDir)) {
+    try {
+      fs.mkdirSync(templatesDir, { recursive: true });
+    } catch (error) {
+      return;
+    }
+  }
+  
+  // Copy proftpd.tar.gz if it exists and target doesn't exist
+  if (fs.existsSync(proftpdSource) && !fs.existsSync(proftpdTarget)) {
+    try {
+      fs.copyFileSync(proftpdSource, proftpdTarget);
+    } catch (error) {
+      // Silently fail if we can't copy
+    }
+  }
+}
+
 // Smart configuration management - only create default config if user doesn't have one
 function initializeUserConfig() {
-  const userConfigDir = path.join(os.homedir(), '.remote-terminal-mcp');
+  const userConfigDir = path.join(os.homedir(), '.remote-terminal');
   const userConfigFile = path.join(userConfigDir, 'config.yaml');
   
   // Check if user already has a config file
@@ -64,6 +90,13 @@ servers: {}
     // Silently fail if we can't write config
     return;
   }
+}
+
+// Copy sync tools safely
+try {
+  copySyncTools();
+} catch (error) {
+  // Don't fail installation if sync tools copy fails
 }
 
 // Initialize user config safely
