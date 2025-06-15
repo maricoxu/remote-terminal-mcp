@@ -15,13 +15,7 @@
 
 ## 🚀 快速开始
 
-### 1. 安装NPM包
-
-```bash
-npm install -g @xuyehua/remote-terminal-mcp
-```
-
-### 2. 在Cursor中配置MCP
+### 1. 在Cursor中配置MCP
 
 在Cursor中，打开设置并编辑MCP配置文件（`.cursor/mcp.json`）：
 
@@ -39,9 +33,15 @@ npm install -g @xuyehua/remote-terminal-mcp
 }
 ```
 
-### 3. 重启Cursor
+> 💡 **提示**：使用`npx`会自动下载最新版本，无需手动安装NPM包。如果你偏好手动管理，也可以先运行 `npm install -g @xuyehua/remote-terminal-mcp` 然后将`command`改为包的绝对路径。
 
-重启Cursor以加载MCP服务器。
+### 2. 启用MCP服务
+
+配置完成后，你需要让MCP服务生效：
+- **方式1**：在Cursor中刷新MCP服务（推荐）
+- **方式2**：重启Cursor应用
+
+配置生效后，你就可以开始使用了！
 
 ## 🎯 在Cursor中使用
 
@@ -63,7 +63,11 @@ AI会使用`list_servers`工具显示所有配置的服务器。
 我想配置一个新的远程服务器，服务器IP是192.168.1.100，用户名是ubuntu，使用SSH密钥认证
 ```
 
-AI会使用配置工具帮你创建服务器配置。
+AI会启动**交互式配置向导**，引导你完成服务器配置：
+- 🎯 **智能向导**：根据你的需求选择最适合的配置方式
+- 🔧 **多种模式**：支持SSH直连、跳板机中继、Docker容器等
+- 📝 **逐步指导**：清晰的步骤说明，无需复杂的手动配置
+- ✅ **即时验证**：配置完成后自动测试连接
 
 ### 🔗 连接服务器
 
@@ -97,10 +101,16 @@ AI会使用管理工具安全删除服务器配置。
 
 ### 交互式配置向导
 
-```bash
-# 启动配置向导
-npx @xuyehua/remote-terminal-mcp --config
+在Cursor中直接说：
 ```
+我要配置一个新的远程服务器
+```
+
+AI会自动启动配置向导，无需手动运行命令。向导包括：
+- 🚀 **快速配置**：适合常见场景的一键配置
+- 🎯 **向导配置**：详细的分步指导
+- 📋 **模板配置**：基于预设模板快速创建
+- ⚙️ **高级配置**：完全自定义的配置选项
 
 ### 支持的连接类型
 
@@ -165,15 +175,27 @@ servers:
 ### 场景1：开发环境管理
 
 ```
-用户：我需要连接到开发服务器部署代码
-AI：我来帮你连接到开发服务器并执行部署操作...
+用户：我需要配置一个开发服务器，IP是192.168.1.100
+AI：我来启动配置向导帮你设置...
+    [启动交互式配置向导]
+    - 检测到这是一个内网IP，推荐SSH直连方式
+    - 请输入用户名...
+    - 选择认证方式：SSH密钥 / 密码
+    - 是否需要Docker支持？
+    [配置完成，自动测试连接]
 ```
 
-### 场景2：Docker容器操作
+### 场景2：Docker容器配置
 
 ```
-用户：在Docker容器中启动一个新的Python应用
-AI：我来帮你在Docker容器中启动Python应用...
+用户：我要配置一个带Docker的GPU训练服务器
+AI：启动Docker配置向导...
+    [Docker环境配置向导]
+    - 选择基础镜像：Ubuntu 20.04 / PyTorch官方镜像
+    - GPU支持：是否启用NVIDIA GPU
+    - 端口映射：Jupyter (8888), TensorBoard (6006)
+    - 挂载目录：代码目录、数据目录
+    [创建并启动容器]
 ```
 
 ### 场景3：多服务器监控
@@ -189,10 +211,13 @@ AI：我来检查所有生产服务器的系统状态...
 
 #### 1. MCP服务器无法启动
 ```bash
-# 检查NPM包是否正确安装
+# 如果使用npx方式，通常无需手动安装
+# 如果需要检查全局安装的包
 npm list -g @xuyehua/remote-terminal-mcp
 
-# 重新安装
+# 清除缓存并重新获取（npx方式）
+npx clear-npx-cache
+# 或者手动重新安装
 npm uninstall -g @xuyehua/remote-terminal-mcp
 npm install -g @xuyehua/remote-terminal-mcp
 ```
@@ -208,9 +233,10 @@ npm install -g @xuyehua/remote-terminal-mcp
 # 查看配置文件位置
 ls -la ~/.remote-terminal-mcp/
 
-# 重置配置
+# 重置配置（在Cursor中说）
+"请帮我重置远程服务器配置"
+# 或者手动重置
 rm -rf ~/.remote-terminal-mcp/
-npx @xuyehua/remote-terminal-mcp --config
 ```
 
 ### 调试模式
