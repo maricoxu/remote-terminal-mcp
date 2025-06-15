@@ -2101,6 +2101,36 @@ servers:
                     }
                 }
         
+        # 询问是否配置同步功能
+        self.colored_print("\n🔄 文件同步功能配置", Fore.CYAN, Style.BRIGHT)
+        current_sync = current_config.get('sync', {})
+        has_sync = bool(current_sync.get('enabled', False))
+        
+        self.colored_print(f"当前同步状态: {'已启用' if has_sync else '未启用'}", Fore.YELLOW)
+        self.colored_print("💡 文件同步功能可以让您在本地VSCode中直接编辑远程服务器文件", Fore.YELLOW)
+        
+        configure_sync = self.smart_input("是否配置文件同步功能 (y/n)", 
+                                        validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
+                                        default='y' if has_sync else 'n')
+        
+        if configure_sync and configure_sync.lower() in ['y', 'yes']:
+            sync_config = self._configure_sync(selected_server)
+            if sync_config:
+                updated_config['sync'] = sync_config
+                self.colored_print("✅ 同步功能配置完成", Fore.GREEN)
+            else:
+                self.colored_print("⚠️ 同步功能配置跳过", Fore.YELLOW)
+        elif has_sync:
+            # 如果之前有同步配置但用户选择不配置，询问是否保留
+            keep_sync = self.smart_input("是否保留现有同步配置 (y/n)", 
+                                       validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
+                                       default='y')
+            if keep_sync and keep_sync.lower() in ['y', 'yes']:
+                updated_config['sync'] = current_sync
+                self.colored_print("✅ 保留现有同步配置", Fore.GREEN)
+            else:
+                self.colored_print("⚠️ 已移除同步配置", Fore.YELLOW)
+        
         # 显示更新预览
         self.colored_print("\n📋 配置更新预览:", Fore.GREEN, Style.BRIGHT)
         self.colored_print(f"服务器名称: {selected_server}", Fore.WHITE)
@@ -2108,6 +2138,16 @@ servers:
         self.colored_print(f"用户: {updated_config['user']}", Fore.WHITE)
         self.colored_print(f"端口: {updated_config['port']}", Fore.WHITE)
         self.colored_print(f"连接类型: {updated_config['type']}", Fore.WHITE)
+        
+        # 显示同步配置预览
+        if 'sync' in updated_config and updated_config['sync'].get('enabled'):
+            sync_info = updated_config['sync']
+            self.colored_print(f"同步功能: 已启用", Fore.GREEN)
+            self.colored_print(f"  远程工作目录: {sync_info.get('remote_workspace', '/home/Code')}", Fore.WHITE)
+            self.colored_print(f"  本地工作目录: {sync_info.get('local_workspace', '.')}", Fore.WHITE)
+            self.colored_print(f"  FTP端口: {sync_info.get('ftp_port', 8021)}", Fore.WHITE)
+        else:
+            self.colored_print(f"同步功能: 未启用", Fore.YELLOW)
         
         # 确认保存
         confirm = self.smart_input("确认保存更改 (y/n)", 
