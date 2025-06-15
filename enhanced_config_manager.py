@@ -2005,7 +2005,7 @@ servers:
         
         return {}
 
-    def edit_server_config(self):
+    def edit_server_config(self, server_name: str = None):
         """编辑现有服务器配置"""
         self.colored_print("\n📝 编辑服务器配置", Fore.YELLOW, Style.BRIGHT)
         self.colored_print("=" * 50, Fore.YELLOW)
@@ -2017,24 +2017,29 @@ servers:
             self.colored_print("💡 请先使用向导配置创建服务器配置", Fore.YELLOW)
             return
         
-        # 显示现有服务器列表
-        self.colored_print("\n📋 现有服务器配置:", Fore.CYAN)
-        server_list = list(existing_servers.keys())
-        for i, server_name in enumerate(server_list, 1):
-            server_info = existing_servers[server_name]
-            host = server_info.get('host', 'N/A')
-            user = server_info.get('user', server_info.get('username', 'N/A'))
-            conn_type = server_info.get('type', 'ssh')
-            self.colored_print(f"  {i}. {server_name} - {user}@{host} ({conn_type})", Fore.WHITE)
-        
-        # 选择要编辑的服务器
-        choice = self.smart_input("选择要编辑的服务器 (输入序号)", 
-                                validator=lambda x: x.isdigit() and 1 <= int(x) <= len(server_list),
-                                suggestions=[str(i) for i in range(1, len(server_list) + 1)])
-        if not choice:
-            return
-        
-        selected_server = server_list[int(choice) - 1]
+        # 如果指定了服务器名称，直接使用；否则让用户选择
+        if server_name and server_name in existing_servers:
+            selected_server = server_name
+            self.colored_print(f"\n🎯 编辑指定服务器: {selected_server}", Fore.CYAN)
+        else:
+            # 显示现有服务器列表
+            self.colored_print("\n📋 现有服务器配置:", Fore.CYAN)
+            server_list = list(existing_servers.keys())
+            for i, srv_name in enumerate(server_list, 1):
+                server_info = existing_servers[srv_name]
+                host = server_info.get('host', 'N/A')
+                user = server_info.get('user', server_info.get('username', 'N/A'))
+                conn_type = server_info.get('type', 'ssh')
+                self.colored_print(f"  {i}. {srv_name} - {user}@{host} ({conn_type})", Fore.WHITE)
+            
+            # 选择要编辑的服务器
+            choice = self.smart_input("选择要编辑的服务器 (输入序号)", 
+                                    validator=lambda x: x.isdigit() and 1 <= int(x) <= len(server_list),
+                                    suggestions=[str(i) for i in range(1, len(server_list) + 1)])
+            if not choice:
+                return
+            
+            selected_server = server_list[int(choice) - 1]
         current_config = existing_servers[selected_server]
         
         self.colored_print(f"\n✏️ 编辑服务器: {selected_server}", Fore.CYAN, Style.BRIGHT)
@@ -2160,6 +2165,101 @@ servers:
             self.colored_print(f"\n✅ 服务器配置已更新: {selected_server}", Fore.GREEN, Style.BRIGHT)
         else:
             self.colored_print("\n❌ 取消更新", Fore.YELLOW)
+
+    def delete_server_config(self, server_name: str = None):
+        """删除现有服务器配置"""
+        self.colored_print("\n🗑️ 删除服务器配置", Fore.RED, Style.BRIGHT)
+        self.colored_print("=" * 50, Fore.RED)
+        
+        # 获取现有服务器配置
+        existing_servers = self.get_existing_servers()
+        if not existing_servers:
+            self.colored_print("❌ 没有找到现有的服务器配置", Fore.RED)
+            self.colored_print("💡 没有可删除的服务器配置", Fore.YELLOW)
+            return
+        
+        # 如果指定了服务器名称，直接使用；否则让用户选择
+        if server_name and server_name in existing_servers:
+            selected_server = server_name
+            self.colored_print(f"\n🎯 删除指定服务器: {selected_server}", Fore.RED)
+        else:
+            # 显示现有服务器列表
+            self.colored_print("\n📋 现有服务器配置:", Fore.CYAN)
+            server_list = list(existing_servers.keys())
+            for i, srv_name in enumerate(server_list, 1):
+                server_info = existing_servers[srv_name]
+                host = server_info.get('host', 'N/A')
+                user = server_info.get('user', server_info.get('username', 'N/A'))
+                conn_type = server_info.get('type', 'ssh')
+                self.colored_print(f"  {i}. {srv_name} - {user}@{host} ({conn_type})", Fore.WHITE)
+            
+            # 选择要删除的服务器
+            choice = self.smart_input("选择要删除的服务器 (输入序号)", 
+                                    validator=lambda x: x.isdigit() and 1 <= int(x) <= len(server_list),
+                                    suggestions=[str(i) for i in range(1, len(server_list) + 1)])
+            if not choice:
+                return
+            
+            selected_server = server_list[int(choice) - 1]
+        
+        current_config = existing_servers[selected_server]
+        
+        # 显示要删除的配置详情
+        self.colored_print(f"\n⚠️ 即将删除服务器配置: {selected_server}", Fore.RED, Style.BRIGHT)
+        self.colored_print("-" * 40, Fore.RED)
+        self.colored_print(f"地址: {current_config.get('host', 'N/A')}", Fore.WHITE)
+        self.colored_print(f"用户: {current_config.get('user', current_config.get('username', 'N/A'))}", Fore.WHITE)
+        self.colored_print(f"端口: {current_config.get('port', 22)}", Fore.WHITE)
+        self.colored_print(f"连接类型: {current_config.get('type', 'ssh')}", Fore.WHITE)
+        
+        # 检查是否有同步配置
+        if 'sync' in current_config and current_config['sync'].get('enabled'):
+            self.colored_print(f"同步功能: 已启用 (将一并删除)", Fore.YELLOW)
+        
+        # 警告信息
+        self.colored_print("\n⚠️ 警告:", Fore.RED, Style.BRIGHT)
+        self.colored_print("• 此操作不可逆", Fore.YELLOW)
+        self.colored_print("• 将删除所有相关配置", Fore.YELLOW)
+        self.colored_print("• 包括同步配置和其他自定义设置", Fore.YELLOW)
+        
+        # 二次确认
+        self.colored_print(f"\n请输入服务器名称 '{selected_server}' 来确认删除:", Fore.RED)
+        confirm_name = self.smart_input("确认服务器名称")
+        
+        if confirm_name != selected_server:
+            self.colored_print("❌ 服务器名称不匹配，取消删除", Fore.YELLOW)
+            return
+        
+        # 最终确认
+        final_confirm = self.smart_input("最终确认删除 (输入 'DELETE' 确认)", 
+                                       validator=lambda x: x == 'DELETE')
+        
+        if final_confirm == 'DELETE':
+            try:
+                # 读取当前配置文件
+                if os.path.exists(self.config_path):
+                    with open(self.config_path, 'r', encoding='utf-8') as f:
+                        config = json.load(f)
+                else:
+                    config = {"servers": {}}
+                
+                # 删除指定服务器
+                if 'servers' in config and selected_server in config['servers']:
+                    del config['servers'][selected_server]
+                    
+                    # 保存更新后的配置
+                    with open(self.config_path, 'w', encoding='utf-8') as f:
+                        json.dump(config, f, indent=2, ensure_ascii=False)
+                    
+                    self.colored_print(f"\n✅ 服务器配置已删除: {selected_server}", Fore.GREEN, Style.BRIGHT)
+                    self.colored_print("🔄 配置文件已更新", Fore.GREEN)
+                else:
+                    self.colored_print(f"❌ 未找到服务器配置: {selected_server}", Fore.RED)
+                    
+            except Exception as e:
+                self.colored_print(f"❌ 删除配置时发生错误: {str(e)}", Fore.RED)
+        else:
+            self.colored_print("\n❌ 取消删除", Fore.YELLOW)
 
     def edit_docker_config(self):
         """编辑现有Docker配置"""

@@ -502,6 +502,16 @@ async def handle_request(request):
                                     content = json.dumps(servers[server_name], ensure_ascii=False, indent=2)
                                 else:
                                     content = f"Error: Server '{server_name}' not found"
+                        elif action == "edit":
+                            if not server_name:
+                                content = "Error: server_name is required for edit action"
+                            else:
+                                # 启动编辑服务器配置的交互式向导
+                                try:
+                                    result = config_manager.edit_server_config(server_name)
+                                    content = f"✅ 服务器 '{server_name}' 的编辑向导已启动\n\n📝 功能包括:\n• 修改基本连接信息\n• 配置或更新同步功能\n• 智能检测现有配置\n• 详细配置预览\n\n请按照向导步骤完成配置修改"
+                                except Exception as e:
+                                    content = f"❌ 启动编辑向导失败: {str(e)}"
                         elif action == "test":
                             if not server_name:
                                 content = "Error: server_name is required for test action"
@@ -509,12 +519,22 @@ async def handle_request(request):
                                 # 使用EnhancedConfigManager的test_connection方法
                                 result = config_manager.test_connection()
                                 content = f"🔍 连接测试功能已启动，请查看配置管理界面"
+                        elif action == "delete":
+                            if not server_name:
+                                content = "Error: server_name is required for delete action"
+                            else:
+                                # 启动删除服务器配置的交互式确认
+                                try:
+                                    result = config_manager.delete_server_config(server_name)
+                                    content = f"🗑️ 服务器 '{server_name}' 的删除向导已启动\n\n⚠️ 注意:\n• 删除操作不可逆\n• 将会移除所有相关配置\n• 请仔细确认后再执行\n\n请按照向导步骤完成删除操作"
+                                except Exception as e:
+                                    content = f"❌ 启动删除向导失败: {str(e)}"
                         elif action == "manage":
                             # 启动配置管理界面
                             result = config_manager.manage_existing()
                             content = f"⚙️ 配置管理界面已启动"
                         else:
-                            content = f"支持的操作: list, view, test, manage"
+                            content = f"支持的操作: list, view, edit, delete, test, manage"
                     except Exception as e:
                         content = f"❌ 配置管理操作失败: {str(e)}"
                 
