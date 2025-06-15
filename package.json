@@ -1,6 +1,6 @@
 {
   "name": "@xuyehua/remote-terminal-mcp",
-  "version": "0.7.0",
+  "version": "0.8.1",
   "description": "A remote terminal MCP for Cursor",
   "main": "index.js",
   "bin": {
@@ -15,14 +15,25 @@
     "config/",
     "templates/",
     "scripts/",
+    "docker_config_manager.py",
+    "enhanced_config_manager.py",
     "requirements.txt",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "BOS_PROGRESS.md"
   ],
   "scripts": {
     "start": "node index.js",
     "test": "node test.js",
-    "postinstall": "node scripts/postinstall.js"
+    "postinstall": "node scripts/postinstall.js",
+    "publish:patch": "node scripts/publish.js version-and-publish patch",
+    "publish:minor": "node scripts/publish.js version-and-publish minor",
+    "publish:major": "node scripts/publish.js version-and-publish major",
+    "version:patch": "node scripts/publish.js patch",
+    "version:minor": "node scripts/publish.js minor",
+    "version:major": "node scripts/publish.js major",
+    "build": "npm pack",
+    "prepublishOnly": "npm test"
   },
   "keywords": [
     "mcp",
@@ -35,7 +46,12 @@
     "relay-cli",
     "intelligent-connection",
     "tmux",
-    "ssh"
+    "ssh",
+    "bos",
+    "configuration",
+    "shell",
+    "zsh",
+    "bash"
   ],
   "author": {
     "name": "xuyehua",
