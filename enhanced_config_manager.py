@@ -206,6 +206,13 @@ class EnhancedConfigManager:
         
         self.colored_print("✅ 启用同步功能", Fore.GREEN)
         
+        # 调用详细配置方法
+        return self._configure_sync_details(server_name)
+    
+    def _configure_sync_details(self, server_name: str) -> Optional[Dict[str, Any]]:
+        """配置同步功能详细设置（不再询问是否启用）"""
+        self.colored_print("✅ 启用同步功能", Fore.GREEN)
+        
         # 配置远程工作目录
         remote_workspace = self.smart_input("远程工作目录", 
                                           validator=lambda x: bool(x and x.startswith('/')),
@@ -2114,12 +2121,12 @@ servers:
         self.colored_print(f"当前同步状态: {'已启用' if has_sync else '未启用'}", Fore.YELLOW)
         self.colored_print("💡 文件同步功能可以让您在本地VSCode中直接编辑远程服务器文件", Fore.YELLOW)
         
-        configure_sync = self.smart_input("是否配置文件同步功能 (y/n)", 
+        configure_sync = self.smart_input("是否启用文件同步功能 (y/n)", 
                                         validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
                                         default='y' if has_sync else 'n')
         
         if configure_sync and configure_sync.lower() in ['y', 'yes']:
-            sync_config = self._configure_sync(selected_server)
+            sync_config = self._configure_sync_details(selected_server)
             if sync_config:
                 updated_config['sync'] = sync_config
                 self.colored_print("✅ 同步功能配置完成", Fore.GREEN)
