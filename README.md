@@ -126,6 +126,12 @@ servers:
 ```
 
 #### 2. 跳板机中继
+
+跳板机中继支持一级跳板和二级跳板两种模式，适用于复杂的网络环境。
+
+##### 一级跳板机配置
+通过单个跳板机连接目标服务器：
+
 ```yaml
 servers:
   relay-server:
@@ -134,7 +140,73 @@ servers:
     user: ubuntu
     jumphost: jumphost.com
     jumphost_user: admin
+    # 可选配置
+    port: 22
+    jumphost_port: 22
+    auth_method: key  # 或 password
 ```
+
+##### 二级跳板机配置
+通过两级跳板机连接目标服务器（跳板机→二级跳板机→目标服务器）：
+
+```yaml
+servers:
+  relay-server:
+    type: relay
+    host: target-server.com
+    user: ubuntu
+    # 一级跳板机配置
+    jumphost: jumphost.com
+    jumphost_user: admin
+    # 二级跳板机配置
+    specs:
+      connection:
+        jump_host:
+          host: jumphost.com
+          username: admin
+          port: 22
+        secondary_jump:
+          host: secondary-jumphost.com
+          username: root
+          port: 22
+        target:
+          host: target-server.com
+          username: ubuntu
+          port: 22
+        tool: relay-cli
+```
+
+##### 配置说明
+
+| 参数 | 说明 | 示例 |
+|------|------|------|
+| `jumphost` | 一级跳板机地址 | `jumphost.com` |
+| `jumphost_user` | 一级跳板机用户名 | `admin` |
+| `secondary_jump.host` | 二级跳板机地址 | `secondary-jumphost.com` |
+| `secondary_jump.username` | 二级跳板机用户名 | `root` |
+| `target.host` | 最终目标服务器地址 | `target-server.com` |
+| `target.username` | 目标服务器用户名 | `ubuntu` |
+| `tool` | 连接工具类型 | `relay-cli` |
+
+##### 跳板机连接原理
+
+跳板机连接通过建立多级SSH隧道来实现安全的远程访问：
+
+```
+本地 → 一级跳板机 → 二级跳板机 → 目标服务器
+```
+
+**连接流程：**
+1. 首先连接到一级跳板机（jumphost）
+2. 在一级跳板机上建立到二级跳板机的连接（如果配置了二级跳板）
+3. 最后从二级跳板机连接到目标服务器
+4. 所有数据通过这个安全隧道传输
+
+**适用场景：**
+- 🏢 **企业内网访问**：通过公司跳板机访问内网服务器
+- 🔒 **安全隔离环境**：生产环境需要多层安全验证
+- 🌐 **跨网络访问**：不同网络段之间的服务器访问
+- 🛡️ **合规要求**：满足安全审计和访问控制要求
 
 #### 3. Docker容器
 ```yaml
@@ -186,7 +258,26 @@ AI：我来启动配置向导帮你设置...
     [配置完成，自动测试连接]
 ```
 
-### 场景2：Docker容器配置
+### 场景2：跳板机配置
+
+```
+用户：我想新增一个通过跳板机连接的服务器
+AI：我来启动配置向导帮你设置跳板机连接...
+    [启动交互式配置向导]
+    - 请输入服务器名称：production-server
+    - 选择连接方式：Relay跳板机连接
+    - 请输入目标服务器地址：target-server.com
+    - 请输入目标服务器用户名：ubuntu
+    - 请输入跳板机地址：jumphost.com
+    - 请输入跳板机用户名：admin
+    - 是否需要二级跳板机？选择：是
+    [二级跳板机配置]
+    - 请输入二级跳板机地址：secondary-jumphost.com
+    - 请输入二级跳板机用户名：root
+    [配置完成，自动测试连接]
+```
+
+### 场景3：Docker容器配置
 
 ```
 用户：我想新增一个GPU训练服务器
@@ -202,7 +293,7 @@ AI：启动配置向导...
     [创建并启动容器]
 ```
 
-### 场景3：多服务器监控
+### 场景4：多服务器监控
 
 ```
 用户：检查所有生产服务器的CPU使用情况
