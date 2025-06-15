@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { execSync } = require('child_process');
 
 // This script is executed after the package is installed.
 // Its purpose is to programmatically ensure that our CLI entry point
@@ -70,4 +71,49 @@ try {
   initializeUserConfig();
 } catch (error) {
   // Don't fail installation if config initialization fails
-} 
+}
+
+// Install Python dependencies
+function installPythonDependencies() {
+  const requirementsPath = path.join(__dirname, '..', 'requirements.txt');
+  
+  // Check if requirements.txt exists
+  if (!fs.existsSync(requirementsPath)) {
+    return;
+  }
+  
+  try {
+    // Check if pip is available
+    execSync('python3 -m pip --version', { stdio: 'ignore' });
+    
+    // Install dependencies
+    console.log('📦 Installing Python dependencies...');
+    execSync(`python3 -m pip install -r "${requirementsPath}" --user --quiet`, { 
+      stdio: 'inherit',
+      timeout: 60000 // 60 seconds timeout
+    });
+    console.log('✅ Python dependencies installed successfully');
+    
+  } catch (error) {
+    // Try with python instead of python3
+    try {
+      execSync('python -m pip --version', { stdio: 'ignore' });
+      execSync(`python -m pip install -r "${requirementsPath}" --user --quiet`, { 
+        stdio: 'inherit',
+        timeout: 60000
+      });
+      console.log('✅ Python dependencies installed successfully');
+    } catch (fallbackError) {
+      // Silent fail - don't break installation
+      console.log('⚠️  Could not install Python dependencies automatically.');
+      console.log('   Please run: pip install -r requirements.txt');
+    }
+  }
+}
+
+// Install Python dependencies safely
+try {
+  installPythonDependencies();
+} catch (error) {
+  // Don't fail installation if Python dependency installation fails
+}

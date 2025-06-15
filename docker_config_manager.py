@@ -13,10 +13,40 @@ import json
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field, asdict
-from colorama import Fore, Back, Style, init
-
-# 初始化colorama
-init(autoreset=True)
+# 添加颜色支持
+try:
+    from colorama import Fore, Back, Style, init
+    init(autoreset=True)
+    HAS_COLOR = True
+except ImportError:
+    # 如果没有colorama，使用简单的颜色代码
+    class Fore:
+        RED = '\033[91m'
+        GREEN = '\033[92m'
+        YELLOW = '\033[93m'
+        BLUE = '\033[94m'
+        MAGENTA = '\033[95m'
+        CYAN = '\033[96m'
+        WHITE = '\033[97m'
+        RESET = '\033[0m'
+    
+    class Back:
+        BLACK = '\033[40m'
+        RED = '\033[41m'
+        GREEN = '\033[42m'
+        YELLOW = '\033[43m'
+        BLUE = '\033[44m'
+        MAGENTA = '\033[45m'
+        CYAN = '\033[46m'
+        WHITE = '\033[47m'
+    
+    class Style:
+        BRIGHT = '\033[1m'
+        DIM = '\033[2m'
+        NORMAL = '\033[22m'
+        RESET_ALL = '\033[0m'
+    
+    HAS_COLOR = True
 
 @dataclass
 class DockerEnvironmentConfig:

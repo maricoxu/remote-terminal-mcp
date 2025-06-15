@@ -25,6 +25,8 @@
     "start": "node index.js",
     "test": "node test.js",
     "postinstall": "node scripts/postinstall.js",
+    "check-deps": "node scripts/check-dependencies.js",
+    "install-deps": "python3 -m pip install -r requirements.txt --user || python -m pip install -r requirements.txt --user",
     "publish:patch": "node scripts/publish.js version-and-publish patch",
     "publish:minor": "node scripts/publish.js version-and-publish minor",
     "publish:major": "node scripts/publish.js version-and-publish major",
