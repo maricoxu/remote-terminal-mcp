@@ -1,0 +1,14 @@
+# BOS 配置示例文件
+# 复制此文件为 bos_config.yaml 并填入真实的 BOS 凭据
+
+bos:
+  access_key: "your_real_access_key_here"
+  secret_key: "your_real_secret_key_here"
+  bucket: "bos://klx-pytorch-work-bd-bj"
+  config_path: "xuyehua/template"
+
+# 或者设置环境变量：
+# export BOS_ACCESS_KEY="your_real_access_key_here"
+# export BOS_SECRET_KEY="your_real_secret_key_here"
+# export BOS_BUCKET="bos://klx-pytorch-work-bd-bj"
+# export BOS_CONFIG_PATH="xuyehua/template" 

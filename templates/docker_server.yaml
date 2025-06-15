@@ -1,0 +1,10 @@
+servers:
+  example-docker:
+    auto_create_container: true
+    container_name: dev_container
+    description: Docker development environment
+    docker_image: ubuntu:20.04
+    host: docker-host.com
+    tmux_session: dev_session
+    type: docker
+    user: your-username

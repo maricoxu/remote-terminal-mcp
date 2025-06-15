@@ -1052,7 +1052,7 @@ servers:
                 server_name = server_list[server_idx]
                 if self.smart_input(f"确认删除服务器 {server_name}?", validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'], suggestions=['y', 'n'], default='n') == 'y':
                     del config['servers'][server_name]
-                    self.save_config(config, merge_mode=False)  # 使用覆盖模式确保删除生效
+                    self.save_config(config, merge_mode=False)
                     self.colored_print(f"✅ 已删除服务器 {server_name}", Fore.GREEN)
         
         elif choice == "3":
@@ -1101,45 +1101,30 @@ servers:
             self.colored_print(f"{ConfigError.ERROR} 请输入数字", Fore.RED)
     
     def save_config(self, config: Dict, merge_mode: bool = True):
-        """保存配置 - 支持合并模式和覆盖模式"""
+        """保存配置 - 合并到现有配置而不是覆盖"""
         try:
-            if merge_mode:
-                # 合并模式：读取现有配置并合并（用于添加新配置）
-                existing_config = {}
-                if os.path.exists(self.config_path):
-                    with open(self.config_path, 'r', encoding='utf-8') as f:
-                        existing_config = yaml.safe_load(f) or {}
-                
-                # 确保servers节点存在
-                if 'servers' not in existing_config:
-                    existing_config['servers'] = {}
-                
-                # 合并新的服务器配置到现有配置
-                if 'servers' in config:
-                    existing_config['servers'].update(config['servers'])
-                
-                # 合并其他配置项
-                for key, value in config.items():
-                    if key != 'servers':
-                        existing_config[key] = value
-                
-                final_config = existing_config
-            else:
-                # 覆盖模式：直接使用传入的配置（用于删除操作）
-                final_config = config
-            
-            # 创建备份
+            # 读取现有配置
+            existing_config = {}
             if os.path.exists(self.config_path):
-                backup_path = f"{self.config_path}.backup_{int(__import__('time').time())}"
-                import shutil
-                shutil.copy2(self.config_path, backup_path)
-                self.colored_print(f"📋 已创建配置备份: {backup_path}", Fore.CYAN)
+                with open(self.config_path, 'r', encoding='utf-8') as f:
+                    existing_config = yaml.safe_load(f) or {}
             
-            # 保存配置
+            # 确保servers节点存在
+            if 'servers' not in existing_config:
+                existing_config['servers'] = {}
+            
+            # 合并新的服务器配置到现有配置
+            if 'servers' in config:
+                existing_config['servers'].update(config['servers'])
+            
+            # 合并其他配置项
+            for key, value in config.items():
+                if key != 'servers':
+                    existing_config[key] = value
+            
+            # 保存合并后的配置
             with open(self.config_path, 'w', encoding='utf-8') as f:
-                yaml.dump(final_config, f, default_flow_style=False, allow_unicode=True)
-                
-            self.colored_print(f"✅ 配置已保存到: {self.config_path}", Fore.GREEN)
+                yaml.dump(existing_config, f, default_flow_style=False, allow_unicode=True)
                 
         except Exception as e:
             self.colored_print(f"{ConfigError.ERROR} 保存配置失败: {e}", Fore.RED)

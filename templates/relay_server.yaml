@@ -1,0 +1,7 @@
+servers:
+  example-relay:
+    description: Server via relay-cli (Baidu internal)
+    host: target-server.internal
+    relay_command: relay-cli -t your-token -s target-server.internal
+    type: relay
+    user: your-username

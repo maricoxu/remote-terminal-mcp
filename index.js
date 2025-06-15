@@ -61,4 +61,10 @@ function initialize(log) {
     }
 }
 
+// 如果直接运行此文件，则启动服务
+if (require.main === module) {
+    const log = (msg) => console.error(`[Supervisor] ${msg}`);
+    initialize(log);
+}
+
 module.exports = { initialize };

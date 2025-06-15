@@ -1,0 +1,19 @@
+servers:
+  example-complex:
+    auto_create_container: true
+    container_name: pytorch_env
+    description: Complex ML development environment
+    docker_image: pytorch/pytorch:latest
+    environment:
+      CUDA_VISIBLE_DEVICES: 0,1
+      PYTHONPATH: /workspace
+    host: complex-server.com
+    port: 2222
+    post_connect_commands:
+    - cd /workspace
+    - source activate pytorch
+    - echo 'Environment ready!'
+    relay_command: relay-cli -t token123 -s complex-server.com
+    tmux_session: ml_work
+    type: relay
+    user: developer

@@ -1,0 +1,7 @@
+servers:
+  example-ssh:
+    description: Standard SSH server
+    host: your-server.com
+    port: 22
+    type: ssh
+    user: your-username
