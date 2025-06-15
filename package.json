@@ -4,9 +4,9 @@
   "description": "A remote terminal MCP for Cursor",
   "main": "index.js",
   "bin": {
-    "remote-terminal-mcp": "./bin/remote-terminal-mcp",
-    "mcp-server-remote-terminal": "./bin/remote-terminal-mcp",
-    "remote-mcp": "./bin/remote-terminal-mcp"
+    "remote-terminal-mcp": "bin/remote-terminal-mcp",
+    "mcp-server-remote-terminal": "bin/remote-terminal-mcp",
+    "remote-mcp": "bin/remote-terminal-mcp"
   },
   "files": [
     "index.js",
