@@ -19,6 +19,8 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from enhanced_config_manager import EnhancedConfigManager
+# 修复导入路径 - enhanced_ssh_manager在python目录下
+sys.path.insert(0, str(Path(__file__).parent))
 from enhanced_ssh_manager import EnhancedSSHManager, log_output
 
 # 服务器信息
@@ -468,51 +470,52 @@ async def handle_request(request):
                 # 新增配置管理工具处理
                 elif tool_name == "interactive_config_wizard":
                     server_type = tool_arguments.get("server_type", "ssh")
-                    quick_mode = tool_arguments.get("quick_mode", False)  # 默认使用完整向导
+                    quick_mode = tool_arguments.get("quick_mode", False)
                     
                     try:
-                        # 创建MCP专用的配置管理器实例，禁用彩色输出
                         import os
-                        from contextlib import redirect_stdout, redirect_stderr
-                        from io import StringIO
                         
-                        # 设置环境变量来禁用彩色输出
-                        old_env = os.environ.get('NO_COLOR', None)
-                        os.environ['NO_COLOR'] = '1'
+                        # 获取当前工作目录
+                        current_dir = os.getcwd()
+                        config_script = os.path.join(current_dir, "enhanced_config_manager.py")
                         
-                        # 捕获所有输出
-                        captured_output = StringIO()
-                        captured_errors = StringIO()
-                        
-                        try:
-                            with redirect_stdout(captured_output), redirect_stderr(captured_errors):
-                                # 创建专用的配置管理器，禁用交互式功能
-                                mcp_config_manager = EnhancedConfigManager()
-                                
-                                # 对于MCP环境，我们提供一个简化的配置创建流程
-                                result_message = "🚀 配置向导启动提示：\n\n"
-                                result_message += "由于在MCP环境中运行，请使用以下方式之一来配置服务器：\n\n"
-                                result_message += "方法1️⃣ 使用命令行工具：\n"
-                                result_message += "```bash\n"
-                                result_message += "cd /Users/xuyehua/Code/remote-terminal-mcp\n"
-                                result_message += "python3 enhanced_config_manager.py\n"
-                                result_message += "```\n\n"
-                                result_message += "方法2️⃣ 使用create_server_config工具：\n"
-                                result_message += "请使用'create_server_config' MCP工具来创建具体的服务器配置\n\n"
-                                result_message += "方法3️⃣ 直接编辑配置文件：\n"
-                                result_message += f"编辑文件：{mcp_config_manager.config_path}\n\n"
-                                result_message += "配置完成后，可以使用'list_servers'工具查看配置的服务器。"
-                                
-                                content = result_message
-                        finally:
-                            # 恢复环境变量
-                            if old_env is None:
-                                os.environ.pop('NO_COLOR', None)
-                            else:
-                                os.environ['NO_COLOR'] = old_env
+                        # 检查配置脚本是否存在
+                        if not os.path.exists(config_script):
+                            content = f"❌ 配置脚本不存在: {config_script}\n\n💡 请确保您在正确的项目目录中运行此命令"
+                        else:
+                            # 提供简单直接的启动指导
+                            content = f"🚀 交互式配置向导启动指南\n"
+                            content += f"{'='*50}\n\n"
+                            content += f"📍 当前目录: {current_dir}\n"
+                            content += f"🎯 服务器类型: {server_type}\n"
+                            content += f"⚡ 快速模式: {'是' if quick_mode else '否'}\n\n"
+                            
+                            content += f"🎉 一键启动命令：\n"
+                            content += f"```bash\n"
+                            content += f"cd {current_dir} && python3 enhanced_config_manager.py\n"
+                            content += f"```\n\n"
+                            
+                            content += f"📋 分步操作：\n"
+                            content += f"1️⃣ 打开新的终端窗口\n"
+                            content += f"2️⃣ 运行命令: cd {current_dir}\n"
+                            content += f"3️⃣ 运行命令: python3 enhanced_config_manager.py\n"
+                            content += f"4️⃣ 按照向导提示完成配置\n\n"
+                            
+                            content += f"💡 快速提示：\n"
+                            content += f"• 复制上面的一键启动命令到终端即可\n"
+                            content += f"• 配置完成后可使用 list_servers 查看结果\n"
+                            content += f"• 支持SSH直连、Relay跳板机、Docker等多种方式\n\n"
+                            
+                            content += f"🔧 配置完成后可用的MCP工具：\n"
+                            content += f"• list_servers - 查看所有配置的服务器\n"
+                            content += f"• connect_server - 连接到指定服务器\n"
+                            content += f"• manage_server_config - 管理服务器配置\n"
+                            content += f"• create_server_config - 快速创建服务器配置\n\n"
+                            
+                            content += f"⚠️ 注意：请在独立的终端窗口中运行配置程序，以获得最佳交互体验。"
                         
                     except Exception as e:
-                        content = f"❌ 配置向导启动失败: {str(e)}\n\n💡 建议：请直接编辑配置文件或使用命令行工具进行配置"
+                        content = f"❌ 配置向导启动失败: {str(e)}\n\n💡 建议：请直接在终端中运行 'python3 enhanced_config_manager.py'"
                 
                 elif tool_name == "manage_server_config":
                     action = tool_arguments.get("action")

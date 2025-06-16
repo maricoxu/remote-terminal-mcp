@@ -73,7 +73,7 @@ class EnhancedConfigManager:
                 self.config_path = user_config
         
         # 设置config_dir - 必须在ensure_directories()之前
-        self.config_dir = self.config_path.parent
+            self.config_dir = self.config_path.parent
         self.templates_dir = Path(__file__).parent / "templates"
         self.ensure_directories()
         
