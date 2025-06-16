@@ -1276,24 +1276,24 @@ servers:
         try:
             if merge_mode:
                 # 合并模式：读取现有配置并合并（用于添加新配置）
-            existing_config = {}
-            if os.path.exists(self.config_path):
-                with open(self.config_path, 'r', encoding='utf-8') as f:
-                    existing_config = yaml.safe_load(f) or {}
-            
-            # 确保servers节点存在
-            if 'servers' not in existing_config:
-                existing_config['servers'] = {}
-            
-            # 合并新的服务器配置到现有配置
-            if 'servers' in config:
-                existing_config['servers'].update(config['servers'])
-            
-            # 合并其他配置项
-            for key, value in config.items():
-                if key != 'servers':
-                    existing_config[key] = value
-            
+                existing_config = {}
+                if os.path.exists(self.config_path):
+                    with open(self.config_path, 'r', encoding='utf-8') as f:
+                        existing_config = yaml.safe_load(f) or {}
+                
+                # 确保servers节点存在
+                if 'servers' not in existing_config:
+                    existing_config['servers'] = {}
+                
+                # 合并新的服务器配置到现有配置
+                if 'servers' in config:
+                    existing_config['servers'].update(config['servers'])
+                
+                # 合并其他配置项
+                for key, value in config.items():
+                    if key != 'servers':
+                        existing_config[key] = value
+                
                 final_config = existing_config
             else:
                 # 覆盖模式：直接使用传入的配置（用于删除操作）
@@ -1374,7 +1374,7 @@ servers:
             if called_from_wizard:
                 self.colored_print("  0. 返回上一级", Fore.WHITE)
             else:
-            self.colored_print("  0. 返回主菜单", Fore.WHITE)
+                self.colored_print("  0. 返回主菜单", Fore.WHITE)
             
             choice = self.smart_input("选择操作", 
                                     validator=lambda x: x in ['0', '1', '2'],
