@@ -341,7 +341,52 @@ class EnhancedConfigManager:
         """确保必要的目录存在"""
         self.config_dir.mkdir(exist_ok=True)
         self.templates_dir.mkdir(exist_ok=True)
+        
+        # 在 MCP 模式下，检查是否需要恢复 NPM 创建的配置
+        if self.is_mcp_mode:
+            self.restore_npm_config_if_needed()
+        
         self.create_default_templates()
+    
+    def restore_npm_config_if_needed(self):
+        """在 MCP 模式下恢复 NPM 创建的配置文件"""
+        config_file = self.config_dir / 'config.yaml'
+        backup_file = self.config_dir / 'config.yaml.backup'
+        persistent_backup = Path.home() / '.remote-terminal-config-backup.yaml'
+        persistent_marker = Path.home() / '.remote-terminal-npm-installed'
+        
+        # 检查是否有 NPM 安装的标记
+        has_npm_marker = persistent_marker.exists()
+        
+        # 如果主配置文件不存在但有 NPM 安装标记，尝试恢复
+        if not config_file.exists() and has_npm_marker:
+            try:
+                # 优先从本地备份恢复，如果不存在则从持久备份恢复
+                source_backup = backup_file if backup_file.exists() else persistent_backup
+                
+                if source_backup.exists():
+                    # 从备份恢复配置文件
+                    import shutil
+                    shutil.copy2(source_backup, config_file)
+                    
+                    # 重新创建本地备份（如果不存在）
+                    if not backup_file.exists() and persistent_backup.exists():
+                        shutil.copy2(persistent_backup, backup_file)
+                    
+                    # 重新创建 NPM 安装标记
+                    npm_marker = self.config_dir / '.npm-installed'
+                    with open(npm_marker, 'w', encoding='utf-8') as f:
+                        f.write(f"Restored at: {__import__('datetime').datetime.now().isoformat()}")
+                    
+                    if not self.is_mcp_mode:  # 只在非 MCP 模式下打印
+                        self.colored_print("✅ 已从备份恢复配置文件", Fore.GREEN)
+                else:
+                    if not self.is_mcp_mode:  # 只在非 MCP 模式下打印
+                        self.colored_print("❌ 找不到备份文件", Fore.RED)
+                        
+            except Exception as e:
+                if not self.is_mcp_mode:  # 只在非 MCP 模式下打印
+                    self.colored_print(f"❌ 恢复配置文件失败: {e}", Fore.RED)
     
     def create_default_templates(self):
         """创建默认配置模板"""

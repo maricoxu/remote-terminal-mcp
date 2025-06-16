@@ -170,20 +170,89 @@ class PostInstaller {
         this.log('Creating user configuration directory...');
         
         const homeDir = os.homedir();
-        const configDir = path.join(homeDir, '.remote-terminal-mcp');
+        const configDir = path.join(homeDir, '.remote-terminal');
         
         if (!fs.existsSync(configDir)) {
             fs.mkdirSync(configDir, { recursive: true });
             this.log(`Configuration directory created: ${configDir}`, 'success');
         }
         
-        // Copy configuration template
-        const configTemplate = path.join(packageRoot, 'config', 'servers.json');
-        const userConfig = path.join(configDir, 'servers.json');
+        // Copy YAML configuration template if config.yaml doesn't exist
+        const configTemplate = path.join(packageRoot, 'templates', 'config.yaml.template');
+        const userConfig = path.join(configDir, 'config.yaml');
         
-        if (fs.existsSync(configTemplate) && !fs.existsSync(userConfig)) {
-            fs.copyFileSync(configTemplate, userConfig);
-            this.log(`Configuration template copied to: ${userConfig}`, 'success');
+        if (!fs.existsSync(userConfig)) {
+            if (fs.existsSync(configTemplate)) {
+                // Read template and replace timestamp
+                let templateContent = fs.readFileSync(configTemplate, 'utf8');
+                templateContent = templateContent.replace('{{ timestamp }}', new Date().toISOString());
+                
+                // Write to user config with explicit permissions
+                fs.writeFileSync(userConfig, templateContent, { encoding: 'utf8', mode: 0o644 });
+                
+                // Verify the file was created
+                if (fs.existsSync(userConfig)) {
+                    this.log(`Configuration template created: ${userConfig}`, 'success');
+                    this.log('Please edit the config.yaml file to add your server details', 'info');
+                    
+                    // Create multiple backup copies in different locations
+                    const backupConfig = path.join(configDir, 'config.yaml.backup');
+                    const persistentBackup = path.join(homeDir, '.remote-terminal-config-backup.yaml');
+                    
+                    fs.copyFileSync(userConfig, backupConfig);
+                    fs.copyFileSync(userConfig, persistentBackup);
+                    this.log(`Backup configuration created: ${backupConfig}`, 'info');
+                    this.log(`Persistent backup created: ${persistentBackup}`, 'info');
+                    
+                    // Create a marker file to indicate NPM installation
+                    const markerFile = path.join(configDir, '.npm-installed');
+                    const persistentMarker = path.join(homeDir, '.remote-terminal-npm-installed');
+                    
+                    const timestamp = new Date().toISOString();
+                    fs.writeFileSync(markerFile, timestamp, 'utf8');
+                    fs.writeFileSync(persistentMarker, timestamp, 'utf8');
+                    this.log(`Installation marker created: ${markerFile}`, 'info');
+                    this.log(`Persistent marker created: ${persistentMarker}`, 'info');
+                } else {
+                    this.warnings.push('Configuration file creation verification failed');
+                }
+            } else {
+                this.warnings.push('Configuration template not found, creating basic config');
+                // Create a basic config if template is missing
+                const basicConfig = `# Remote Terminal MCP Configuration
+# Generated at: ${new Date().toISOString()}
+
+servers:
+  example-server:
+    type: script_based
+    host: example.com
+    port: 22
+    username: your-username
+    description: 示例服务器配置 - 请修改为你的实际服务器信息
+    session:
+      name: example-server_dev
+    specs:
+      connection:
+        type: ssh
+        timeout: 30
+      environment_setup:
+        shell: bash
+        working_directory: /home/your-username
+
+global_settings:
+  default_timeout: 30
+  auto_recovery: true
+  log_level: INFO
+
+security_settings:
+  strict_host_key_checking: false
+  connection_timeout: 30
+`;
+                fs.writeFileSync(userConfig, basicConfig, 'utf8');
+                this.log(`Basic configuration created: ${userConfig}`, 'success');
+            }
+        } else {
+            this.log(`Configuration file already exists: ${userConfig}`, 'info');
         }
         
         return configDir;
@@ -223,11 +292,68 @@ class PostInstaller {
             await this.checkTmux();
             await this.setPermissions();
             await this.createUserConfig();
+            
+            // Wait a moment and recreate config if it was deleted
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await this.ensureConfigExists();
+            
             await this.showCompletion();
             
         } catch (error) {
             this.log(`Installation error: ${error.message}`, 'error');
             process.exit(1);
+        }
+    }
+
+    async ensureConfigExists() {
+        const homeDir = os.homedir();
+        const configDir = path.join(homeDir, '.remote-terminal');
+        const userConfig = path.join(configDir, 'config.yaml');
+        const backupConfig = path.join(configDir, 'config.yaml.backup');
+        
+        if (!fs.existsSync(userConfig)) {
+            this.log('Configuration file was deleted, recreating...', 'warning');
+            
+            if (fs.existsSync(backupConfig)) {
+                // Restore from backup
+                fs.copyFileSync(backupConfig, userConfig);
+                this.log('Configuration restored from backup', 'success');
+            } else {
+                // Create basic config
+                const basicConfig = `# Remote Terminal MCP Configuration
+# Generated at: ${new Date().toISOString()}
+
+servers:
+  example-server:
+    type: script_based
+    host: example.com
+    port: 22
+    username: your-username
+    description: 示例服务器配置 - 请修改为你的实际服务器信息
+    session:
+      name: example-server_dev
+    specs:
+      connection:
+        type: ssh
+        timeout: 30
+      environment_setup:
+        shell: bash
+        working_directory: /home/your-username
+
+global_settings:
+  default_timeout: 30
+  auto_recovery: true
+  log_level: INFO
+
+security_settings:
+  strict_host_key_checking: false
+  connection_timeout: 30
+`;
+                fs.writeFileSync(userConfig, basicConfig, 'utf8');
+                this.log('Basic configuration recreated', 'success');
+            }
+        } else {
+            this.log('Configuration file exists', 'success');
         }
     }
 }
