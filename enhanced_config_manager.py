@@ -14,7 +14,7 @@ import tempfile
 import re
 from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
-from docker_config_manager import DockerConfigManager, DockerEnvironmentConfig
+# Docker配置现在统一在enhanced_config_manager中处理
 
 # 添加颜色支持
 try:
@@ -53,7 +53,8 @@ class EnhancedConfigManager:
         self.is_mcp_mode = (
             os.environ.get('NO_COLOR') == '1' or 
             os.environ.get('MCP_MODE') == '1' or
-            not sys.stdout.isatty()  # 检测是否在管道或重定向环境中运行
+            not sys.stdout.isatty() or  # 检测是否在管道或重定向环境中运行
+            not sys.stdin.isatty()  # 检测标准输入是否被重定向
         )
         
         if config_path:
@@ -77,8 +78,8 @@ class EnhancedConfigManager:
         self.templates_dir = Path(__file__).parent / "templates"
         self.ensure_directories()
         
-        # 初始化Docker配置管理器
-        self.docker_manager = DockerConfigManager(str(self.config_dir))
+        # Docker配置现在统一在enhanced_config_manager中处理
+        # 不再需要独立的docker_manager
         
     def colored_print(self, text: str, color=Fore.WHITE, style=""):
         """彩色打印 - 在MCP模式下使用纯文本"""
@@ -113,7 +114,13 @@ class EnhancedConfigManager:
                     "选择操作": "0",  # 退出
                     "选择连接方式": "1",  # SSH
                     "是否使用Docker容器": "n",
-                    "是否启用文件同步功能": "n"
+                    "是否启用文件同步功能": "n",
+                    "容器名称": "dev-container",
+                    "Docker镜像": "ubuntu:20.04",
+                    "Shell环境": "bash",
+                    "配置方式": "1",  # 快速配置
+                    "选择配置方式": "1",
+                    "选择Docker配置方式": "1"
                 }
                 # 从提示中匹配合适的默认值
                 for key, value in mcp_defaults.items():
@@ -1476,7 +1483,7 @@ servers:
             return False  # 用户选择退出
         
         # 步骤1: 基本信息
-        self.show_progress(1, 3, "基本容器信息")
+        self.show_progress(1, 4, "基本容器信息")
         
         container_name = self.smart_input("容器名称", 
                                         validator=lambda x: self.validate_container_name(x),
@@ -1492,7 +1499,7 @@ servers:
             return False
         
         # 步骤2: Shell环境配置
-        self.show_progress(2, 3, "Shell环境配置")
+        self.show_progress(2, 4, "Shell环境配置")
         
         self.colored_print("\n🐚 Shell环境配置", Fore.BLUE)
         self.colored_print("💡 选择你的Shell环境，配置文件将从.remote-terminal目录复制", Fore.YELLOW)
@@ -1549,12 +1556,51 @@ servers:
             self.colored_print(f"  • 用户配置: {user_config_dir}", Fore.WHITE)
             self.colored_print(f"  • 项目模板: {project_template_dir}", Fore.WHITE)
         
-        # 步骤3: 生成配置
-        self.show_progress(3, 3, "生成Docker配置")
+        # 步骤3: 配置选择
+        self.show_progress(3, 4, "配置选择")
         
-        # 使用预设的端口和挂载配置
-        ports = ["8080:8080", "8888:8888", "6006:6006"]  # 常用端口：web服务、jupyter、tensorboard
-        volumes = ["/home:/home", "/data:/data"]  # 常用挂载目录
+        self.colored_print("\n⚙️ 配置方式选择", Fore.CYAN)
+        self.colored_print("  1. 快速配置 - 使用预设的常用配置", Fore.GREEN)
+        self.colored_print("  2. 自定义配置 - 手动配置端口映射和挂载目录", Fore.YELLOW)
+        
+        config_mode = self.smart_input("选择配置方式", 
+                                     validator=lambda x: x in ['1', '2'],
+                                     suggestions=['1', '2'],
+                                     default='1')
+        
+        if config_mode == "1":
+            # 快速配置：使用预设
+            ports = ["8080:8080", "8888:8888", "6006:6006"]  # 常用端口：web服务、jupyter、tensorboard
+            volumes = ["/home:/home", "/data:/data"]  # 常用挂载目录
+            self.colored_print("\n✅ 使用快速配置", Fore.GREEN)
+            self.colored_print(f"端口映射: {', '.join(ports)}", Fore.WHITE)
+            self.colored_print(f"目录挂载: {', '.join(volumes)}", Fore.WHITE)
+        else:
+            # 自定义配置
+            self.show_progress(4, 5, "自定义配置")
+            self.colored_print("\n🔧 自定义配置", Fore.YELLOW)
+            
+            # 端口映射配置
+            self.colored_print("\n📡 端口映射配置 (格式: host:container，多个用逗号分隔)")
+            ports_input = self.smart_input(
+                "端口映射 (直接回车使用默认)",
+                default="8080:8080,8888:8888,6006:6006",
+                suggestions=["8080:8080,8888:8888,6006:6006", "3000:3000", "直接回车使用默认"]
+            )
+            ports = [p.strip() for p in ports_input.split(",") if p.strip()] if ports_input else []
+            
+            # 挂载目录配置
+            self.colored_print("\n📁 挂载目录配置 (格式: host:container，多个用逗号分隔)")
+            volumes_input = self.smart_input(
+                "挂载目录 (直接回车使用默认)",
+                default="/home:/home,/data:/data",
+                suggestions=["/home:/home,/data:/data", "/workspace:/workspace", "直接回车使用默认"]
+            )
+            volumes = [v.strip() for v in volumes_input.split(",") if v.strip()] if volumes_input else []
+        
+        # 步骤4: 生成配置
+        final_step = 4 if config_mode == "1" else 5
+        self.show_progress(final_step, final_step, "生成Docker配置")
         
         # 构建Docker配置
         docker_config = {
@@ -1712,43 +1758,73 @@ servers:
         self.colored_print("\n🔍 Docker运行命令预览", Fore.CYAN, Style.BRIGHT)
         self.colored_print("=" * 60, Fore.CYAN)
         
-        # 构建docker run命令
-        cmd_parts = ["docker run -d"]
+        # 构建docker run命令 - 使用更完整的系统级配置
+        cmd_parts = ["docker run"]
         
-        # 容器名称
-        cmd_parts.append(f"--name {docker_config['container_name']}")
+        # 系统级权限和安全配置
+        cmd_parts.append("--privileged")
+        cmd_parts.append(f"--name={docker_config['container_name']}")
+        cmd_parts.append("--ulimit core=-1")
+        cmd_parts.append("--security-opt seccomp=unconfined")
+        cmd_parts.append("-dti")
         
-        # 端口映射
-        for port in docker_config.get('ports', []):
-            cmd_parts.append(f"-p {port}")
+        # 网络和系统命名空间配置
+        cmd_parts.append("--net=host")
+        cmd_parts.append("--uts=host") 
+        cmd_parts.append("--ipc=host")
+        cmd_parts.append("--security-opt=seccomp=unconfined")
         
-        # 目录挂载
-        for volume in docker_config.get('volumes', []):
+        # 目录挂载 - 包含常用数据目录
+        default_volumes = ["/home:/home", "/data1:/data1", "/data2:/data2", "/data3:/data3", "/data4:/data4"]
+        volumes = docker_config.get('volumes', [])
+        
+        # 合并默认挂载和用户自定义挂载
+        all_volumes = default_volumes.copy()
+        for volume in volumes:
+            if volume not in all_volumes:
+                all_volumes.append(volume)
+        
+        for volume in all_volumes:
             cmd_parts.append(f"-v {volume}")
+        
+        # 共享内存配置
+        cmd_parts.append("--shm-size=256g")
+        
+        # 重启策略
+        cmd_parts.append("--restart=always")
+        
+        # 端口映射（如果使用host网络，端口映射会被忽略，但保留以供参考）
+        if docker_config.get('ports'):
+            self.colored_print("\n⚠️  注意：使用 --net=host 时，端口映射会被忽略", Fore.YELLOW)
+            self.colored_print("以下端口配置仅供参考：", Fore.YELLOW)
+            for port in docker_config.get('ports', []):
+                self.colored_print(f"  - {port}", Fore.WHITE)
         
         # 环境变量
         for key, value in docker_config.get('environment', {}).items():
             cmd_parts.append(f"-e {key}={value}")
         
-        # 其他配置
-        if docker_config.get('privileged'):
-            cmd_parts.append("--privileged")
-        if docker_config.get('network_mode'):
-            cmd_parts.append(f"--network {docker_config['network_mode']}")
-        if docker_config.get('restart_policy'):
-            cmd_parts.append(f"--restart {docker_config['restart_policy']}")
+        # 工作目录
         if docker_config.get('working_directory'):
             cmd_parts.append(f"-w {docker_config['working_directory']}")
         
         # 镜像
         cmd_parts.append(docker_config['image'])
         
-        # 默认命令
-        cmd_parts.append("/bin/bash -c 'tail -f /dev/null'")
-        
         # 显示命令
         docker_command = " \\\n  ".join(cmd_parts)
         self.colored_print(docker_command, Fore.WHITE)
+        
+        # 显示配置说明
+        self.colored_print(f"\n📋 配置说明:", Fore.GREEN)
+        self.colored_print("  • --privileged: 容器获得完整系统权限", Fore.WHITE)
+        self.colored_print("  • --net=host: 使用主机网络栈", Fore.WHITE)
+        self.colored_print("  • --uts=host: 共享主机UTS命名空间", Fore.WHITE)
+        self.colored_print("  • --ipc=host: 共享主机IPC命名空间", Fore.WHITE)
+        self.colored_print("  • --shm-size=256g: 设置共享内存大小", Fore.WHITE)
+        self.colored_print("  • --ulimit core=-1: 不限制core dump大小", Fore.WHITE)
+        self.colored_print("  • --security-opt seccomp=unconfined: 禁用seccomp安全限制", Fore.WHITE)
+        self.colored_print("  • --restart=always: 容器自动重启", Fore.WHITE)
         
         # 显示设置命令
         if docker_config.get('setup_commands'):
@@ -1823,27 +1899,28 @@ servers:
         self.colored_print("-" * 40, Fore.CYAN)
         
         # 首先列出现有的Docker配置
-        docker_configs = self.docker_manager.list_docker_configs()
+        docker_configs = self.get_existing_docker_configs()
         if not docker_configs:
             self.colored_print("❌ 没有找到Docker配置，请先创建Docker环境", Fore.RED)
             return
         
         self.colored_print("📋 可用的Docker环境:", Fore.GREEN)
-        for i, config_name in enumerate(docker_configs, 1):
+        config_names = list(docker_configs.keys())
+        for i, config_name in enumerate(config_names, 1):
             self.colored_print(f"  {i}. {config_name}", Fore.WHITE)
         
         # 选择Docker配置
         while True:
             try:
-                choice = int(self.smart_input(f"选择Docker环境 (1-{len(docker_configs)})", 
-                                            validator=lambda x: x.isdigit() and 1 <= int(x) <= len(docker_configs)))
-                selected_docker = docker_configs[int(choice) - 1]
+                choice = int(self.smart_input(f"选择Docker环境 (1-{len(config_names)})", 
+                                            validator=lambda x: x.isdigit() and 1 <= int(x) <= len(config_names)))
+                selected_docker = config_names[int(choice) - 1]
                 break
             except (ValueError, IndexError):
                 self.colored_print("❌ 无效选择", Fore.RED)
         
         # 获取Docker配置详情
-        docker_config = self.docker_manager.get_docker_config(selected_docker)
+        docker_config = docker_configs[selected_docker]
         if not docker_config:
             self.colored_print("❌ 无法加载Docker配置", Fore.RED)
             return
@@ -1862,7 +1939,7 @@ servers:
         elif server_choice == "2":
             self.add_docker_to_existing_server(docker_config)
     
-    def create_server_with_docker(self, docker_config: DockerEnvironmentConfig):
+    def create_server_with_docker(self, docker_config: dict):
         """创建包含Docker的新服务器配置"""
         self.colored_print("\n🚀 创建包含Docker的服务器配置", Fore.GREEN, Style.BRIGHT)
         self.colored_print("-" * 40, Fore.GREEN)
@@ -1870,7 +1947,7 @@ servers:
         # 基本服务器信息
         server_name = self.smart_input("服务器名称", 
                                      validator=lambda x: bool(x and len(x) > 0),
-                                     suggestions=[f"{docker_config.container_name}_server", "docker_server"])
+                                     suggestions=[f"{docker_config.get('container_name', 'container')}_server", "docker_server"])
         
         server_host = self.smart_input("服务器地址", 
                                      validator=self.validate_hostname,
@@ -1887,17 +1964,17 @@ servers:
             "port": 22,
             "private_key_path": "~/.ssh/id_rsa",
             "type": "script_based",
-            "description": f"服务器配置与Docker环境: {docker_config.container_name}",
+            "description": f"服务器配置与Docker环境: {docker_config.get('container_name', 'container')}",
             "specs": {
                 "connection": {
                     "tool": "ssh",
                     "target": {"host": server_host}
                 },
-                "docker": docker_config.to_yaml_dict()
+                "docker": docker_config
             },
             "session": {
                 "name": f"{server_name}_session",
-                "working_directory": docker_config.working_directory,
+                "working_directory": docker_config.get("working_directory", "/workspace"),
                 "shell": "/bin/bash"
             }
         }}}
@@ -1905,9 +1982,9 @@ servers:
         # 保存配置
         self.save_config(config)
         self.colored_print(f"\n✅ 服务器配置 '{server_name}' 创建成功！", Fore.GREEN, Style.BRIGHT)
-        self.colored_print(f"已集成Docker环境: {docker_config.container_name}", Fore.GREEN)
+        self.colored_print(f"已集成Docker环境: {docker_config.get('container_name', 'container')}", Fore.GREEN)
     
-    def add_docker_to_existing_server(self, docker_config: DockerEnvironmentConfig):
+    def add_docker_to_existing_server(self, docker_config: dict):
         """添加Docker配置到现有服务器"""
         # TODO: 实现添加到现有服务器的功能
         self.colored_print("🚧 添加到现有服务器功能正在开发中...", Fore.YELLOW)
@@ -1971,8 +2048,8 @@ servers:
         """基于模板的Docker配置"""
         self.colored_print("\n📋 基于模板的Docker配置", Fore.BLUE, Style.BRIGHT)
         
-        # 调用Docker管理器的模板功能
-        templates_dir = self.docker_manager.docker_templates_dir
+        # 查找Docker模板
+        templates_dir = self.config_dir / "docker_templates"
         templates = list(templates_dir.glob("*.yaml"))
         
         if not templates:
@@ -2019,17 +2096,15 @@ servers:
     def detailed_docker_config(self, server_name: str) -> dict:
         """详细Docker配置"""
         self.colored_print("\n⚙️ 详细Docker配置", Fore.YELLOW, Style.BRIGHT)
-        self.colored_print("🔄 跳转到Docker配置管理器...", Fore.CYAN)
+        self.colored_print("💡 使用统一的Docker向导配置...", Fore.CYAN)
         
-        # 调用独立的Docker配置管理器
-        self.docker_manager.create_custom_environment()
-        
-        # 获取最新创建的配置
-        docker_configs = self.docker_manager.list_docker_configs()
-        if docker_configs:
-            latest_config = self.docker_manager.get_docker_config(docker_configs[-1])
-            if latest_config:
-                return latest_config.to_yaml_dict()
+        # 使用统一的Docker向导配置，强制选择自定义配置模式
+        if self.docker_wizard_setup(called_from_guided_setup=True):
+            # 获取最新创建的配置
+            docker_configs = self.get_existing_docker_configs()
+            if docker_configs:
+                latest_config_name = list(docker_configs.keys())[-1]
+                return docker_configs[latest_config_name]
         
         return {}
     
@@ -2037,27 +2112,28 @@ servers:
         """选择现有Docker配置"""
         self.colored_print("\n📂 选择现有Docker配置", Fore.MAGENTA, Style.BRIGHT)
         
-        docker_configs = self.docker_manager.list_docker_configs()
+        docker_configs = self.get_existing_docker_configs()
         if not docker_configs:
             self.colored_print("❌ 没有找到Docker配置，请先创建", Fore.RED)
             return {}
         
         self.colored_print("现有Docker配置:", Fore.CYAN)
-        for i, config_name in enumerate(docker_configs, 1):
+        config_names = list(docker_configs.keys())
+        for i, config_name in enumerate(config_names, 1):
             self.colored_print(f"  {i}. {config_name}", Fore.WHITE)
         
         while True:
             try:
-                choice = int(self.smart_input(f"选择配置 (1-{len(docker_configs)})", 
-                                            validator=lambda x: x.isdigit() and 1 <= int(x) <= len(docker_configs)))
-                selected_config = docker_configs[int(choice) - 1]
+                choice = int(self.smart_input(f"选择配置 (1-{len(config_names)})", 
+                                            validator=lambda x: x.isdigit() and 1 <= int(x) <= len(config_names)))
+                selected_config = config_names[int(choice) - 1]
                 break
             except (ValueError, IndexError):
                 self.colored_print("❌ 无效选择", Fore.RED)
         
-        docker_config = self.docker_manager.get_docker_config(selected_config)
+        docker_config = docker_configs[selected_config]
         if docker_config:
-            return docker_config.to_yaml_dict()
+            return docker_config
         
         return {}
 
