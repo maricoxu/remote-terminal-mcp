@@ -318,3 +318,53 @@ dev-debug.log
 # Task files
 tasks.json
 tasks/ tests/test_report_*.txt
+
+# Task files
+tasks.json
+tasks/
+
+# 测试报告和临时文件
+tests/test_report_*.txt
+regression_test_report_*.txt
+test_report_*.txt
+*_test_report_*.txt
+
+# 连接测试文件
+test_*_connection.py
+connect_*.py
+debug_*.py
+fix_*.py
+migrate_*.py
+enhanced_connect.py
+
+# 临时脚本文件
+input_password.py
+*_fixed.py
+*_simple.py
+*_functionality.py
+demo_*.py
+check_*.py
+
+# 测试和调试文件
+test_*.py
+debug_*.py
+*_test.py
+*_debug.py
+
+# 配置管理器备份文件
+enhanced_config_manager_*.py
+
+# 同步相关测试文件
+*sync*.py
+add_sync_config.py
+vscode_sync_manager.py
+
+# MCP 测试文件
+test_mcp_*.py
+test_npm_*.py
+test_edit_*.py
+test_direct_*.py
+
+# 其他临时文件
+copy_*.py
+connect_*.py
