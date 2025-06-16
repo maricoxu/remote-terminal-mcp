@@ -1,0 +1,61 @@
+# Remote Terminal MCP Configuration Template
+# This file is automatically created when no config exists
+# Generated at: {{ timestamp }}
+
+servers:
+  # 示例服务器配置 - 请根据你的实际服务器信息修改
+  example-server:
+    type: script_based
+    host: example.com
+    port: 22
+    username: your-username
+    description: 示例服务器配置 - 请修改为你的实际服务器信息
+    session:
+      name: example-server_dev
+    specs:
+      connection:
+        type: ssh
+        timeout: 30
+      environment_setup:
+        shell: bash
+        working_directory: /home/your-username
+
+  # 你可以添加更多服务器配置，格式如下：
+  # my-dev-server:
+  #   type: script_based
+  #   host: 192.168.1.100
+  #   port: 22
+  #   username: ubuntu
+  #   description: 开发服务器
+  #   session:
+  #     name: my-dev-server_dev
+  #   specs:
+  #     connection:
+  #       type: ssh
+  #       timeout: 30
+  #     environment_setup:
+  #       shell: bash
+  #       working_directory: /home/ubuntu
+  #     docker:
+  #       enabled: true
+  #       image: ubuntu:22.04
+  #       container_name: dev-container
+
+# 全局设置
+global_settings:
+  default_timeout: 30
+  auto_recovery: true
+  log_level: INFO
+  default_shell: bash
+
+# 安全设置
+security_settings:
+  strict_host_key_checking: false
+  connection_timeout: 30
+  max_retry_attempts: 3
+
+# 使用说明:
+# 1. 修改 example-server 的配置信息为你的实际服务器
+# 2. 或者删除 example-server，添加你自己的服务器配置
+# 3. 保存文件后，使用 remote-terminal-mcp 工具连接服务器
+# 4. 更多配置选项请参考文档 
