@@ -470,52 +470,18 @@ async def handle_request(request):
                 # 新增配置管理工具处理
                 elif tool_name == "interactive_config_wizard":
                     server_type = tool_arguments.get("server_type", "ssh")
-                    quick_mode = tool_arguments.get("quick_mode", False)
+                    quick_mode = tool_arguments.get("quick_mode", True)  # 默认使用快速模式，适合MCP环境
                     
                     try:
-                        import os
-                        
-                        # 获取当前工作目录
-                        current_dir = os.getcwd()
-                        config_script = os.path.join(current_dir, "enhanced_config_manager.py")
-                        
-                        # 检查配置脚本是否存在
-                        if not os.path.exists(config_script):
-                            content = f"❌ 配置脚本不存在: {config_script}\n\n💡 请确保您在正确的项目目录中运行此命令"
+                        if quick_mode:
+                            # 快速模式：使用预设模板创建配置
+                            result = config_manager.quick_setup()
                         else:
-                            # 提供简单直接的启动指导
-                            content = f"🚀 交互式配置向导启动指南\n"
-                            content += f"{'='*50}\n\n"
-                            content += f"📍 当前目录: {current_dir}\n"
-                            content += f"🎯 服务器类型: {server_type}\n"
-                            content += f"⚡ 快速模式: {'是' if quick_mode else '否'}\n\n"
-                            
-                            content += f"🎉 一键启动命令：\n"
-                            content += f"```bash\n"
-                            content += f"cd {current_dir} && python3 enhanced_config_manager.py\n"
-                            content += f"```\n\n"
-                            
-                            content += f"📋 分步操作：\n"
-                            content += f"1️⃣ 打开新的终端窗口\n"
-                            content += f"2️⃣ 运行命令: cd {current_dir}\n"
-                            content += f"3️⃣ 运行命令: python3 enhanced_config_manager.py\n"
-                            content += f"4️⃣ 按照向导提示完成配置\n\n"
-                            
-                            content += f"💡 快速提示：\n"
-                            content += f"• 复制上面的一键启动命令到终端即可\n"
-                            content += f"• 配置完成后可使用 list_servers 查看结果\n"
-                            content += f"• 支持SSH直连、Relay跳板机、Docker等多种方式\n\n"
-                            
-                            content += f"🔧 配置完成后可用的MCP工具：\n"
-                            content += f"• list_servers - 查看所有配置的服务器\n"
-                            content += f"• connect_server - 连接到指定服务器\n"
-                            content += f"• manage_server_config - 管理服务器配置\n"
-                            content += f"• create_server_config - 快速创建服务器配置\n\n"
-                            
-                            content += f"⚠️ 注意：请在独立的终端窗口中运行配置程序，以获得最佳交互体验。"
-                        
+                            # 完整向导模式：需要交互式输入
+                            result = config_manager.guided_setup()
+                        content = f"✅ 配置向导完成！\n\n服务器配置已创建成功"
                     except Exception as e:
-                        content = f"❌ 配置向导启动失败: {str(e)}\n\n💡 建议：请直接在终端中运行 'python3 enhanced_config_manager.py'"
+                        content = f"❌ 配置向导失败: {str(e)}\n\n💡 建议：请直接在终端中运行 'python3 enhanced_config_manager.py' 获得完整交互体验"
                 
                 elif tool_name == "manage_server_config":
                     action = tool_arguments.get("action")

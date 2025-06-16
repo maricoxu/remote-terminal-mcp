@@ -1,0 +1,122 @@
+global_settings:
+  auto_reconnect: true
+  command_timeout: 300
+  connection_timeout: 30
+  default_server: gpu-server-01
+  max_retry_attempts: 3
+  ssh_options:
+    ConnectTimeout: 10
+    ServerAliveCountMax: 3
+    ServerAliveInterval: 60
+    StrictHostKeyChecking: 'no'
+    UserKnownHostsFile: /dev/null
+security:
+  allowed_commands:
+  - ^ls.*
+  - ^pwd$
+  - ^cd .*
+  - ^mkdir .*
+  - ^cat .*
+  - ^head .*
+  - ^tail .*
+  - ^ps .*
+  - ^nvidia-smi.*
+  - ^python.*
+  - ^pip.*
+  - ^git .*
+  - ^tmux.*
+  forbidden_commands:
+  - ^rm -rf /$
+  - ^sudo .*
+  - ^su .*
+  - .*passwd.*
+servers:
+  cpu-server:
+    description: CPU密集计算服务器
+    host: cpu-cluster.example.com
+    port: 22
+    private_key_path: ~/.ssh/id_rsa
+    session:
+      environment:
+        MKL_NUM_THREADS: '16'
+        OMP_NUM_THREADS: '32'
+      name: cpu-work
+      shell: /bin/bash
+      working_directory: /data/projects
+    specs:
+      cpu_cores: 128
+      gpu_count: 0
+      memory: 256GB
+    type: direct_ssh
+    username: xuyehua
+  dev-server:
+    description: 开发测试环境
+    host: dev.example.com
+    port: 2222
+    private_key_path: ~/.ssh/dev_key
+    session:
+      environment:
+        NODE_ENV: development
+        PYTHONPATH: /home/developer/projects
+      name: dev-session
+      shell: /bin/zsh
+      working_directory: /home/developer/projects
+    specs:
+      cpu_cores: 16
+      gpu_count: 2
+      gpu_type: RTX 3090
+      memory: 64GB
+    type: direct_ssh
+    username: developer
+  gpu-server-01:
+    description: GPU训练服务器
+    host: your-gpu-server.example.com
+    port: 22
+    private_key_path: ~/.ssh/id_rsa
+    session:
+      environment:
+        CUDA_VISIBLE_DEVICES: 0,1,2,3,4,5,6,7
+        PYTHONPATH: /workspace:/workspace/src
+      name: gpu-work
+      shell: /bin/zsh
+      working_directory: /workspace
+    specs:
+      cpu_cores: 64
+      gpu_count: 8
+      gpu_type: Tesla A100
+      memory: 512GB
+    type: direct_ssh
+    username: xuyehua
+  secure-server:
+    description: 内网安全服务器
+    host: internal-server.company.com
+    jump_host:
+      host: bastion.company.com
+      port: 22
+      private_key_path: ~/.ssh/bastion_key
+      username: xuyehua
+    port: 22
+    private_key_path: ~/.ssh/company_key
+    session:
+      name: secure-work
+      shell: /bin/bash
+      working_directory: /home/xuyehua
+    type: jump_ssh
+    username: xuyehua
+  test-server:
+    connection_type: ssh
+    description: 'SSH连接: test-server'
+    host: 192.168.1.100
+    port: 22
+    private_key_path: ~/.ssh/id_rsa
+    session:
+      name: test-server_session
+      shell: /bin/bash
+      working_directory: '~'
+    specs:
+      connection:
+        target:
+          host: 192.168.1.100
+        tool: ssh
+    type: script_based
+    username: testuser

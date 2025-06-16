@@ -1,0 +1,78 @@
+docker:
+  auto_create: true
+  container_name: xyh_pytorch
+  environment: 
+    CUDA_VISIBLE_DEVICES: "all"
+    PYTHONPATH: "/workspace"
+  image: iregistry.baidu-int.com/xmlir/xmlir_ubuntu_2004_x86_64:v0.32
+  network_mode: bridge
+  ports:
+  - 8080:8080
+  - 8888:8888
+  - 6006:6006
+  privileged: true
+  restart_policy: unless-stopped
+  gpus: "all"
+  memory_limit: "32g"
+  shm_size: "64g"
+  
+  # 基础挂载
+  volumes:
+  - /home:/home
+  - /data:/data
+  - /workspace:/workspace
+  
+  # 存储配置增强
+  storage:
+    persistent_volumes:
+    - /home:/home
+    - /data:/data
+    - /workspace:/workspace
+    - /models:/models
+    tmpfs_mounts:
+    - /tmp:2g
+    - /var/tmp:1g
+    bind_mounts:
+      /home: /home
+      /data: /data
+      /workspace: /workspace
+  
+  # 数据管理
+  data_management:
+    enabled: true
+    backup_schedule: "0 2 * * *"  # 每天凌晨2点备份
+    auto_cleanup: true
+  
+  # BOS配置（用于自动下载配置文件）
+  bos:
+    bucket: "bos://klx-pytorch-work-bd-bj"
+    config_path: "xuyehua/template"
+    # access_key 和 secret_key 需要在运行时配置
+  
+  setup_commands:
+  - apt-get update
+  - apt-get install -y curl git vim wget
+  - apt-get install -y zsh
+  - chsh -s /bin/zsh
+  - '# 安装BOS SDK'
+  - pip install bos-python-sdk
+  - '# 创建配置目录'
+  - mkdir -p ~/.config
+  - '# BOS配置文件下载（需要环境变量）'
+  - '[ ! -z "$BOS_ACCESS_KEY" ] && python3 -c "import bos; bos.download(\"bos://klx-pytorch-work-bd-bj\", \"xuyehua/template\", \"/tmp/configs\")" || echo "跳过BOS下载"'
+  - '[ -d "/tmp/configs" ] && cp -r /tmp/configs/* ~/ && rm -rf /tmp/configs || echo "没有BOS配置文件"'
+  - '# 设置数据备份脚本'
+  - 'echo "0 2 * * * /usr/local/bin/backup-data.sh" | crontab -'
+  
+  shell_config:
+    type: zsh
+    path: /bin/zsh
+    config_file: .zshrc
+    custom_configs:
+    - .zshrc
+    - .zsh_history
+    - .p10k.zsh
+  
+  working_directory: /workspace
+  template_type: ml_pytorch
+  description: "增强版PyTorch机器学习环境，支持BOS存储和数据备份"

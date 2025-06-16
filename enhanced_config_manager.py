@@ -61,7 +61,7 @@ class EnhancedConfigManager:
             self.config_path = Path(config_path)
         else:
             # 优先使用用户主目录下的配置
-            user_config = Path.home() / '.remote-terminal-mcp' / 'config.yaml'
+            user_config = Path.home() / '.remote-terminal' / 'config.yaml'
             # 后备选项：当前目录下的配置
             local_config = Path.cwd() / 'config' / 'servers.local.yaml'
             
