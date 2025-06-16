@@ -1,0 +1,27 @@
+回归测试报告 - 2025-06-15 23:51:41
+============================================================
+
+Shell配置测试: PASS
+
+Zsh连接测试: PASS
+
+配置文件语法检查: FAIL
+  错误: Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/Users/xuyehua/Code/remote-terminal-mcp/enhanced_config_manager.py", line 123
+    server_name = self.smart_input(f"🏷️ {server_type}名称", 
+    ^
+IndentationError: expected an indented block
+
+
+MCP服务器语法检查: FAIL
+  错误: Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/Users/xuyehua/Code/remote-terminal-mcp/python/mcp_server.py", line 21, in <module>
+    from enhanced_config_manager import EnhancedConfigManager
+  File "/Users/xuyehua/Code/remote-terminal-mcp/enhanced_config_manager.py", line 123
+    server_name = self.smart_input(f"🏷️ {server_type}名称", 
+    ^
+IndentationError: expected an indented block
+
+

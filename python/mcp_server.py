@@ -558,7 +558,7 @@ async def handle_request(request):
                             content = f"🔍 连接诊断功能已启动，请在配置管理界面中选择服务器 '{server_name}' 进行测试"
                         except Exception as e:
                             content = f"❌ 启动连接诊断失败: {str(e)}"
-                
+                    
                 else:
                     content = f"Unknown tool: {tool_name}"
                 

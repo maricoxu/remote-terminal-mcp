@@ -15,7 +15,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field, asdict
 # 添加颜色支持
 try:
-    from colorama import Fore, Back, Style, init
+from colorama import Fore, Back, Style, init
     init(autoreset=True)
     HAS_COLOR = True
 except ImportError:

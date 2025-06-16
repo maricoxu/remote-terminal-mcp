@@ -24,7 +24,7 @@ try {
   console.error(error);
   // Exit with a non-zero code to indicate failure.
   process.exit(1);
-}
+} 
 
 // Copy sync tools to user config directory
 function copySyncTools() {

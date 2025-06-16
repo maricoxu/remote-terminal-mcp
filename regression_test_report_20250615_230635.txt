@@ -1,0 +1,19 @@
+回归测试报告 - 2025-06-15 23:06:35
+============================================================
+
+Shell配置测试: FAIL
+  错误: /bin/sh: python: command not found
+
+
+Zsh连接测试: FAIL
+  错误: /bin/sh: python: command not found
+
+
+配置文件语法检查: FAIL
+  错误: /bin/sh: python: command not found
+
+
+MCP服务器语法检查: FAIL
+  错误: /bin/sh: python: command not found
+
+

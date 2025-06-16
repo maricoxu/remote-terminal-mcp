@@ -123,8 +123,8 @@ class EnhancedConfigManager:
             server_name = self.smart_input(f"🏷️ {server_type}名称", 
                                          validator=lambda x: bool(x and len(x) > 0),
                                          show_suggestions=False)
-        if not server_name:
-            return None
+            if not server_name:
+                return None
         
         # 支持user@host格式
         user_host_input = self.smart_input("👤 用户名@服务器地址 (或只输入服务器地址)", 
@@ -209,49 +209,125 @@ class EnhancedConfigManager:
         # 调用详细配置方法
         return self._configure_sync_details(server_name)
     
-    def _configure_sync_details(self, server_name: str) -> Optional[Dict[str, Any]]:
+    def _configure_relay_host(self, host_type: str, current_config: Dict, default_host: str = "", default_user: str = "") -> Optional[Dict[str, Any]]:
+        """配置relay连接中的单个主机（跳板机或目标服务器）"""
+        self.colored_print(f"配置{host_type}连接信息:", Fore.YELLOW)
+        
+        # 主机地址
+        host = self.smart_input(f"{host_type}地址", 
+                              default=current_config.get('host', default_host),
+                              validator=self.validate_hostname)
+        if not host:
+            return None
+        
+        # 用户名
+        username = self.smart_input(f"{host_type}用户名", 
+                                  default=current_config.get('username', default_user),
+                                  validator=self.validate_username)
+        if not username:
+            return None
+        
+        # 端口
+        port = self.smart_input(f"{host_type}SSH端口", 
+                              default=str(current_config.get('port', 22)),
+                              validator=self.validate_port)
+        if not port:
+            return None
+        
+        # 密码配置
+        self.colored_print(f"\n🔐 {host_type}认证配置", Fore.YELLOW)
+        current_password = current_config.get('password', '')
+        
+        if current_password:
+            # 显示当前密码的掩码版本
+            masked_password = '*' * min(len(current_password), 8)
+            self.colored_print(f"当前密码: {masked_password}", Fore.CYAN)
+            password_prompt = f"{host_type}登录密码 (回车保持当前密码，输入新密码则更新)"
+            default_password = current_password
+        else:
+            password_prompt = f"{host_type}登录密码 (直接回车表示使用SSH密钥认证)"
+            default_password = ""
+        
+        password_input = self.smart_input(password_prompt, 
+                                        default=default_password,
+                                        show_suggestions=False)
+        
+        # 构建配置
+        host_config = {
+            "host": host,
+            "username": username,
+            "port": int(port)
+        }
+        
+        # 处理密码配置
+        if password_input and password_input.strip():
+            host_config["password"] = password_input.strip()
+            if password_input.strip() == current_password:
+                self.colored_print(f"✅ {host_type}保持现有密码认证", Fore.GREEN)
+            else:
+                self.colored_print(f"✅ {host_type}已更新密码认证", Fore.GREEN)
+        else:
+            self.colored_print(f"✅ {host_type}将使用SSH密钥认证", Fore.GREEN)
+        
+        return host_config
+
+    def _configure_sync_details(self, server_name: str, current_sync_config: Dict = None) -> Optional[Dict[str, Any]]:
         """配置同步功能详细设置（不再询问是否启用）"""
         self.colored_print("✅ 启用同步功能", Fore.GREEN)
         
+        # 获取现有配置的默认值
+        if current_sync_config is None:
+            current_sync_config = {}
+        
         # 配置远程工作目录
+        current_remote = current_sync_config.get('remote_workspace', '/home/Code')
         remote_workspace = self.smart_input("远程工作目录", 
                                           validator=lambda x: bool(x and x.startswith('/')),
-                                          default="/home/Code",
+                                          default=current_remote,
                                           suggestions=["/home/Code", "/workspace", "/opt/workspace"])
         if not remote_workspace:
             return None
         
-        # 检测本地工作目录
+        # 配置本地工作目录
+        current_local = current_sync_config.get('local_workspace', os.getcwd())
         current_dir = os.getcwd()
-        self.colored_print(f"📁 当前本地目录: {current_dir}", Fore.CYAN)
         
-        local_workspace = self.smart_input("本地工作目录 (回车使用当前目录)", 
-                                         default=current_dir,
+        if current_local != current_dir:
+            self.colored_print(f"📁 当前本地目录: {current_dir}", Fore.CYAN)
+            self.colored_print(f"📁 配置中的本地目录: {current_local}", Fore.YELLOW)
+        else:
+            self.colored_print(f"📁 当前本地目录: {current_dir}", Fore.CYAN)
+        
+        local_workspace = self.smart_input("本地工作目录", 
+                                         default=current_local,
                                          show_suggestions=False)
         if not local_workspace:
-            local_workspace = current_dir
+            local_workspace = current_local
         
         # FTP配置
         self.colored_print("\n🌐 FTP服务器配置", Fore.CYAN)
         
+        current_ftp_port = str(current_sync_config.get('ftp_port', 8021))
         ftp_port = self.smart_input("FTP端口", 
                                    validator=self.validate_port,
-                                   default="8021",
+                                   default=current_ftp_port,
                                    show_suggestions=False)
         if not ftp_port:
-            ftp_port = "8021"
+            ftp_port = current_ftp_port
         
+        current_ftp_user = current_sync_config.get('ftp_user', 'ftpuser')
         ftp_user = self.smart_input("FTP用户名", 
-                                   default="ftpuser",
+                                   default=current_ftp_user,
                                    show_suggestions=False)
         if not ftp_user:
-            ftp_user = "ftpuser"
+            ftp_user = current_ftp_user
         
+        current_ftp_password = current_sync_config.get('ftp_password', 'your_ftp_password')
         ftp_password = self.smart_input("FTP密码", 
-                                       default="your_ftp_password",
+                                       default=current_ftp_password,
                                        show_suggestions=False)
         if not ftp_password:
-            ftp_password = "your_ftp_password"
+            ftp_password = current_ftp_password
         
         sync_config = {
             "enabled": True,
@@ -720,9 +796,9 @@ class EnhancedConfigManager:
                                 "volumes": latest_config.get('volumes', [])
                             }
                             self.colored_print(f"✅ 已应用新Docker配置: {latest_config['container_name']}", Fore.GREEN)
-                        else:
-                            # 用户取消了Docker配置，继续当前流程
-                            self.colored_print("⚠️ Docker配置被取消，将继续不使用Docker", Fore.YELLOW)
+                    else:
+                        # 用户取消了Docker配置，继续当前流程
+                        self.colored_print("⚠️ Docker配置被取消，将继续不使用Docker", Fore.YELLOW)
                     
             else:
                 # 没有现有配置，直接创建新配置
@@ -748,9 +824,9 @@ class EnhancedConfigManager:
                             "volumes": latest_config.get('volumes', [])
                         }
                         self.colored_print(f"✅ 已应用Docker配置: {latest_config['container_name']}", Fore.GREEN)
-                    else:
-                        # 用户取消了Docker配置，继续当前流程
-                        self.colored_print("⚠️ Docker配置被取消，将继续不使用Docker", Fore.YELLOW)
+                else:
+                    # 用户取消了Docker配置，继续当前流程
+                    self.colored_print("⚠️ Docker配置被取消，将继续不使用Docker", Fore.YELLOW)
         
         self.show_progress(4, 4, "完成配置")
         
@@ -1200,24 +1276,24 @@ servers:
         try:
             if merge_mode:
                 # 合并模式：读取现有配置并合并（用于添加新配置）
-                existing_config = {}
-                if os.path.exists(self.config_path):
-                    with open(self.config_path, 'r', encoding='utf-8') as f:
-                        existing_config = yaml.safe_load(f) or {}
-                
-                # 确保servers节点存在
-                if 'servers' not in existing_config:
-                    existing_config['servers'] = {}
-                
-                # 合并新的服务器配置到现有配置
-                if 'servers' in config:
-                    existing_config['servers'].update(config['servers'])
-                
-                # 合并其他配置项
-                for key, value in config.items():
-                    if key != 'servers':
-                        existing_config[key] = value
-                
+            existing_config = {}
+            if os.path.exists(self.config_path):
+                with open(self.config_path, 'r', encoding='utf-8') as f:
+                    existing_config = yaml.safe_load(f) or {}
+            
+            # 确保servers节点存在
+            if 'servers' not in existing_config:
+                existing_config['servers'] = {}
+            
+            # 合并新的服务器配置到现有配置
+            if 'servers' in config:
+                existing_config['servers'].update(config['servers'])
+            
+            # 合并其他配置项
+            for key, value in config.items():
+                if key != 'servers':
+                    existing_config[key] = value
+            
                 final_config = existing_config
             else:
                 # 覆盖模式：直接使用传入的配置（用于删除操作）
@@ -1298,7 +1374,7 @@ servers:
             if called_from_wizard:
                 self.colored_print("  0. 返回上一级", Fore.WHITE)
             else:
-                self.colored_print("  0. 返回主菜单", Fore.WHITE)
+            self.colored_print("  0. 返回主菜单", Fore.WHITE)
             
             choice = self.smart_input("选择操作", 
                                     validator=lambda x: x in ['0', '1', '2'],
@@ -1337,7 +1413,7 @@ servers:
                 return {}
             
             with open(self.config_path, 'r', encoding='utf-8') as f:
-                config = yaml.safe_load(f)
+                    config = yaml.safe_load(f)
             
             if not config or 'servers' not in config:
                 return {}
@@ -2055,30 +2131,11 @@ servers:
         # 显示当前配置并允许编辑
         self.colored_print("\n💡 当前配置如下，按回车保持不变，输入新值进行修改:", Fore.YELLOW)
         
-        # 编辑基本信息
-        new_host = self.smart_input(f"服务器地址", 
-                                  default=current_config.get('host', ''),
-                                  validator=self.validate_hostname)
-        if new_host is None:
-            return
-        
-        new_user = self.smart_input(f"用户名", 
-                                  default=current_config.get('user', current_config.get('username', '')),
-                                  validator=self.validate_username)
-        if new_user is None:
-            return
-        
-        new_port = self.smart_input(f"端口", 
-                                  default=str(current_config.get('port', 22)),
-                                  validator=self.validate_port)
-        if new_port is None:
-            return
-        
-        # 编辑连接类型
+        # 首先选择连接类型
         current_type = current_config.get('type', 'ssh')
         self.colored_print(f"\n当前连接类型: {current_type}", Fore.CYAN)
         self.colored_print("1. SSH直连", Fore.WHITE)
-        self.colored_print("2. Relay连接", Fore.WHITE)
+        self.colored_print("2. Relay跳板机连接", Fore.WHITE)
         
         type_choice = self.smart_input("连接类型", 
                                      default='1' if current_type == 'ssh' else '2',
@@ -2087,6 +2144,72 @@ servers:
             return
         
         new_type = 'ssh' if type_choice == '1' else 'script_based'
+        
+        # 初始化变量
+        jump_host_config = None
+        target_config = None
+        
+        # 根据连接类型配置不同的信息
+        if new_type == 'ssh':
+            # SSH直连配置
+            self.colored_print("\n📡 SSH直连配置", Fore.CYAN, Style.BRIGHT)
+            
+            new_host = self.smart_input(f"服务器地址", 
+                                      default=current_config.get('host', ''),
+                                      validator=self.validate_hostname)
+            if new_host is None:
+                return
+            
+            new_user = self.smart_input(f"用户名", 
+                                      default=current_config.get('user', current_config.get('username', '')),
+                                      validator=self.validate_username)
+            if new_user is None:
+                return
+            
+            new_port = self.smart_input(f"端口", 
+                                      default=str(current_config.get('port', 22)),
+                                      validator=self.validate_port)
+            if new_port is None:
+                return
+        
+        else:
+            # Relay跳板机连接配置
+            self.colored_print("\n🔗 Relay跳板机连接配置", Fore.CYAN, Style.BRIGHT)
+            self.colored_print("需要配置两级连接：本地 → 跳板机 → 目标服务器", Fore.YELLOW)
+            
+            # 获取当前的specs配置
+            current_specs = current_config.get('specs', {}).get('connection', {})
+            current_jump_host = current_specs.get('jump_host', {})
+            current_target = current_specs.get('target', {})
+            
+            # 配置跳板机信息
+            self.colored_print("\n📍 第一级：跳板机配置", Fore.CYAN)
+            jump_host_config = self._configure_relay_host(
+                "跳板机", 
+                current_jump_host,
+                default_host=current_config.get('host', ''),
+                default_user=current_config.get('user', current_config.get('username', ''))
+            )
+            if not jump_host_config:
+                self.colored_print("❌ 跳板机配置失败", Fore.RED)
+                return
+            
+            # 配置目标服务器信息
+            self.colored_print("\n🎯 第二级：目标服务器配置", Fore.CYAN)
+            target_config = self._configure_relay_host(
+                "目标服务器",
+                current_target,
+                default_host=current_target.get('host', ''),
+                default_user=current_target.get('username', 'root')
+            )
+            if not target_config:
+                self.colored_print("❌ 目标服务器配置失败", Fore.RED)
+                return
+            
+            # 对于Relay连接，主配置使用跳板机信息
+            new_host = jump_host_config['host']
+            new_user = jump_host_config['username']
+            new_port = jump_host_config.get('port', 22)
         
         # 构建新配置
         updated_config = {
@@ -2097,21 +2220,22 @@ servers:
             "description": current_config.get('description', f"编辑的配置: {selected_server}")
         }
         
-        # 保留其他配置项
+        # 保留其他配置项，但排除主配置中的password字段（因为密码现在分别存储在jump_host和target中）
         for key, value in current_config.items():
-            if key not in ['host', 'user', 'username', 'port', 'type']:
+            if key not in ['host', 'user', 'username', 'port', 'type', 'specs', 'password']:
                 updated_config[key] = value
         
-        # 如果是relay连接，处理relay相关配置
+        # 如果是relay连接，添加relay相关配置
         if new_type == 'script_based':
             updated_config['connection_type'] = 'relay'
-            if 'specs' not in updated_config:
-                updated_config['specs'] = {
-                    "connection": {
-                        "tool": "relay-cli",
-                        "target": {"host": updated_config['host']}
-                    }
+            # 构建specs配置（使用之前配置的jump_host_config和target_config）
+            updated_config['specs'] = {
+                "connection": {
+                    "tool": "relay-cli",
+                    "jump_host": jump_host_config,
+                    "target": target_config
                 }
+            }
         
         # 询问是否配置同步功能
         self.colored_print("\n🔄 文件同步功能配置", Fore.CYAN, Style.BRIGHT)
@@ -2126,7 +2250,7 @@ servers:
                                         default='y' if has_sync else 'n')
         
         if configure_sync and configure_sync.lower() in ['y', 'yes']:
-            sync_config = self._configure_sync_details(selected_server)
+            sync_config = self._configure_sync_details(selected_server, current_sync)
             if sync_config:
                 updated_config['sync'] = sync_config
                 self.colored_print("✅ 同步功能配置完成", Fore.GREEN)
@@ -2143,6 +2267,36 @@ servers:
             else:
                 self.colored_print("⚠️ 已移除同步配置", Fore.YELLOW)
         
+        # 询问是否配置Docker环境
+        self.colored_print("\n🐳 Docker环境配置", Fore.CYAN, Style.BRIGHT)
+        current_docker = current_config.get('docker', {})
+        has_docker = bool(current_docker.get('enabled', False))
+        
+        self.colored_print(f"当前Docker状态: {'已启用' if has_docker else '未启用'}", Fore.YELLOW)
+        self.colored_print("💡 Docker环境可以让您自动进入指定的容器进行开发", Fore.YELLOW)
+        
+        configure_docker = self.smart_input("是否启用Docker环境 (y/n)", 
+                                          validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
+                                          default='y' if has_docker else 'n')
+        
+        if configure_docker and configure_docker.lower() in ['y', 'yes']:
+            docker_config = self._configure_docker_for_server(selected_server, current_docker)
+            if docker_config:
+                updated_config['docker'] = docker_config
+                self.colored_print("✅ Docker环境配置完成", Fore.GREEN)
+            else:
+                self.colored_print("⚠️ Docker环境配置跳过", Fore.YELLOW)
+        elif has_docker:
+            # 如果之前有Docker配置但用户选择不配置，询问是否保留
+            keep_docker = self.smart_input("是否保留现有Docker配置 (y/n)", 
+                                         validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
+                                         default='y')
+            if keep_docker and keep_docker.lower() in ['y', 'yes']:
+                updated_config['docker'] = current_docker
+                self.colored_print("✅ 保留现有Docker配置", Fore.GREEN)
+            else:
+                self.colored_print("⚠️ 已移除Docker配置", Fore.YELLOW)
+        
         # 显示更新预览
         self.colored_print("\n📋 配置更新预览:", Fore.GREEN, Style.BRIGHT)
         self.colored_print(f"服务器名称: {selected_server}", Fore.WHITE)
@@ -2150,6 +2304,26 @@ servers:
         self.colored_print(f"用户: {updated_config['user']}", Fore.WHITE)
         self.colored_print(f"端口: {updated_config['port']}", Fore.WHITE)
         self.colored_print(f"连接类型: {updated_config['type']}", Fore.WHITE)
+        
+        # 如果是relay连接，显示跳板机配置详情
+        if updated_config.get('type') == 'script_based' and 'specs' in updated_config:
+            specs = updated_config['specs']['connection']
+            if 'jump_host' in specs and 'target' in specs:
+                self.colored_print("\n🔗 Relay连接配置:", Fore.CYAN, Style.BRIGHT)
+                
+                jump_host = specs['jump_host']
+                self.colored_print(f"  📍 跳板机: {jump_host['username']}@{jump_host['host']}:{jump_host.get('port', 22)}", Fore.WHITE)
+                if 'password' in jump_host:
+                    self.colored_print(f"    认证: 密码认证", Fore.GREEN)
+                else:
+                    self.colored_print(f"    认证: SSH密钥认证", Fore.YELLOW)
+                
+                target = specs['target']
+                self.colored_print(f"  🎯 目标服务器: {target['username']}@{target['host']}:{target.get('port', 22)}", Fore.WHITE)
+                if 'password' in target:
+                    self.colored_print(f"    认证: 密码认证", Fore.GREEN)
+                else:
+                    self.colored_print(f"    认证: SSH密钥认证", Fore.YELLOW)
         
         # 显示同步配置预览
         if 'sync' in updated_config and updated_config['sync'].get('enabled'):
@@ -2160,6 +2334,17 @@ servers:
             self.colored_print(f"  FTP端口: {sync_info.get('ftp_port', 8021)}", Fore.WHITE)
         else:
             self.colored_print(f"同步功能: 未启用", Fore.YELLOW)
+        
+        # 显示Docker配置预览
+        if 'docker' in updated_config and updated_config['docker'].get('enabled'):
+            docker_info = updated_config['docker']
+            self.colored_print(f"Docker环境: 已启用", Fore.GREEN)
+            self.colored_print(f"  容器名称: {docker_info.get('container_name', 'N/A')}", Fore.WHITE)
+            self.colored_print(f"  自动进入: {'是' if docker_info.get('auto_enter', False) else '否'}", Fore.WHITE)
+            self.colored_print(f"  Shell类型: {docker_info.get('shell', 'bash')}", Fore.WHITE)
+            self.colored_print(f"  工作目录: {docker_info.get('working_directory', '/workspace')}", Fore.WHITE)
+        else:
+            self.colored_print(f"Docker环境: 未启用", Fore.YELLOW)
         
         # 确认保存
         confirm = self.smart_input("确认保存更改 (y/n)", 
@@ -2367,11 +2552,191 @@ servers:
                                  validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
                                  default='y')
         if confirm and confirm.lower() in ['y', 'yes']:
-            # 保存Docker配置
+            # 保存Docker配置到模板目录
             self.save_docker_wizard_config(updated_config)
+            
+            # 同时更新主配置文件中使用该Docker配置的服务器
+            self._update_servers_using_docker_config(selected_docker, updated_config)
+            
             self.colored_print(f"\n✅ Docker配置已更新: {selected_docker}", Fore.GREEN, Style.BRIGHT)
         else:
             self.colored_print("\n❌ 取消更新", Fore.YELLOW)
+
+    def _configure_docker_for_server(self, server_name: str, current_docker_config: Dict = None) -> Optional[Dict[str, Any]]:
+        """为服务器配置Docker环境"""
+        self.colored_print(f"\n🐳 配置 {server_name} 的Docker环境", Fore.CYAN, Style.BRIGHT)
+        self.colored_print("-" * 40, Fore.CYAN)
+        
+        if current_docker_config is None:
+            current_docker_config = {}
+        
+        # 检查是否有现有的Docker配置可以使用
+        existing_dockers = self.get_existing_docker_configs()
+        
+        if existing_dockers:
+            self.colored_print("\n💡 发现现有Docker配置，您可以:", Fore.YELLOW)
+            self.colored_print("1. 使用现有Docker配置", Fore.WHITE)
+            self.colored_print("2. 手动配置Docker容器", Fore.WHITE)
+            
+            choice = self.smart_input("选择配置方式", 
+                                    validator=lambda x: x in ['1', '2'],
+                                    default='1')
+            
+            if choice == '1':
+                # 使用现有Docker配置
+                self.colored_print("\n📋 现有Docker配置:", Fore.CYAN)
+                docker_list = list(existing_dockers.keys())
+                for i, docker_name in enumerate(docker_list, 1):
+                    docker_info = existing_dockers[docker_name]
+                    image = docker_info.get('image', 'N/A')
+                    self.colored_print(f"  {i}. {docker_name} - {image}", Fore.WHITE)
+                
+                docker_choice = self.smart_input("选择Docker配置 (输入序号)", 
+                                                validator=lambda x: x.isdigit() and 1 <= int(x) <= len(docker_list),
+                                                suggestions=[str(i) for i in range(1, len(docker_list) + 1)])
+                if not docker_choice:
+                    return None
+                
+                selected_docker = docker_list[int(docker_choice) - 1]
+                selected_config = existing_dockers[selected_docker]
+                
+                docker_config = {
+                    "enabled": True,
+                    "container_name": selected_config.get('container_name', selected_docker),
+                    "image": selected_config.get('image', ''),
+                    "auto_enter": True,
+                    "shell": selected_config.get('shell_config', {}).get('type', 'bash'),
+                    "working_directory": selected_config.get('working_directory', '/workspace')
+                }
+                
+                # 立即保存到主配置文件
+                self._save_docker_config_to_server(server_name, docker_config)
+                return docker_config
+        
+        # 手动配置Docker容器
+        self.colored_print("\n🔧 手动配置Docker容器", Fore.CYAN)
+        
+        # 容器名称
+        default_container = current_docker_config.get('container_name', '')
+        container_name = self.smart_input("Docker容器名称", 
+                                         default=default_container,
+                                         validator=self.validate_container_name)
+        if not container_name:
+            return None
+        
+        # 镜像名称（新增）
+        default_image = current_docker_config.get('image', '')
+        image_name = self.smart_input("Docker镜像名称", 
+                                    default=default_image,
+                                    suggestions=["ubuntu:20.04", "pytorch/pytorch:latest", "node:18-alpine"])
+        if not image_name:
+            return None
+        
+        # 是否自动进入容器
+        default_auto_enter = current_docker_config.get('auto_enter', True)
+        auto_enter_choice = self.smart_input("连接时自动进入容器 (y/n)", 
+                                           default='y' if default_auto_enter else 'n',
+                                           validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'])
+        auto_enter = auto_enter_choice and auto_enter_choice.lower() in ['y', 'yes']
+        
+        # Shell类型
+        default_shell = current_docker_config.get('shell', 'bash')
+        self.colored_print(f"\n当前Shell: {default_shell}", Fore.CYAN)
+        self.colored_print("1. Bash", Fore.WHITE)
+        self.colored_print("2. Zsh", Fore.WHITE)
+        
+        shell_choice = self.smart_input("容器内Shell类型", 
+                                      default='1' if default_shell == 'bash' else '2',
+                                      validator=lambda x: x in ['1', '2'])
+        shell_type = 'bash' if shell_choice == '1' else 'zsh'
+        
+        # 工作目录
+        default_workdir = current_docker_config.get('working_directory', '/workspace')
+        working_directory = self.smart_input("容器内工作目录", 
+                                           default=default_workdir)
+        
+        docker_config = {
+            "enabled": True,
+            "container_name": container_name,
+            "image": image_name,
+            "auto_enter": auto_enter,
+            "shell": shell_type,
+            "working_directory": working_directory or '/workspace'
+        }
+        
+        # 立即保存到主配置文件
+        self._save_docker_config_to_server(server_name, docker_config)
+        return docker_config
+    
+    def _save_docker_config_to_server(self, server_name: str, docker_config: Dict[str, Any]):
+        """将Docker配置保存到服务器的主配置文件中"""
+        try:
+            # 读取现有配置
+            existing_config = {}
+            if os.path.exists(self.config_path):
+                with open(self.config_path, 'r', encoding='utf-8') as f:
+                    existing_config = yaml.safe_load(f) or {}
+            
+            # 确保servers节点存在
+            if 'servers' not in existing_config:
+                existing_config['servers'] = {}
+            
+            # 确保服务器配置存在
+            if server_name not in existing_config['servers']:
+                existing_config['servers'][server_name] = {}
+            
+            # 更新Docker配置
+            existing_config['servers'][server_name]['docker'] = docker_config
+            
+            # 保存配置
+            with open(self.config_path, 'w', encoding='utf-8') as f:
+                yaml.dump(existing_config, f, default_flow_style=False, allow_unicode=True)
+            
+            self.colored_print(f"✅ Docker配置已保存到服务器 {server_name}", Fore.GREEN)
+            
+        except Exception as e:
+            self.colored_print(f"❌ 保存Docker配置失败: {e}", Fore.RED)
+            raise
+    
+    def _update_servers_using_docker_config(self, docker_name: str, updated_config: Dict[str, Any]):
+        """更新使用指定Docker配置的所有服务器"""
+        try:
+            # 读取现有配置
+            existing_config = {}
+            if os.path.exists(self.config_path):
+                with open(self.config_path, 'r', encoding='utf-8') as f:
+                    existing_config = yaml.safe_load(f) or {}
+            
+            if 'servers' not in existing_config:
+                return
+            
+            updated_servers = []
+            # 查找使用该Docker配置的服务器
+            for server_name, server_config in existing_config['servers'].items():
+                if 'docker' in server_config:
+                    docker_config = server_config['docker']
+                    if docker_config.get('container_name') == docker_name:
+                        # 更新Docker配置
+                        new_docker_config = {
+                            "enabled": True,
+                            "container_name": updated_config.get('container_name', docker_name),
+                            "image": updated_config.get('image', ''),
+                            "auto_enter": docker_config.get('auto_enter', True),
+                            "shell": updated_config.get('shell_config', {}).get('type', 'bash'),
+                            "working_directory": updated_config.get('working_directory', '/workspace')
+                        }
+                        existing_config['servers'][server_name]['docker'] = new_docker_config
+                        updated_servers.append(server_name)
+            
+            if updated_servers:
+                # 保存更新后的配置
+                with open(self.config_path, 'w', encoding='utf-8') as f:
+                    yaml.dump(existing_config, f, default_flow_style=False, allow_unicode=True)
+                
+                self.colored_print(f"✅ 已更新使用Docker配置 '{docker_name}' 的服务器: {', '.join(updated_servers)}", Fore.GREEN)
+            
+        except Exception as e:
+            self.colored_print(f"❌ 更新服务器Docker配置失败: {e}", Fore.RED)
 
 def main():
     """主函数"""

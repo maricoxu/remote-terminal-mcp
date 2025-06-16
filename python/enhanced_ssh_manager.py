@@ -1014,6 +1014,7 @@ class EnhancedSSHManager:
         # 优先级1: 用户配置目录
         user_config_dir = Path.home() / ".remote-terminal" / "configs" / shell_type
         if user_config_dir.exists() and any(user_config_dir.glob(".*")):
+            log_output(f"📁 找到用户配置目录: {user_config_dir}", "INFO")
             return {
                 "type": "用户配置",
                 "path": str(user_config_dir),
@@ -1023,12 +1024,14 @@ class EnhancedSSHManager:
         # 优先级2: 项目模板目录
         project_template_dir = Path(__file__).parent.parent / "templates" / "configs" / shell_type
         if project_template_dir.exists() and any(project_template_dir.glob(".*")):
+            log_output(f"📁 找到项目模板目录: {project_template_dir}", "INFO")
             return {
                 "type": "项目模板",
                 "path": str(project_template_dir),
                 "priority": 2
             }
         
+        log_output(f"⚠️ 未找到{shell_type}配置文件目录", "WARNING")
         return None
     
     def _copy_config_files_to_container(self, session_name: str, config_source: dict, shell_type: str) -> bool:
@@ -1041,15 +1044,21 @@ class EnhancedSSHManager:
             # 这样避免了复杂的容器名称获取和docker cp操作
             import os
             
+            copied_files = 0
             # 读取配置文件内容并在容器内创建
             for config_file in os.listdir(source_path):
                 if config_file.startswith('.'):  # 只处理隐藏配置文件
                     source_file = os.path.join(source_path, config_file)
                     if os.path.isfile(source_file):
                         try:
-                            # 读取配置文件内容
-                            with open(source_file, 'r', encoding='utf-8') as f:
-                                content = f.read()
+                            # 读取配置文件内容，处理编码问题
+                            try:
+                                with open(source_file, 'r', encoding='utf-8') as f:
+                                    content = f.read()
+                            except UnicodeDecodeError:
+                                # 如果是二进制文件（如.zsh_history），跳过
+                                log_output(f"⚠️ 跳过二进制文件: {config_file}", "WARNING")
+                                continue
                             
                             # 在容器内创建配置文件
                             # 使用cat命令创建文件，避免特殊字符问题
@@ -1064,11 +1073,17 @@ class EnhancedSSHManager:
                             time.sleep(1)
                             
                             log_output(f"✅ 已创建: {config_file}", "INFO")
+                            copied_files += 1
                             
                         except Exception as e:
                             log_output(f"⚠️ 处理配置文件失败: {config_file} - {str(e)}", "WARNING")
             
-            return True
+            if copied_files > 0:
+                log_output(f"✅ 成功复制 {copied_files} 个配置文件", "SUCCESS")
+                return True
+            else:
+                log_output(f"⚠️ 未找到可复制的配置文件", "WARNING")
+                return False
             
         except Exception as e:
             log_output(f"配置文件复制异常: {str(e)}", "ERROR")
