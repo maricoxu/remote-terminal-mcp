@@ -471,15 +471,48 @@ async def handle_request(request):
                     quick_mode = tool_arguments.get("quick_mode", False)  # 默认使用完整向导
                     
                     try:
-                        if quick_mode:
-                            # 如果明确要求快速模式，使用quick_setup
-                            result = config_manager.quick_setup()
-                        else:
-                            # 默认使用完整向导配置
-                            result = config_manager.guided_setup()
-                        content = f"✅ 配置向导完成！\n\n服务器配置已创建成功"
+                        # 创建MCP专用的配置管理器实例，禁用彩色输出
+                        import os
+                        from contextlib import redirect_stdout, redirect_stderr
+                        from io import StringIO
+                        
+                        # 设置环境变量来禁用彩色输出
+                        old_env = os.environ.get('NO_COLOR', None)
+                        os.environ['NO_COLOR'] = '1'
+                        
+                        # 捕获所有输出
+                        captured_output = StringIO()
+                        captured_errors = StringIO()
+                        
+                        try:
+                            with redirect_stdout(captured_output), redirect_stderr(captured_errors):
+                                # 创建专用的配置管理器，禁用交互式功能
+                                mcp_config_manager = EnhancedConfigManager()
+                                
+                                # 对于MCP环境，我们提供一个简化的配置创建流程
+                                result_message = "🚀 配置向导启动提示：\n\n"
+                                result_message += "由于在MCP环境中运行，请使用以下方式之一来配置服务器：\n\n"
+                                result_message += "方法1️⃣ 使用命令行工具：\n"
+                                result_message += "```bash\n"
+                                result_message += "cd /Users/xuyehua/Code/remote-terminal-mcp\n"
+                                result_message += "python3 enhanced_config_manager.py\n"
+                                result_message += "```\n\n"
+                                result_message += "方法2️⃣ 使用create_server_config工具：\n"
+                                result_message += "请使用'create_server_config' MCP工具来创建具体的服务器配置\n\n"
+                                result_message += "方法3️⃣ 直接编辑配置文件：\n"
+                                result_message += f"编辑文件：{mcp_config_manager.config_path}\n\n"
+                                result_message += "配置完成后，可以使用'list_servers'工具查看配置的服务器。"
+                                
+                                content = result_message
+                        finally:
+                            # 恢复环境变量
+                            if old_env is None:
+                                os.environ.pop('NO_COLOR', None)
+                            else:
+                                os.environ['NO_COLOR'] = old_env
+                        
                     except Exception as e:
-                        content = f"❌ 配置向导失败: {str(e)}"
+                        content = f"❌ 配置向导启动失败: {str(e)}\n\n💡 建议：请直接编辑配置文件或使用命令行工具进行配置"
                 
                 elif tool_name == "manage_server_config":
                     action = tool_arguments.get("action")
@@ -520,11 +553,111 @@ async def handle_request(request):
                 
                 elif tool_name == "create_server_config":
                     try:
-                        # 直接启动完整的向导界面来创建服务器配置
-                        result = config_manager.guided_setup()
-                        content = f"✅ 服务器配置向导已启动，请按照向导步骤完成配置"
+                        # 获取参数
+                        name = tool_arguments.get("name")
+                        host = tool_arguments.get("host") 
+                        username = tool_arguments.get("username")
+                        port = tool_arguments.get("port", 22)
+                        connection_type = tool_arguments.get("connection_type", "ssh")
+                        description = tool_arguments.get("description", "")
+                        
+                        # 验证必需参数
+                        if not all([name, host, username]):
+                            content = "❌ 创建服务器配置失败：缺少必需参数 (name, host, username)"
+                        else:
+                            # 创建服务器配置
+                            import os
+                            from contextlib import redirect_stdout, redirect_stderr
+                            from io import StringIO
+                            
+                            # 设置环境变量来禁用彩色输出
+                            old_env = os.environ.get('NO_COLOR', None)
+                            os.environ['NO_COLOR'] = '1'
+                            
+                            # 捕获所有输出
+                            captured_output = StringIO()
+                            captured_errors = StringIO()
+                            
+                            try:
+                                with redirect_stdout(captured_output), redirect_stderr(captured_errors):
+                                    mcp_config_manager = EnhancedConfigManager()
+                                    
+                                    # 构建服务器配置
+                                    server_config = {
+                                        "servers": {
+                                            name: {
+                                                "host": host,
+                                                "username": username,
+                                                "port": int(port),
+                                                "private_key_path": "~/.ssh/id_rsa",
+                                                "type": "script_based",
+                                                "connection_type": connection_type,
+                                                "description": description or f"{connection_type.upper()}连接: {name}",
+                                                "session": {
+                                                    "name": f"{name}_session",
+                                                    "working_directory": "~",
+                                                    "shell": "/bin/bash"
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    # 添加连接特定配置
+                                    if connection_type == "relay":
+                                        relay_target_host = tool_arguments.get("relay_target_host", host)
+                                        server_config["servers"][name]["specs"] = {
+                                            "connection": {
+                                                "tool": "relay-cli",
+                                                "target": {"host": relay_target_host}
+                                            }
+                                        }
+                                    elif connection_type == "ssh":
+                                        server_config["servers"][name]["specs"] = {
+                                            "connection": {
+                                                "tool": "ssh",
+                                                "target": {"host": host}
+                                            }
+                                        }
+                                    
+                                    # Docker配置 (如果提供)
+                                    docker_enabled = tool_arguments.get("docker_enabled", False)
+                                    if docker_enabled:
+                                        docker_container = tool_arguments.get("docker_container", f"{name}_container")
+                                        docker_image = tool_arguments.get("docker_image", "ubuntu:20.04")
+                                        
+                                        if "specs" not in server_config["servers"][name]:
+                                            server_config["servers"][name]["specs"] = {}
+                                        
+                                        server_config["servers"][name]["specs"]["docker"] = {
+                                            "container_name": docker_container,
+                                            "image": docker_image,
+                                            "auto_create": True,
+                                            "ports": [],
+                                            "volumes": []
+                                        }
+                                    
+                                    # 保存配置
+                                    mcp_config_manager.save_config(server_config)
+                                    
+                                    content = f"✅ 服务器配置创建成功！\n\n"
+                                    content += f"服务器名称: {name}\n"
+                                    content += f"服务器地址: {host}\n"  
+                                    content += f"用户名: {username}\n"
+                                    content += f"端口: {port}\n"
+                                    content += f"连接类型: {connection_type}\n"
+                                    if docker_enabled:
+                                        content += f"Docker容器: {docker_container}\n"
+                                    content += f"\n配置文件位置: {mcp_config_manager.config_path}\n"
+                                    content += f"\n💡 提示：现在可以使用 'connect_server' 工具连接到此服务器"
+                            finally:
+                                # 恢复环境变量
+                                if old_env is None:
+                                    os.environ.pop('NO_COLOR', None)
+                                else:
+                                    os.environ['NO_COLOR'] = old_env
+                            
                     except Exception as e:
-                        content = f"❌ 启动配置向导失败: {str(e)}"
+                        content = f"❌ 创建服务器配置失败: {str(e)}"
                 
                 elif tool_name == "diagnose_connection":
                     server_name = tool_arguments.get("server_name")

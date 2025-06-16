@@ -48,26 +48,47 @@ class ConfigError:
 
 class EnhancedConfigManager:
     def __init__(self, config_path: str = None):
-        if config_path is None:
-            # 使用用户家目录下的.remote-terminal文件夹
-            self.config_dir = Path.home() / ".remote-terminal"
-            self.config_path = self.config_dir / "config.yaml"
-        else:
+        """初始化配置管理器"""
+        # 检测是否在MCP环境中运行
+        self.is_mcp_mode = (
+            os.environ.get('NO_COLOR') == '1' or 
+            os.environ.get('MCP_MODE') == '1' or
+            not sys.stdout.isatty()  # 检测是否在管道或重定向环境中运行
+        )
+        
+        if config_path:
             self.config_path = Path(config_path)
-            self.config_dir = self.config_path.parent
-        self.templates_dir = self.config_dir / "templates"
+        else:
+            # 优先使用用户主目录下的配置
+            user_config = Path.home() / '.remote-terminal-mcp' / 'config.yaml'
+            # 后备选项：当前目录下的配置
+            local_config = Path.cwd() / 'config' / 'servers.local.yaml'
+            
+            if user_config.exists():
+                self.config_path = user_config
+            elif local_config.exists():
+                self.config_path = local_config
+            else:
+                # 默认使用用户配置路径（会自动创建）
+                self.config_path = user_config
+        
+        # 设置config_dir - 必须在ensure_directories()之前
+        self.config_dir = self.config_path.parent
+        self.templates_dir = Path(__file__).parent / "templates"
+        self.ensure_directories()
         
         # 初始化Docker配置管理器
         self.docker_manager = DockerConfigManager(str(self.config_dir))
         
-        self.ensure_directories()
-        
     def colored_print(self, text: str, color=Fore.WHITE, style=""):
-        """彩色打印函数"""
-        if HAS_COLOR:
-            print(f"{style}{color}{text}{Style.RESET_ALL}")
+        """彩色打印 - 在MCP模式下使用纯文本"""
+        if self.is_mcp_mode:
+            # 在MCP模式下，移除表情符号和颜色，仅输出纯文本
+            clean_text = re.sub(r'[🎯🔗🖥️🐳⚙️📋💡🚀✅❌⏰🎉🔧📝📍🔍💻🎨🎯🔥🌉🏃🛰️]', '', text)
+            print(clean_text)
         else:
-            print(text)
+            print(f"{color}{style}{text}{Style.RESET_ALL}")
+        return True
     
     def show_progress(self, current_step: int, total_steps: int, step_name: str):
         """显示进度指示器"""
@@ -77,6 +98,29 @@ class EnhancedConfigManager:
     
     def smart_input(self, prompt: str, validator=None, suggestions=None, default="", show_suggestions=True):
         """智能输入函数，支持验证和建议"""
+        
+        # 在MCP模式下，避免交互式输入
+        if self.is_mcp_mode:
+            if default:
+                return default
+            else:
+                # 为MCP模式提供合理的默认值
+                mcp_defaults = {
+                    "服务器名称": "mcp-server",
+                    "服务器地址": "localhost", 
+                    "用户名": "user",
+                    "SSH端口": "22",
+                    "选择操作": "0",  # 退出
+                    "选择连接方式": "1",  # SSH
+                    "是否使用Docker容器": "n",
+                    "是否启用文件同步功能": "n"
+                }
+                # 从提示中匹配合适的默认值
+                for key, value in mcp_defaults.items():
+                    if key in prompt:
+                        return value
+                return ""  # 最后的默认值
+        
         if suggestions and show_suggestions:
             self.colored_print(f"💡 建议: {', '.join(suggestions)}", Fore.CYAN)
         
@@ -366,6 +410,12 @@ class EnhancedConfigManager:
     
     def main_menu(self):
         """主菜单 - 简化版"""
+        
+        # 在MCP模式下，不运行交互式菜单
+        if self.is_mcp_mode:
+            self.colored_print("MCP模式下无法运行交互式主菜单", Fore.YELLOW)
+            return False
+        
         self.colored_print("\n🚀 Remote Terminal Configuration Manager", Fore.CYAN, Style.BRIGHT)
         self.colored_print("=" * 50, Fore.CYAN)
         
@@ -518,6 +568,12 @@ class EnhancedConfigManager:
         
     def guided_setup(self):
         """向导配置 - 重新设计的配置体验"""
+        
+        # 在MCP模式下，不运行交互式配置
+        if self.is_mcp_mode:
+            self.colored_print("MCP模式下的配置向导已被调用，但无法进行交互式配置", Fore.YELLOW)
+            return False
+        
         self.colored_print("\n🎯 向导配置模式", Fore.YELLOW, Style.BRIGHT)
         self.colored_print("📋 逐步引导，轻松完成服务器配置", Fore.YELLOW)
         self.colored_print("=" * 50, Fore.YELLOW)
