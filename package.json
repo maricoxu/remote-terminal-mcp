@@ -1,6 +1,6 @@
 {
   "name": "@xuyehua/remote-terminal-mcp",
-  "version": "0.13.2",
+  "version": "0.13.3",
   "description": "A remote terminal MCP for Cursor",
   "main": "index.js",
   "bin": {
@@ -23,18 +23,24 @@
   ],
   "scripts": {
     "start": "node index.js",
-    "test": "node test.js",
-    "postinstall": "node scripts/postinstall.js",
+    "test": "python3 tests/run_tests.py",
+    "test:local": "python3 tests/run_tests.py local",
+    "test:npm": "python3 tests/run_tests.py npm",
+    "test:integration": "python3 tests/run_tests.py integration",
+    "test:pre-commit": "python3 tests/run_tests.py --pre-commit",
+    "test:pre-publish": "python3 tests/run_tests.py --pre-publish",
+    "test:verbose": "python3 tests/run_tests.py all -v",
+    "postinstall": "node scripts/post-install.js",
     "check-deps": "node scripts/check-dependencies.js",
     "install-deps": "python3 -m pip install -r requirements.txt --user || python -m pip install -r requirements.txt --user",
-    "publish:patch": "node scripts/publish.js version-and-publish patch",
-    "publish:minor": "node scripts/publish.js version-and-publish minor",
-    "publish:major": "node scripts/publish.js version-and-publish major",
+    "publish:patch": "npm run test:pre-publish && node scripts/publish.js version-and-publish patch",
+    "publish:minor": "npm run test:pre-publish && node scripts/publish.js version-and-publish minor",
+    "publish:major": "npm run test:pre-publish && node scripts/publish.js version-and-publish major",
     "version:patch": "node scripts/publish.js patch",
     "version:minor": "node scripts/publish.js minor",
     "version:major": "node scripts/publish.js major",
     "build": "npm pack",
-    "prepublishOnly": "npm test"
+    "prepublishOnly": "npm run test:pre-publish"
   },
   "keywords": [
     "mcp",

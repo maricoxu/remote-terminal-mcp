@@ -70,8 +70,10 @@ class DockerEnvironmentConfig:
     network_mode: str = "host"  # host, bridge, none
     restart_policy: str = "always"
     
-    # GPU和资源
-    gpus: str = "all"  # all, "0,1", none, ""
+    # 硬件加速器配置
+    gpus: str = ""  # all, "0,1", none, ""
+    xpu_config: Dict[str, str] = field(default_factory=dict)  # XPU配置
+    accelerator_type: str = "none"  # none, nvidia, xpu, custom
     memory_limit: str = ""  # "8g", "16g"
     shm_size: str = "64g"
     
@@ -84,6 +86,16 @@ class DockerEnvironmentConfig:
     bos_secret_key: str = ""
     bos_bucket: str = ""
     bos_config_path: str = ""
+    
+    # 存储配置增强
+    persistent_volumes: List[str] = field(default_factory=list)  # 持久化存储卷
+    tmpfs_mounts: List[str] = field(default_factory=list)  # 临时文件系统挂载
+    bind_mounts: Dict[str, str] = field(default_factory=dict)  # 绑定挂载 {host_path: container_path}
+    
+    # 数据管理
+    data_backup_enabled: bool = False
+    backup_schedule: str = ""  # cron格式
+    auto_cleanup: bool = False
     
     # 模板信息
     template_type: str = "custom"  # development, ml, web, custom
@@ -114,9 +126,15 @@ class DockerEnvironmentConfig:
         if self.environment:
             config["environment"] = self.environment
             
-        # 添加GPU支持
-        if self.gpus and self.gpus != "none":
-            config["gpus"] = self.gpus
+        # 添加硬件加速器支持
+        if self.accelerator_type != "none":
+            config["accelerator"] = {
+                "type": self.accelerator_type
+            }
+            if self.gpus and self.gpus != "none":
+                config["accelerator"]["gpus"] = self.gpus
+            if self.xpu_config:
+                config["accelerator"]["xpu"] = self.xpu_config
             
         # 添加资源限制
         if self.memory_limit:
@@ -143,6 +161,26 @@ class DockerEnvironmentConfig:
                 config["bos"]["bucket"] = self.bos_bucket
             if self.bos_config_path:
                 config["bos"]["config_path"] = self.bos_config_path
+        
+        # 添加存储配置增强
+        if self.persistent_volumes or self.tmpfs_mounts or self.bind_mounts:
+            config["storage"] = {}
+            if self.persistent_volumes:
+                config["storage"]["persistent_volumes"] = self.persistent_volumes
+            if self.tmpfs_mounts:
+                config["storage"]["tmpfs_mounts"] = self.tmpfs_mounts
+            if self.bind_mounts:
+                config["storage"]["bind_mounts"] = self.bind_mounts
+        
+        # 添加数据管理
+        if self.data_backup_enabled or self.backup_schedule or self.auto_cleanup:
+            config["data_management"] = {}
+            if self.data_backup_enabled:
+                config["data_management"]["enabled"] = self.data_backup_enabled
+            if self.backup_schedule:
+                config["data_management"]["backup_schedule"] = self.backup_schedule
+            if self.auto_cleanup:
+                config["data_management"]["auto_cleanup"] = self.auto_cleanup
         
         # 添加元信息
         if self.template_type != "custom":
@@ -183,8 +221,17 @@ class DockerEnvironmentConfig:
         for key, value in self.environment.items():
             cmd_parts.extend(["-e", f"{key}={value}"])
             
-        # GPU支持
-        if self.gpus and self.gpus != "none":
+        # 硬件加速器支持
+        if self.accelerator_type == "nvidia" and self.gpus:
+            if self.gpus == "all":
+                cmd_parts.append("--gpus all")
+            else:
+                cmd_parts.extend(["--gpus", f'"{self.gpus}"'])
+        elif self.accelerator_type == "xpu" and self.xpu_config:
+            # XPU可能需要特殊的运行时配置
+            if "runtime" in self.xpu_config:
+                cmd_parts.extend(["--runtime", self.xpu_config["runtime"]])
+        elif self.accelerator_type == "custom" and self.gpus:
             if self.gpus == "all":
                 cmd_parts.append("--gpus all")
             else:
@@ -218,7 +265,7 @@ class DockerConfigManager:
         if config_dir:
             self.config_dir = Path(config_dir)
         else:
-            self.config_dir = Path.home() / ".remote-terminal-mcp"
+            self.config_dir = Path.home() / ".remote-terminal"
             
         self.docker_templates_dir = self.config_dir / "docker_templates"
         self.docker_configs_dir = self.config_dir / "docker_configs"
@@ -374,7 +421,7 @@ class DockerConfigManager:
         print(f"{style}{color}{text}{Style.RESET_ALL}")
         
     def smart_input(self, prompt: str, default: str = "", suggestions: List[str] = None, 
-                   validator=None, show_suggestions: bool = True) -> str:
+                   validator=None, show_suggestions: bool = True, allow_empty: bool = False) -> str:
         """智能输入"""
         if suggestions and show_suggestions:
             self.colored_print(f"💡 建议: {', '.join(suggestions[:3])}", Fore.YELLOW)
@@ -388,6 +435,8 @@ class DockerConfigManager:
             user_input = input(full_prompt).strip()
             if not user_input and default:
                 return default
+            if not user_input and allow_empty:
+                return ""
             if not user_input:
                 continue
                 
@@ -441,7 +490,7 @@ class DockerConfigManager:
         
         try:
             # 基础配置
-            self.show_progress(1, 6, "基础配置")
+            self.show_progress(1, 4, "基础配置")
             container_name = self.smart_input(
                 "容器名称",
                 suggestions=["dev_env", "ml_workspace", "web_app"],
@@ -455,11 +504,12 @@ class DockerConfigManager:
             )
             
             # 高级配置
-            self.show_progress(2, 6, "高级配置")
+            self.show_progress(2, 4, "高级配置")
             self.colored_print("\n📡 端口映射 (格式: host:container，多个用逗号分隔)")
             ports_input = self.smart_input(
                 "端口映射",
-                suggestions=["8080:80", "3000:3000,8888:8888", "无端口映射直接回车"]
+                suggestions=["8080:80", "3000:3000,8888:8888", "无端口映射直接回车"],
+                allow_empty=True
             )
             ports = [p.strip() for p in ports_input.split(",") if p.strip()] if ports_input else []
             
@@ -467,43 +517,26 @@ class DockerConfigManager:
             volumes_input = self.smart_input(
                 "挂载目录",
                 default="/home:/home",
-                suggestions=["/home:/home", "/data:/data,/workspace:/workspace"]
+                suggestions=["/home:/home", "/data:/data,/workspace:/workspace", "无挂载直接回车清空"],
+                allow_empty=True
             )
             volumes = [v.strip() for v in volumes_input.split(",") if v.strip()] if volumes_input else []
             
-            # 环境变量
-            self.show_progress(3, 6, "环境变量配置")
-            environment = {}
-            while True:
-                env_var = self.smart_input(
-                    "环境变量 (格式: KEY=VALUE，回车结束)",
-                    suggestions=["CUDA_VISIBLE_DEVICES=all", "PYTHONPATH=/workspace", "回车结束"]
-                )
-                if not env_var:
-                    break
-                if "=" in env_var:
-                    key, value = env_var.split("=", 1)
-                    environment[key.strip()] = value.strip()
-                else:
-                    self.colored_print("❌ 格式错误，请使用 KEY=VALUE 格式", Fore.RED)
-            
-            # GPU和资源配置
-            self.show_progress(4, 6, "资源配置")
-            use_gpu = self.smart_input(
-                "是否使用GPU (y/n)",
-                default="n",
-                validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no']
-            ).lower() in ['y', 'yes']
-            
-            gpus = "all" if use_gpu else ""
+            # 使用默认配置，跳过环境变量和硬件加速器配置
+            self.show_progress(3, 4, "应用默认配置")
+            environment = {}  # 空环境变量
+            gpus = ""  # 不使用GPU
+            xpu_config = {}  # 不使用XPU
+            accelerator_choice = "1"  # 默认无加速器
             
             memory_limit = self.smart_input(
-                "内存限制 (如: 8g, 16g，回车跳过)",
-                suggestions=["8g", "16g", "32g"]
+                "内存限制 (如: 8g, 16g，直接回车跳过)",
+                suggestions=["8g", "16g", "32g", "直接回车跳过"],
+                allow_empty=True
             )
             
             # 初始化配置
-            self.show_progress(5, 6, "初始化配置")
+            self.show_progress(4, 4, "完成配置")
             
             # Shell选择
             self.colored_print("\n🐚 Shell配置")
@@ -514,10 +547,11 @@ class DockerConfigManager:
                 validator=lambda x: x in ['bash', 'zsh', 'sh']
             )
             
-            self.colored_print("\n📦 安装包 (用逗号分隔，回车跳过)")
+            self.colored_print("\n📦 安装包 (用逗号分隔，直接回车跳过)")
             packages_input = self.smart_input(
                 "安装包",
-                suggestions=["git,vim,curl", "python3,pip", "nodejs,npm"]
+                suggestions=["git,vim,curl", "python3,pip", "nodejs,npm", "直接回车跳过"],
+                allow_empty=True
             )
             install_packages = [p.strip() for p in packages_input.split(",") if p.strip()] if packages_input else []
             
@@ -555,6 +589,82 @@ class DockerConfigManager:
                         suggestions=["xuyehua/template", "username/config"]
                     )
             
+            # 存储配置增强
+            persistent_volumes = []
+            tmpfs_mounts = []
+            bind_mounts = {}
+            
+            self.colored_print("\n📁 存储配置增强")
+            self.colored_print("1. 添加持久化存储卷")
+            self.colored_print("2. 添加临时文件系统挂载")
+            self.colored_print("3. 添加绑定挂载")
+            self.colored_print("4. 跳过存储配置")
+            self.colored_print("5. 回车结束")
+            
+            while True:
+                choice = self.smart_input(
+                    "选择存储配置增强选项 (1-5)",
+                    default="4",
+                    validator=lambda x: x in ['1', '2', '3', '4', '5']
+                )
+                if choice == "1":
+                    self.colored_print("\n📁 添加持久化存储卷 (格式: host:container，多个用逗号分隔)")
+                    volumes_input = self.smart_input(
+                        "持久化存储卷",
+                        default="/home:/home",
+                        suggestions=["/home:/home", "/data:/data,/workspace:/workspace"]
+                    )
+                    persistent_volumes = [v.strip() for v in volumes_input.split(",") if v.strip()] if volumes_input else []
+                elif choice == "2":
+                    self.colored_print("\n📁 添加临时文件系统挂载 (格式: host:container，多个用逗号分隔)")
+                    volumes_input = self.smart_input(
+                        "临时文件系统挂载",
+                        default="/home:/home",
+                        suggestions=["/home:/home", "/data:/data,/workspace:/workspace"]
+                    )
+                    tmpfs_mounts = [v.strip() for v in volumes_input.split(",") if v.strip()] if volumes_input else []
+                elif choice == "3":
+                    self.colored_print("\n📁 添加绑定挂载 (格式: host_path:container_path，多个用逗号分隔)")
+                    self.colored_print("例如: /home:/home, /data:/data")
+                    volumes_input = self.smart_input(
+                        "绑定挂载",
+                        default="/home:/home",
+                        suggestions=["/home:/home", "/data:/data,/workspace:/workspace"]
+                    )
+                    bind_mounts = {k.strip(): v.strip() for k, v in (m.split(':') for m in volumes_input.split(','))} if volumes_input else {}
+                elif choice == "4":
+                    break
+                else:
+                    self.colored_print("❌ 无效选择", Fore.RED)
+            
+            # 数据管理
+            data_backup_enabled = self.smart_input(
+                "是否启用数据备份 (y/n)",
+                default="n",
+                validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no']
+            ).lower() in ['y', 'yes']
+            
+            backup_schedule = self.smart_input(
+                "数据备份计划 (cron格式)",
+                default="0 0 * * *",
+                validator=lambda x: bool(x.strip())
+            )
+            
+            auto_cleanup = self.smart_input(
+                "是否启用自动清理 (y/n)",
+                default="n",
+                validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no']
+            ).lower() in ['y', 'yes']
+            
+            # 确定加速器类型
+            accelerator_type_map = {
+                "1": "none",
+                "2": "nvidia", 
+                "3": "xpu",
+                "4": "custom"
+            }
+            accelerator_type = accelerator_type_map.get(accelerator_choice, "none")
+            
             # 创建配置对象
             docker_config = DockerEnvironmentConfig(
                 container_name=container_name,
@@ -564,18 +674,32 @@ class DockerConfigManager:
                 environment=environment,
                 shell=shell,
                 gpus=gpus,
+                xpu_config=xpu_config,
+                accelerator_type=accelerator_type,
                 memory_limit=memory_limit,
                 install_packages=install_packages,
                 bos_access_key=bos_access_key,
                 bos_secret_key=bos_secret_key,
                 bos_bucket=bos_bucket,
                 bos_config_path=bos_config_path,
+                persistent_volumes=persistent_volumes,
+                tmpfs_mounts=tmpfs_mounts,
+                bind_mounts=bind_mounts,
+                data_backup_enabled=data_backup_enabled,
+                backup_schedule=backup_schedule,
+                auto_cleanup=auto_cleanup,
                 template_type="custom",
                 description=f"自定义Docker环境: {container_name}"
             )
             
+            # 应用高级存储配置
+            docker_config = self.setup_advanced_storage(docker_config)
+            
+            # 应用BOS存储配置
+            if shell == "zsh" or bos_access_key:
+                docker_config = self.setup_bos_storage(docker_config)
+            
             # 保存配置
-            self.show_progress(6, 6, "保存配置")
             self.save_docker_config(container_name, docker_config)
             
             self.colored_print(f"\n✅ Docker环境 '{container_name}' 创建成功！", Fore.GREEN, Style.BRIGHT)
@@ -661,6 +785,12 @@ class DockerConfigManager:
             bos_secret_key=bos_config.get('secret_key', ''),
             bos_bucket=bos_config.get('bucket', ''),
             bos_config_path=bos_config.get('config_path', ''),
+            persistent_volumes=template_config.get('persistent_volumes', []),
+            tmpfs_mounts=template_config.get('tmpfs_mounts', []),
+            bind_mounts=template_config.get('bind_mounts', {}),
+            data_backup_enabled=template_config.get('data_backup_enabled', False),
+            backup_schedule=template_config.get('backup_schedule', '0 0 * * *'),
+            auto_cleanup=template_config.get('auto_cleanup', False),
             template_type=template_config.get('template_type', 'custom'),
             description=template_config.get('description', f"基于模板: {selected_template.stem}")
         )
@@ -678,8 +808,159 @@ class DockerConfigManager:
     
     def manage_environments(self):
         """管理Docker环境"""
-        # TODO: 实现管理功能
-        self.colored_print("🚧 管理功能正在开发中...", Fore.YELLOW)
+        # 实现环境管理功能
+        pass
+    
+    def setup_bos_storage(self, config: DockerEnvironmentConfig) -> DockerEnvironmentConfig:
+        """设置BOS存储配置"""
+        self.colored_print("\n☁️ BOS存储配置", Fore.CYAN, Style.BRIGHT)
+        self.colored_print("-" * 40, Fore.CYAN)
+        
+        try:
+            # BOS基础配置
+            configure_bos = self.smart_input(
+                "是否配置BOS自动下载配置文件 (y/n)",
+                default="n",
+                validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no']
+            ).lower() in ['y', 'yes']
+            
+            if not configure_bos:
+                return config
+            
+            # BOS认证信息
+            self.colored_print("\n🔑 BOS认证配置")
+            bos_access_key = self.smart_input(
+                "BOS Access Key",
+                validator=lambda x: bool(x.strip())
+            )
+            bos_secret_key = self.smart_input(
+                "BOS Secret Key",
+                validator=lambda x: bool(x.strip())
+            )
+            
+            # BOS存储桶配置
+            self.colored_print("\n🪣 BOS存储桶配置")
+            bos_bucket = self.smart_input(
+                "BOS Bucket",
+                default="bos://klx-pytorch-work-bd-bj",
+                suggestions=["bos://klx-pytorch-work-bd-bj", "bos://your-bucket-name"]
+            )
+            bos_config_path = self.smart_input(
+                "配置文件路径",
+                default="xuyehua/template",
+                suggestions=["xuyehua/template", "username/config", "shared/configs"]
+            )
+            
+            # 更新配置
+            config.bos_access_key = bos_access_key
+            config.bos_secret_key = bos_secret_key
+            config.bos_bucket = bos_bucket
+            config.bos_config_path = bos_config_path
+            
+            # 添加BOS下载命令到setup_commands
+            bos_setup_commands = [
+                "# BOS配置文件下载",
+                f"export BOS_ACCESS_KEY={bos_access_key}",
+                f"export BOS_SECRET_KEY={bos_secret_key}",
+                "pip install bos-python-sdk",
+                f"python3 -c \"import bos; bos.download('{bos_bucket}', '{bos_config_path}', '/tmp/configs')\"",
+                "cp -r /tmp/configs/* ~/",
+                "rm -rf /tmp/configs"
+            ]
+            
+            config.setup_commands.extend(bos_setup_commands)
+            
+            self.colored_print("✅ BOS存储配置完成", Fore.GREEN)
+            return config
+            
+        except Exception as e:
+            self.colored_print(f"❌ BOS配置失败: {e}", Fore.RED)
+            return config
+    
+    def setup_advanced_storage(self, config: DockerEnvironmentConfig) -> DockerEnvironmentConfig:
+        """设置高级存储配置"""
+        self.colored_print("\n📁 高级存储配置", Fore.BLUE, Style.BRIGHT)
+        self.colored_print("-" * 40, Fore.BLUE)
+        
+        try:
+            # 持久化存储
+            self.colored_print("\n💾 持久化存储配置")
+            setup_persistent = self.smart_input(
+                "是否配置持久化存储 (y/n)",
+                default="y",
+                validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no']
+            ).lower() in ['y', 'yes']
+            
+            if setup_persistent:
+                self.colored_print("推荐的持久化存储配置:")
+                self.colored_print("  • /home - 用户主目录")
+                self.colored_print("  • /data - 数据目录")
+                self.colored_print("  • /workspace - 工作空间")
+                self.colored_print("  • /models - 模型文件")
+                
+                volumes_input = self.smart_input(
+                    "持久化存储卷 (格式: host:container，多个用逗号分隔)",
+                    default="/home:/home,/data:/data,/workspace:/workspace",
+                    suggestions=["/home:/home,/data:/data", "/workspace:/workspace,/models:/models"]
+                )
+                
+                if volumes_input:
+                    persistent_volumes = [v.strip() for v in volumes_input.split(",") if v.strip()]
+                    config.persistent_volumes = persistent_volumes
+                    # 同时添加到常规volumes中
+                    config.volumes.extend(persistent_volumes)
+            
+            # 临时存储
+            self.colored_print("\n🗂️ 临时存储配置")
+            setup_tmpfs = self.smart_input(
+                "是否配置临时文件系统 (y/n)",
+                default="n",
+                validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no']
+            ).lower() in ['y', 'yes']
+            
+            if setup_tmpfs:
+                self.colored_print("推荐的临时存储配置:")
+                self.colored_print("  • /tmp - 临时文件")
+                self.colored_print("  • /var/tmp - 变量临时文件")
+                
+                tmpfs_input = self.smart_input(
+                    "临时文件系统挂载 (格式: path:size，多个用逗号分隔)",
+                    default="/tmp:1g,/var/tmp:512m",
+                    suggestions=["/tmp:1g", "/tmp:1g,/var/tmp:512m"]
+                )
+                
+                if tmpfs_input:
+                    tmpfs_mounts = [t.strip() for t in tmpfs_input.split(",") if t.strip()]
+                    config.tmpfs_mounts = tmpfs_mounts
+            
+            # 数据备份
+            self.colored_print("\n💾 数据备份配置")
+            setup_backup = self.smart_input(
+                "是否启用数据备份 (y/n)",
+                default="n",
+                validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no']
+            ).lower() in ['y', 'yes']
+            
+            if setup_backup:
+                config.data_backup_enabled = True
+                config.backup_schedule = self.smart_input(
+                    "备份计划 (cron格式)",
+                    default="0 2 * * *",  # 每天凌晨2点
+                    suggestions=["0 2 * * *", "0 */6 * * *", "0 0 * * 0"]
+                )
+                
+                config.auto_cleanup = self.smart_input(
+                    "是否启用自动清理旧备份 (y/n)",
+                    default="y",
+                    validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no']
+                ).lower() in ['y', 'yes']
+            
+            self.colored_print("✅ 高级存储配置完成", Fore.GREEN)
+            return config
+            
+        except Exception as e:
+            self.colored_print(f"❌ 高级存储配置失败: {e}", Fore.RED)
+            return config
     
     def preview_docker_command(self):
         """预览Docker命令"""
