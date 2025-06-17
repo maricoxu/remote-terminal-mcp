@@ -519,51 +519,51 @@ class EnhancedConfigManager:
             "ssh_server.yaml": {
                 "servers": {
                     "example-ssh": {
-                        "host": "your-server.com",
-                        "user": "your-username",
+                        "host": "REPLACE_WITH_YOUR_SERVER_HOST",
+                        "user": "REPLACE_WITH_YOUR_USERNAME",
                         "port": 22,
                         "type": "ssh",
-                        "description": "Standard SSH server"
+                        "description": "Standard SSH server - TEMPLATE ONLY, REPLACE VALUES BEFORE USE"
                     }
                 }
             },
             "relay_server.yaml": {
                 "servers": {
                     "example-relay": {
-                        "host": "target-server.internal",
-                        "user": "your-username", 
+                        "host": "REPLACE_WITH_TARGET_SERVER",
+                        "user": "REPLACE_WITH_YOUR_USERNAME", 
                         "type": "relay",
-                        "relay_command": "relay-cli -s target-server.internal",
-                        "description": "Server via relay-cli"
+                        "relay_command": "relay-cli -s REPLACE_WITH_TARGET_SERVER",
+                        "description": "Server via relay-cli - TEMPLATE ONLY, REPLACE VALUES BEFORE USE"
                     }
                 }
             },
             "docker_server.yaml": {
                 "servers": {
                     "example-docker": {
-                        "host": "docker-host.com",
-                        "user": "your-username",
+                        "host": "REPLACE_WITH_DOCKER_HOST",
+                        "user": "REPLACE_WITH_YOUR_USERNAME",
                         "type": "docker",
-                        "container_name": "dev_container",
+                        "container_name": "REPLACE_WITH_CONTAINER_NAME",
                         "docker_image": "ubuntu:20.04",
                         "auto_create_container": True,
-                        "tmux_session": "dev_session",
-                        "description": "Docker development environment"
+                        "tmux_session": "REPLACE_WITH_SESSION_NAME",
+                        "description": "Docker development environment - TEMPLATE ONLY, REPLACE VALUES BEFORE USE"
                     }
                 }
             },
             "complex_server.yaml": {
                 "servers": {
                     "example-complex": {
-                        "host": "complex-server.com",
-                        "user": "developer",
+                        "host": "REPLACE_WITH_COMPLEX_SERVER",
+                        "user": "REPLACE_WITH_YOUR_USERNAME",
                         "port": 2222,
                         "type": "relay",
-                        "relay_command": "relay-cli -s complex-server.com",
-                        "container_name": "pytorch_env",
+                        "relay_command": "relay-cli -s REPLACE_WITH_COMPLEX_SERVER",
+                        "container_name": "REPLACE_WITH_CONTAINER_NAME",
                         "docker_image": "pytorch/pytorch:latest",
                         "auto_create_container": True,
-                        "tmux_session": "ml_work",
+                        "tmux_session": "REPLACE_WITH_SESSION_NAME",
                         "environment": {
                             "CUDA_VISIBLE_DEVICES": "0,1",
                             "PYTHONPATH": "/workspace"
@@ -573,7 +573,7 @@ class EnhancedConfigManager:
                             "source activate pytorch",
                             "echo 'Environment ready!'"
                         ],
-                        "description": "Complex ML development environment"
+                        "description": "Complex ML development environment - TEMPLATE ONLY, REPLACE VALUES BEFORE USE"
                     }
                 }
             }

@@ -1,15 +1,15 @@
 servers:
   example-ssh:
-    description: Standard SSH server
-    host: your-server.com
+    description: "Standard SSH server - TEMPLATE ONLY, REPLACE VALUES BEFORE USE"
+    host: "REPLACE_WITH_YOUR_SERVER_HOST"
     port: 22
     type: ssh
-    user: your-username
-    # 同步功能配置
+    user: "REPLACE_WITH_YOUR_USERNAME"
+    # 同步功能配置（可选）
     sync:
       enabled: false
-      remote_workspace: "/home/Code"
+      remote_workspace: "REPLACE_WITH_REMOTE_PATH"
       local_workspace: ""  # 将自动检测当前工作目录
       ftp_port: 8021
-      ftp_user: "ftpuser"
-      ftp_password: "your_ftp_password"
+      ftp_user: "REPLACE_WITH_FTP_USERNAME"
+      ftp_password: "REPLACE_WITH_FTP_PASSWORD"

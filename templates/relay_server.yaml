@@ -1,7 +1,7 @@
 servers:
   example-relay:
-    description: Server via relay-cli (Baidu internal)
-    host: target-server.internal
-    relay_command: relay-cli -t your-token -s target-server.internal
+    description: "Server via relay-cli - TEMPLATE ONLY, REPLACE VALUES BEFORE USE"
+    host: "REPLACE_WITH_TARGET_SERVER"
     type: relay
-    user: your-username
+    user: "REPLACE_WITH_YOUR_USERNAME"
+    relay_command: "relay-cli -s REPLACE_WITH_TARGET_SERVER"
