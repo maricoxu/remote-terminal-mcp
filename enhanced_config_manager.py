@@ -12,6 +12,7 @@ import json
 import subprocess
 import tempfile
 import re
+import time
 from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
 # Docker配置现在统一在enhanced_config_manager中处理
@@ -117,7 +118,14 @@ class EnhancedConfigManager:
                     self.colored_print(f"❌ 配置迁移失败: {e}", Fore.RED)
     
     def has_user_config(self) -> bool:
-        """检查是否存在用户配置（非模板配置）"""
+        """检查是否存在用户配置（非模板配置）
+        
+        智能判断逻辑：
+        1. 如果有非example-server的服务器，肯定是用户配置
+        2. 如果只有example-server，检查其配置是否被修改过
+        3. 如果配置文件有用户自定义的全局设置，也认为是用户配置
+        4. 特殊保护：npm安装标记和最近修改时间（仅在不确定时作为保护机制）
+        """
         if not self.config_path.exists():
             return False
             
@@ -125,17 +133,78 @@ class EnhancedConfigManager:
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 config = yaml.safe_load(f) or {}
             
-            # 检查是否有真实的服务器配置（非示例配置）
+            # 检查是否有真实的服务器配置
             servers = config.get('servers', {})
             if not servers:
                 return False
                 
-            # 如果有任何非示例服务器，认为是用户配置
+            # 1. 如果有任何非示例服务器，肯定是用户配置
             non_example_servers = [name for name in servers.keys() 
                                   if name != 'example-server']
+            if len(non_example_servers) > 0:
+                return True
             
-            # 只要有非示例服务器，就认为是用户配置
-            return len(non_example_servers) > 0
+            # 2. 检查example-server是否被修改过
+            is_template_config = True
+            if 'example-server' in servers:
+                example_config = servers['example-server']
+                
+                # 检查关键字段是否被修改（不是默认模板值）
+                template_indicators = [
+                    example_config.get('host') == 'example.com',
+                    example_config.get('username') == 'your-username',
+                    example_config.get('description') == '示例服务器配置 - 请修改为你的实际服务器信息',
+                    example_config.get('port') == 22
+                ]
+                
+                # 如果所有关键字段都是模板值，才认为是模板配置
+                is_template_config = all(template_indicators)
+                
+                # 如果任何关键字段被修改，认为是用户配置
+                if not is_template_config:
+                    return True
+            
+            # 3. 检查是否有自定义的全局设置
+            global_settings = config.get('global_settings', {})
+            if global_settings:
+                # 检查是否有非默认的全局设置
+                non_default_settings = [
+                    global_settings.get('default_timeout') not in [None, 30],
+                    global_settings.get('log_level') not in [None, 'INFO'],
+                    global_settings.get('auto_recovery') not in [None, True],
+                    'default_server' in global_settings,  # 这个字段表示用户有特定偏好
+                ]
+                
+                if any(non_default_settings):
+                    return True
+            
+            # 到这里，配置看起来像是模板配置
+            # 4. 特殊保护机制：仅在确认是模板配置的情况下，检查时间保护
+            if is_template_config:
+                # 检查npm安装标记（如果是最近安装的，给一些时间让用户配置）
+                npm_marker_file = self.config_dir / '.npm-installed'
+                if npm_marker_file.exists():
+                    try:
+                        marker_time = os.path.getmtime(npm_marker_file)
+                        current_time = time.time()
+                        # 如果npm安装标记是最近24小时内的，给用户时间配置
+                        if (current_time - marker_time) < 24 * 3600:
+                            return True
+                    except Exception:
+                        pass
+                
+                # 检查配置文件修改时间（最后的保护机制）
+                try:
+                    config_mtime = os.path.getmtime(self.config_path)
+                    current_time = time.time()
+                    # 如果配置文件在最近30分钟内被修改，可能用户正在编辑
+                    if (current_time - config_mtime) < 1800:  # 30分钟
+                        return True
+                except Exception:
+                    pass
+            
+            # 如果以上条件都不满足，认为是模板配置
+            return False
             
         except Exception:
             return False
@@ -3172,6 +3241,7 @@ servers:
         1. 如果有用户配置，完全保持不变
         2. 如果没有配置文件，创建默认配置
         3. 如果有损坏的配置，尝试修复或重建
+        4. 避免不必要的配置重建，保护用户数据
         """
         # 如果配置文件不存在，创建默认配置
         if not self.config_path.exists():
@@ -3181,7 +3251,12 @@ servers:
             self.create_default_config_template()
             return True
         
-        # 如果配置文件存在，检查其有效性
+        # 如果配置文件存在，首先检查是否为用户配置
+        if self.has_user_config():
+            # 如果是用户配置，不做任何修改，直接返回
+            return False
+        
+        # 如果不是用户配置，检查其有效性
         try:
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 config = yaml.safe_load(f)

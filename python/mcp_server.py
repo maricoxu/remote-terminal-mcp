@@ -554,96 +554,72 @@ async def handle_request(request):
                         if not all([name, host, username]):
                             content = "❌ 创建服务器配置失败：缺少必需参数 (name, host, username)"
                         else:
-                            # 创建服务器配置
-                            import os
-                            from contextlib import redirect_stdout, redirect_stderr
-                            from io import StringIO
-                            
-                            # 设置环境变量来禁用彩色输出
-                            old_env = os.environ.get('NO_COLOR', None)
-                            os.environ['NO_COLOR'] = '1'
-                            
-                            # 捕获所有输出
-                            captured_output = StringIO()
-                            captured_errors = StringIO()
-                            
+                            # 创建服务器配置 - 简化版，避免输出重定向干扰
                             try:
-                                with redirect_stdout(captured_output), redirect_stderr(captured_errors):
-                                    mcp_config_manager = EnhancedConfigManager()
-                                    
-                                    # 构建服务器配置
-                                    server_config = {
-                                        "servers": {
-                                            name: {
-                                                "host": host,
-                                                "username": username,
-                                                "port": int(port),
-                                                "private_key_path": "~/.ssh/id_rsa",
-                                                "type": "script_based",
-                                                "connection_type": connection_type,
-                                                "description": description or f"{connection_type.upper()}连接: {name}",
-                                                "session": {
-                                                    "name": f"{name}_session",
-                                                    "working_directory": "~",
-                                                    "shell": "/bin/bash"
+                                mcp_config_manager = EnhancedConfigManager()
+                                
+                                # 构建服务器配置
+                                server_config = {
+                                    "servers": {
+                                        name: {
+                                            "host": host,
+                                            "username": username,
+                                            "port": int(port),
+                                            "type": "script_based",
+                                            "connection_type": connection_type,
+                                            "description": description or f"{connection_type.upper()}连接: {name}",
+                                            "session": {
+                                                "name": f"{name}_session"
+                                            },
+                                            "specs": {
+                                                "connection": {
+                                                    "type": "ssh",
+                                                    "timeout": 30
+                                                },
+                                                "environment_setup": {
+                                                    "shell": "bash",
+                                                    "working_directory": f"/home/{username}"
                                                 }
                                             }
                                         }
                                     }
+                                }
+                                
+                                # 添加连接特定配置
+                                if connection_type == "relay":
+                                    relay_target_host = tool_arguments.get("relay_target_host", host)
+                                    server_config["servers"][name]["specs"]["connection"]["tool"] = "relay-cli"
+                                    server_config["servers"][name]["specs"]["connection"]["target"] = {"host": relay_target_host}
+                                
+                                # Docker配置 (如果提供)
+                                docker_enabled = tool_arguments.get("docker_enabled", False)
+                                if docker_enabled:
+                                    docker_container = tool_arguments.get("docker_container", f"{name}_container")
+                                    docker_image = tool_arguments.get("docker_image", "ubuntu:20.04")
                                     
-                                    # 添加连接特定配置
-                                    if connection_type == "relay":
-                                        relay_target_host = tool_arguments.get("relay_target_host", host)
-                                        server_config["servers"][name]["specs"] = {
-                                            "connection": {
-                                                "tool": "relay-cli",
-                                                "target": {"host": relay_target_host}
-                                            }
-                                        }
-                                    elif connection_type == "ssh":
-                                        server_config["servers"][name]["specs"] = {
-                                            "connection": {
-                                                "tool": "ssh",
-                                                "target": {"host": host}
-                                            }
-                                        }
-                                    
-                                    # Docker配置 (如果提供)
-                                    docker_enabled = tool_arguments.get("docker_enabled", False)
-                                    if docker_enabled:
-                                        docker_container = tool_arguments.get("docker_container", f"{name}_container")
-                                        docker_image = tool_arguments.get("docker_image", "ubuntu:20.04")
-                                        
-                                        if "specs" not in server_config["servers"][name]:
-                                            server_config["servers"][name]["specs"] = {}
-                                        
-                                        server_config["servers"][name]["specs"]["docker"] = {
-                                            "container_name": docker_container,
-                                            "image": docker_image,
-                                            "auto_create": True,
-                                            "ports": [],
-                                            "volumes": []
-                                        }
-                                    
-                                    # 保存配置
-                                    mcp_config_manager.save_config(server_config)
-                                    
-                                    content = f"✅ 服务器配置创建成功！\n\n"
-                                    content += f"服务器名称: {name}\n"
-                                    content += f"服务器地址: {host}\n"  
-                                    content += f"用户名: {username}\n"
-                                    content += f"端口: {port}\n"
-                                    content += f"连接类型: {connection_type}\n"
-                                    if docker_enabled:
-                                        content += f"Docker容器: {docker_container}\n"
-                                    content += f"\n配置文件位置: {mcp_config_manager.config_path}\n"
-                                    content += f"\n💡 提示：现在可以使用 'connect_server' 工具连接到此服务器"
-                            finally:
-                                # 恢复环境变量
-                                if old_env is None:
-                                    os.environ.pop('NO_COLOR', None)
-                                else:
-                                    os.environ['NO_COLOR'] = old_env
+                                    server_config["servers"][name]["specs"]["docker"] = {
+                                        "container_name": docker_container,
+                                        "image": docker_image,
+                                        "auto_create": True,
+                                        "ports": [],
+                                        "volumes": []
+                                    }
+                                
+                                # 保存配置
+                                mcp_config_manager.save_config(server_config, merge_mode=True)
+                                
+                                content = f"✅ 服务器配置创建成功！\n\n"
+                                content += f"服务器名称: {name}\n"
+                                content += f"服务器地址: {host}\n"  
+                                content += f"用户名: {username}\n"
+                                content += f"端口: {port}\n"
+                                content += f"连接类型: {connection_type}\n"
+                                if docker_enabled:
+                                    content += f"Docker容器: {docker_container}\n"
+                                content += f"\n配置文件位置: {mcp_config_manager.config_path}\n"
+                                content += f"\n💡 提示：现在可以使用 'connect_server' 工具连接到此服务器"
+                            except Exception as save_error:
+                                content = f"❌ 保存配置时出错: {str(save_error)}"
                             
                     except Exception as e:
                         content = f"❌ 创建服务器配置失败: {str(e)}"
