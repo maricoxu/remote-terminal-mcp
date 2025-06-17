@@ -167,77 +167,138 @@ class PostInstaller {
     }
 
     async createUserConfig() {
-        this.log('Creating user configuration directory...');
+        this.log('Checking user configuration...');
         
         const homeDir = os.homedir();
         const configDir = path.join(homeDir, '.remote-terminal');
+        const userConfig = path.join(configDir, 'config.yaml');
+        const backupConfig = path.join(configDir, 'config.yaml.backup');
+        const persistentBackup = path.join(homeDir, '.remote-terminal-config-backup.yaml');
+        const markerFile = path.join(configDir, '.npm-installed');
+        const persistentMarker = path.join(homeDir, '.remote-terminal-npm-installed');
         
+        // 检查是否是npm包更新场景
+        const isUpdate = (fs.existsSync(markerFile) || fs.existsSync(persistentMarker)) && fs.existsSync(userConfig);
+        
+        if (isUpdate) {
+            this.log('Detected npm package update - preserving existing user configuration', 'success');
+            this.log(`Existing configuration: ${userConfig}`, 'info');
+            
+            // 更新安装标记的时间戳
+            const timestamp = new Date().toISOString();
+            try {
+                fs.writeFileSync(markerFile, timestamp, 'utf8');
+                fs.writeFileSync(persistentMarker, timestamp, 'utf8');
+                this.log('Updated installation markers', 'info');
+            } catch (error) {
+                this.warnings.push(`Failed to update installation markers: ${error.message}`);
+            }
+            
+            return configDir;
+        }
+        
+        // 首次安装或配置丢失的情况
         if (!fs.existsSync(configDir)) {
             fs.mkdirSync(configDir, { recursive: true });
             this.log(`Configuration directory created: ${configDir}`, 'success');
         }
         
-        // Copy YAML configuration template if config.yaml doesn't exist
-        const configTemplate = path.join(packageRoot, 'templates', 'config.yaml.template');
-        const userConfig = path.join(configDir, 'config.yaml');
+        // 检查是否存在任何形式的用户配置
+        const hasUserConfig = fs.existsSync(userConfig) || 
+                             fs.existsSync(backupConfig) || 
+                             fs.existsSync(persistentBackup);
         
-        if (!fs.existsSync(userConfig)) {
-            if (fs.existsSync(configTemplate)) {
-                // Read template and replace timestamp
-                let templateContent = fs.readFileSync(configTemplate, 'utf8');
-                templateContent = templateContent.replace('{{ timestamp }}', new Date().toISOString());
+        if (hasUserConfig) {
+            this.log('Found existing user configuration - preserving user data', 'success');
+            
+            // 如果主配置文件不存在但有备份，尝试恢复
+            if (!fs.existsSync(userConfig)) {
+                if (fs.existsSync(backupConfig)) {
+                    fs.copyFileSync(backupConfig, userConfig);
+                    this.log('Restored configuration from local backup', 'success');
+                } else if (fs.existsSync(persistentBackup)) {
+                    fs.copyFileSync(persistentBackup, userConfig);
+                    this.log('Restored configuration from persistent backup', 'success');
+                }
+            }
+            
+            // 创建安装标记
+            const timestamp = new Date().toISOString();
+            try {
+                fs.writeFileSync(markerFile, timestamp, 'utf8');
+                fs.writeFileSync(persistentMarker, timestamp, 'utf8');
+                this.log('Created installation markers', 'info');
+            } catch (error) {
+                this.warnings.push(`Failed to create installation markers: ${error.message}`);
+            }
+            
+            return configDir;
+        }
+        
+        // 真正的首次安装 - 创建新配置
+        this.log('First-time installation - creating new configuration', 'info');
+        
+        const configTemplate = path.join(packageRoot, 'templates', 'config.yaml.template');
+        
+        if (fs.existsSync(configTemplate)) {
+            // Read template and replace timestamp
+            let templateContent = fs.readFileSync(configTemplate, 'utf8');
+            templateContent = templateContent.replace('{{ timestamp }}', new Date().toISOString());
+            
+            // Write to user config with explicit permissions
+            fs.writeFileSync(userConfig, templateContent, { encoding: 'utf8', mode: 0o644 });
+            
+            // Verify the file was created
+            if (fs.existsSync(userConfig)) {
+                this.log(`Configuration template created: ${userConfig}`, 'success');
+                this.log('Please edit the config.yaml file to add your server details', 'info');
                 
-                // Write to user config with explicit permissions
-                fs.writeFileSync(userConfig, templateContent, { encoding: 'utf8', mode: 0o644 });
-                
-                // Verify the file was created
-                if (fs.existsSync(userConfig)) {
-                    this.log(`Configuration template created: ${userConfig}`, 'success');
-                    this.log('Please edit the config.yaml file to add your server details', 'info');
-                    
-                    // Create multiple backup copies in different locations
-                    const backupConfig = path.join(configDir, 'config.yaml.backup');
-                    const persistentBackup = path.join(homeDir, '.remote-terminal-config-backup.yaml');
-                    
+                // Create backup copies
+                try {
                     fs.copyFileSync(userConfig, backupConfig);
                     fs.copyFileSync(userConfig, persistentBackup);
                     this.log(`Backup configuration created: ${backupConfig}`, 'info');
                     this.log(`Persistent backup created: ${persistentBackup}`, 'info');
-                    
-                    // Create a marker file to indicate NPM installation
-                    const markerFile = path.join(configDir, '.npm-installed');
-                    const persistentMarker = path.join(homeDir, '.remote-terminal-npm-installed');
-                    
-                    const timestamp = new Date().toISOString();
+                } catch (error) {
+                    this.warnings.push(`Failed to create backup copies: ${error.message}`);
+                }
+                
+                // Create installation markers
+                const timestamp = new Date().toISOString();
+                try {
                     fs.writeFileSync(markerFile, timestamp, 'utf8');
                     fs.writeFileSync(persistentMarker, timestamp, 'utf8');
                     this.log(`Installation marker created: ${markerFile}`, 'info');
                     this.log(`Persistent marker created: ${persistentMarker}`, 'info');
-                } else {
-                    this.warnings.push('Configuration file creation verification failed');
+                } catch (error) {
+                    this.warnings.push(`Failed to create installation markers: ${error.message}`);
                 }
             } else {
-                this.warnings.push('Configuration template not found, creating basic config');
-                // Create a basic config if template is missing
-                const basicConfig = `# Remote Terminal MCP Configuration
+                this.warnings.push('Configuration file creation verification failed');
+            }
+        } else {
+            this.log('Configuration template not found, creating basic config', 'warning');
+            // Create a basic config if template is missing
+            const basicConfig = `# Remote Terminal MCP Configuration
 # Generated at: ${new Date().toISOString()}
+# TEMPLATE ONLY - REPLACE VALUES BEFORE USE
 
 servers:
   example-server:
     type: script_based
-    host: example.com
+    host: "REPLACE_WITH_YOUR_SERVER_HOST"
     port: 22
-    username: your-username
-    description: 示例服务器配置 - 请修改为你的实际服务器信息
+    username: "REPLACE_WITH_YOUR_USERNAME"
+    description: "示例服务器配置 - TEMPLATE ONLY, REPLACE VALUES BEFORE USE"
     session:
-      name: example-server_dev
+      name: "REPLACE_WITH_SESSION_NAME"
     specs:
       connection:
         type: ssh
         timeout: 30
       environment_setup:
         shell: bash
-        working_directory: /home/your-username
+        working_directory: "REPLACE_WITH_WORKING_DIRECTORY"
 
 global_settings:
   default_timeout: 30
@@ -248,11 +309,21 @@ security_settings:
   strict_host_key_checking: false
   connection_timeout: 30
 `;
-                fs.writeFileSync(userConfig, basicConfig, 'utf8');
-                this.log(`Basic configuration created: ${userConfig}`, 'success');
+            fs.writeFileSync(userConfig, basicConfig, 'utf8');
+            this.log(`Basic configuration created: ${userConfig}`, 'success');
+            
+            // Create backup and markers
+            try {
+                fs.copyFileSync(userConfig, backupConfig);
+                fs.copyFileSync(userConfig, persistentBackup);
+                
+                const timestamp = new Date().toISOString();
+                fs.writeFileSync(markerFile, timestamp, 'utf8');
+                fs.writeFileSync(persistentMarker, timestamp, 'utf8');
+                this.log('Created backup copies and installation markers', 'info');
+            } catch (error) {
+                this.warnings.push(`Failed to create backup copies or markers: ${error.message}`);
             }
-        } else {
-            this.log(`Configuration file already exists: ${userConfig}`, 'info');
         }
         
         return configDir;
