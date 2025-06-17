@@ -126,88 +126,9 @@ class EnhancedConfigManager:
         3. 如果配置文件有用户自定义的全局设置，也认为是用户配置
         4. 特殊保护：npm安装标记和最近修改时间（仅在不确定时作为保护机制）
         """
-        if not self.config_path.exists():
-            return False
-            
-        try:
-            with open(self.config_path, 'r', encoding='utf-8') as f:
-                config = yaml.safe_load(f) or {}
-            
-            # 检查是否有真实的服务器配置
-            servers = config.get('servers', {})
-            if not servers:
-                return False
-                
-            # 1. 如果有任何非示例服务器，肯定是用户配置
-            non_example_servers = [name for name in servers.keys() 
-                                  if name != 'example-server']
-            if len(non_example_servers) > 0:
-                return True
-            
-            # 2. 检查example-server是否被修改过
-            is_template_config = True
-            if 'example-server' in servers:
-                example_config = servers['example-server']
-                
-                # 检查关键字段是否被修改（不是默认模板值）
-                template_indicators = [
-                    example_config.get('host') == 'example.com',
-                    example_config.get('username') == 'your-username',
-                    example_config.get('description') == '示例服务器配置 - 请修改为你的实际服务器信息',
-                    example_config.get('port') == 22
-                ]
-                
-                # 如果所有关键字段都是模板值，才认为是模板配置
-                is_template_config = all(template_indicators)
-                
-                # 如果任何关键字段被修改，认为是用户配置
-                if not is_template_config:
-                    return True
-            
-            # 3. 检查是否有自定义的全局设置
-            global_settings = config.get('global_settings', {})
-            if global_settings:
-                # 检查是否有非默认的全局设置
-                non_default_settings = [
-                    global_settings.get('default_timeout') not in [None, 30],
-                    global_settings.get('log_level') not in [None, 'INFO'],
-                    global_settings.get('auto_recovery') not in [None, True],
-                    'default_server' in global_settings,  # 这个字段表示用户有特定偏好
-                ]
-                
-                if any(non_default_settings):
-                    return True
-            
-            # 到这里，配置看起来像是模板配置
-            # 4. 特殊保护机制：仅在确认是模板配置的情况下，检查时间保护
-            if is_template_config:
-                # 检查npm安装标记（如果是最近安装的，给一些时间让用户配置）
-                npm_marker_file = self.config_dir / '.npm-installed'
-                if npm_marker_file.exists():
-                    try:
-                        marker_time = os.path.getmtime(npm_marker_file)
-                        current_time = time.time()
-                        # 如果npm安装标记是最近24小时内的，给用户时间配置
-                        if (current_time - marker_time) < 24 * 3600:
-                            return True
-                    except Exception:
-                        pass
-                
-                # 检查配置文件修改时间（最后的保护机制）
-                try:
-                    config_mtime = os.path.getmtime(self.config_path)
-                    current_time = time.time()
-                    # 如果配置文件在最近30分钟内被修改，可能用户正在编辑
-                    if (current_time - config_mtime) < 1800:  # 30分钟
-                        return True
-                except Exception:
-                    pass
-            
-            # 如果以上条件都不满足，认为是模板配置
-            return False
-            
-        except Exception:
-            return False
+        # 简化版本中，我们暂时移除了这个复杂的检测逻辑
+        # 直接使用简单的默认覆盖策略
+        return False
     
     def colored_print(self, text: str, color=Fore.WHITE, style=""):
         """彩色打印 - 在MCP模式下禁止输出"""
@@ -550,136 +471,18 @@ class EnhancedConfigManager:
         return bool(re.match(r'^[a-zA-Z0-9_-]+$', username))
 
     def ensure_directories(self):
-        """确保必要的目录存在"""
+        """确保必要的目录存在 - 简化版本"""
         self.config_dir.mkdir(exist_ok=True)
         self.templates_dir.mkdir(exist_ok=True)
         
-        # 在 MCP 模式下，检查是否需要恢复 NPM 创建的配置
-        if self.is_mcp_mode:
-            self.restore_npm_config_if_needed()
-        
+        # 简化版本：移除复杂的NPM配置恢复逻辑
+        # 只创建模板文件
         self.create_default_templates()
-    
+
     def restore_npm_config_if_needed(self):
-        """在 MCP 模式下恢复 NPM 创建的配置文件，但保护用户现有配置"""
-        config_file = self.config_dir / 'config.yaml'
-        
-        # 如果已经有用户配置，不做任何操作
-        if self.has_user_config():
-            return
-        
-        backup_file = self.config_dir / 'config.yaml.backup'
-        persistent_backup = Path.home() / '.remote-terminal-config-backup.yaml'
-        persistent_marker = Path.home() / '.remote-terminal-npm-installed'
-        
-        # 检查是否有 NPM 安装的标记
-        has_npm_marker = persistent_marker.exists()
-        
-        # 如果主配置文件不存在或只有示例配置，且有 NPM 安装标记，尝试恢复
-        if (not config_file.exists() or not self.has_user_config()) and has_npm_marker:
-            try:
-                # 优先从本地备份恢复，如果不存在则从持久备份恢复
-                source_backup = backup_file if backup_file.exists() else persistent_backup
-                
-                if source_backup.exists():
-                    # 从备份恢复配置文件
-                    import shutil
-                    shutil.copy2(source_backup, config_file)
-                    
-                    # 重新创建本地备份（如果不存在）
-                    if not backup_file.exists() and persistent_backup.exists():
-                        shutil.copy2(persistent_backup, backup_file)
-                    
-                    # 重新创建 NPM 安装标记
-                    npm_marker = self.config_dir / '.npm-installed'
-                    with open(npm_marker, 'w', encoding='utf-8') as f:
-                        f.write(f"Restored at: {__import__('datetime').datetime.now().isoformat()}")
-                    
-                    if not self.is_mcp_mode:  # 只在非 MCP 模式下打印
-                        self.colored_print("✅ 已从备份恢复配置文件", Fore.GREEN)
-                else:
-                    # 如果没有备份，且没有用户配置，创建默认模板
-                    if not config_file.exists():
-                        self.create_default_config_template()
-                        
-            except Exception as e:
-                if not self.is_mcp_mode:  # 只在非 MCP 模式下打印
-                    self.colored_print(f"❌ 恢复配置文件失败: {e}", Fore.RED)
-        elif not config_file.exists():
-            # 如果没有配置文件且没有 NPM 标记，创建默认模板
-            self.create_default_config_template()
-    
-    def create_default_config_template(self):
-        """创建默认配置模板（仅在没有用户配置时）"""
-        config_file = self.config_dir / 'config.yaml'
-        
-        # 确保不覆盖用户配置
-        if self.has_user_config():
-            return
-            
-        default_config = {
-            "# Remote Terminal MCP Configuration Template": None,
-            "# This file is automatically created when no config exists": None,
-            f"# Generated at: {__import__('datetime').datetime.now().isoformat()}": None,
-            "servers": {
-                "example-server": {
-                    "type": "script_based",
-                    "host": "example.com",
-                    "port": 22,
-                    "username": "your-username",
-                    "description": "示例服务器配置 - 请修改为你的实际服务器信息",
-                    "session": {
-                        "name": "example-server_dev"
-                    },
-                    "specs": {
-                        "connection": {
-                            "type": "ssh",
-                            "timeout": 30
-                        },
-                        "environment_setup": {
-                            "shell": "bash",
-                            "working_directory": "/home/your-username"
-                        }
-                    }
-                }
-            },
-            "global_settings": {
-                "default_timeout": 30,
-                "auto_recovery": True,
-                "log_level": "INFO",
-                "default_shell": "bash"
-            },
-            "security_settings": {
-                "strict_host_key_checking": False,
-                "connection_timeout": 30,
-                "max_retry_attempts": 3
-            }
-        }
-        
-        try:
-            with open(config_file, 'w', encoding='utf-8') as f:
-                # 写入注释和配置
-                f.write("# Remote Terminal MCP Configuration Template\n")
-                f.write("# This file is automatically created when no config exists\n")
-                f.write(f"# Generated at: {__import__('datetime').datetime.now().isoformat()}\n\n")
-                
-                # 写入实际配置
-                yaml.dump({
-                    "servers": default_config["servers"],
-                    "global_settings": default_config["global_settings"],
-                    "security_settings": default_config["security_settings"]
-                }, f, default_flow_style=False, allow_unicode=True)
-                
-                # 添加使用说明
-                f.write("\n# 使用说明:\n")
-                f.write("# 1. 修改 example-server 的配置信息为你的实际服务器\n")
-                f.write("# 2. 或者删除 example-server，添加你自己的服务器配置\n")
-                f.write("# 3. 保存文件后，使用 remote-terminal-mcp 工具连接服务器\n")
-                f.write("# 4. 更多配置选项请参考文档\n")
-                
-        except Exception as e:
-            if not self.is_mcp_mode:
-                self.colored_print(f"❌ 创建默认配置失败: {e}", Fore.RED)
+        """简化版本：移除复杂的NPM配置恢复逻辑"""
+        # 简化版本：什么都不做
+        pass
     
     def create_default_templates(self):
         """创建默认配置模板文件"""
@@ -3235,71 +3038,52 @@ servers:
             self.colored_print(f"❌ 更新服务器Docker配置失败: {e}", Fore.RED)
 
     def ensure_config_exists(self):
-        """确保配置文件存在 - 智能配置初始化
+        """确保配置文件存在 - 终极简化版本
         
-        设计原则：
-        1. 如果有用户配置，完全保持不变
-        2. 如果没有配置文件，创建默认配置
-        3. 如果有损坏的配置，尝试修复或重建
-        4. 避免不必要的配置重建，保护用户数据
+        最简单策略：
+        1. 如果配置文件不存在，创建默认配置
+        2. 如果配置文件存在，什么都不做
+        3. 不再进行任何智能检测或修复
         """
-        # 如果配置文件不存在，创建默认配置
-        if not self.config_path.exists():
+        try:
             # 确保目录存在
             self.config_path.parent.mkdir(parents=True, exist_ok=True)
-            # 创建默认配置模板
-            self.create_default_config_template()
-            return True
-        
-        # 如果配置文件存在，首先检查是否为用户配置
-        if self.has_user_config():
-            # 如果是用户配置，不做任何修改，直接返回
-            return False
-        
-        # 如果不是用户配置，检查其有效性
-        try:
-            with open(self.config_path, 'r', encoding='utf-8') as f:
-                config = yaml.safe_load(f)
             
-            # 如果配置文件为空，创建默认配置
-            if not config:
+            # 如果配置文件不存在，创建默认配置
+            if not self.config_path.exists():
+                if not self.is_mcp_mode:
+                    self.colored_print("📝 配置文件不存在，正在创建默认配置...", Fore.CYAN)
                 self.create_default_config_template()
                 return True
-                
-            # 如果配置文件有效但没有servers节点，只添加servers节点而不覆盖整个文件
-            if 'servers' not in config:
-                config['servers'] = {
-                    "example-server": {
-                        "type": "script_based",
-                        "host": "example.com",
-                        "port": 22,
-                        "username": "your-username",
-                        "description": "示例服务器配置 - 请修改为你的实际服务器信息",
-                        "session": {
-                            "name": "example-server_dev"
-                        },
-                        "specs": {
-                            "connection": {
-                                "type": "ssh",
-                                "timeout": 30
-                            },
-                            "environment_setup": {
-                                "shell": "bash",
-                                "working_directory": "/home/your-username"
-                            }
-                        }
-                    }
-                }
-                
-                # 保存修复后的配置
-                with open(self.config_path, 'w', encoding='utf-8') as f:
-                    yaml.dump(config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
-                
-                return True
             
-            # 如果servers节点存在但为空，添加示例服务器
-            elif not config['servers']:
-                config['servers']['example-server'] = {
+            # 如果配置文件存在，什么都不做
+            return False
+                
+        except Exception as e:
+            # 如果出现任何错误，尝试创建默认配置
+            if not self.is_mcp_mode:
+                self.colored_print(f"❌ 配置文件处理失败，正在创建默认配置: {e}", Fore.RED)
+            
+            try:
+                self.create_default_config_template()
+                return True
+            except Exception as create_error:
+                if not self.is_mcp_mode:
+                    self.colored_print(f"❌ 创建默认配置失败: {create_error}", Fore.RED)
+                raise
+
+    def create_default_config_template(self):
+        """创建默认配置模板 - 终极简化版本
+        
+        最简单策略：
+        1. 总是创建/覆盖配置文件
+        2. 不进行任何检查
+        """
+        config_file = self.config_dir / 'config.yaml'
+            
+        default_config = {
+            "servers": {
+                "example-server": {
                     "type": "script_based",
                     "host": "example.com",
                     "port": 22,
@@ -3319,22 +3103,44 @@ servers:
                         }
                     }
                 }
+            },
+            "global_settings": {
+                "default_timeout": 30,
+                "auto_recovery": True,
+                "log_level": "INFO",
+                "default_shell": "bash"
+            },
+            "security_settings": {
+                "strict_host_key_checking": False,
+                "connection_timeout": 30,
+                "max_retry_attempts": 3
+            }
+        }
+        
+        try:
+            with open(config_file, 'w', encoding='utf-8') as f:
+                # 写入注释和配置
+                f.write("# Remote Terminal MCP Configuration Template\n")
+                f.write("# This file is automatically created when no config exists\n")
+                f.write(f"# Generated at: {__import__('datetime').datetime.now().isoformat()}\n\n")
                 
-                # 保存修复后的配置
-                with open(self.config_path, 'w', encoding='utf-8') as f:
-                    yaml.dump(config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+                # 写入实际配置
+                yaml.dump(default_config, f, default_flow_style=False, allow_unicode=True)
                 
-                return True
-            else:
-                # 配置文件正常且有服务器配置，无需修改
-                return False
+                # 添加使用说明
+                f.write("\n# 使用说明:\n")
+                f.write("# 1. 修改 example-server 的配置信息为你的实际服务器\n")
+                f.write("# 2. 或者删除 example-server，添加你自己的服务器配置\n")
+                f.write("# 3. 保存文件后，使用 remote-terminal-mcp 工具连接服务器\n")
+                f.write("# 4. 更多配置选项请参考文档\n")
+                
+            if not self.is_mcp_mode:
+                self.colored_print("✅ 默认配置文件已创建", Fore.GREEN)
                 
         except Exception as e:
-            # 如果配置文件损坏，重新创建
             if not self.is_mcp_mode:
-                self.colored_print(f"⚠️ 配置文件损坏，正在重新创建: {e}", Fore.YELLOW)
-            self.create_default_config_template()
-            return True
+                self.colored_print(f"❌ 创建默认配置失败: {e}", Fore.RED)
+            raise
 
 def main():
     """主函数"""
