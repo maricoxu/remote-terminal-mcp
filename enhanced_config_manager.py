@@ -3038,48 +3038,111 @@ servers:
             self.colored_print(f"❌ 更新服务器Docker配置失败: {e}", Fore.RED)
 
     def ensure_config_exists(self):
-        """确保配置文件存在 - 终极简化版本
+        """确保配置文件存在 - 超级安全版本
         
-        最简单策略：
-        1. 如果配置文件不存在，创建默认配置
-        2. 如果配置文件存在，什么都不做
-        3. 不再进行任何智能检测或修复
+        最安全策略：
+        1. 使用文件锁防止并发修改
+        2. 多重检查防止竞争条件
+        3. 只在文件真正不存在时创建
+        4. 详细日志记录所有操作
         """
+        import fcntl
+        import tempfile
+        
         try:
             # 确保目录存在
             self.config_path.parent.mkdir(parents=True, exist_ok=True)
             
-            # 如果配置文件不存在，创建默认配置
-            if not self.config_path.exists():
-                if not self.is_mcp_mode:
-                    self.colored_print("📝 配置文件不存在，正在创建默认配置...", Fore.CYAN)
-                self.create_default_config_template()
-                return True
-            
-            # 如果配置文件存在，什么都不做
-            return False
-                
-        except Exception as e:
-            # 如果出现任何错误，尝试创建默认配置
-            if not self.is_mcp_mode:
-                self.colored_print(f"❌ 配置文件处理失败，正在创建默认配置: {e}", Fore.RED)
+            # 使用临时文件作为锁机制
+            lock_file = self.config_path.parent / '.config_lock'
             
             try:
-                self.create_default_config_template()
-                return True
-            except Exception as create_error:
+                # 尝试获取文件锁
+                with open(lock_file, 'w') as lock_fd:
+                    fcntl.flock(lock_fd.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    
+                    # 在锁保护下检查配置文件
+                    if self.config_path.exists():
+                        # 文件存在，检查是否为有效配置
+                        try:
+                            with open(self.config_path, 'r', encoding='utf-8') as f:
+                                content = f.read().strip()
+                            
+                            # 如果文件不为空且包含基本结构，认为是有效配置
+                            if content and ('servers:' in content or 'global_settings:' in content):
+                                if not self.is_mcp_mode:
+                                    self.colored_print("✅ 发现有效配置文件，保持不变", Fore.GREEN)
+                                return False
+                            else:
+                                if not self.is_mcp_mode:
+                                    self.colored_print("⚠️ 配置文件为空或损坏，重新创建", Fore.YELLOW)
+                        except Exception as e:
+                            if not self.is_mcp_mode:
+                                self.colored_print(f"⚠️ 配置文件读取失败，重新创建: {e}", Fore.YELLOW)
+                    
+                    # 只有在文件不存在或无效时才创建
+                    if not self.is_mcp_mode:
+                        self.colored_print("📝 创建新的配置文件...", Fore.CYAN)
+                    self.create_default_config_template()
+                    return True
+                    
+            except (IOError, OSError):
+                # 无法获取锁，可能有其他进程在操作
                 if not self.is_mcp_mode:
-                    self.colored_print(f"❌ 创建默认配置失败: {create_error}", Fore.RED)
-                raise
+                    self.colored_print("⏳ 其他进程正在操作配置文件，等待...", Fore.YELLOW)
+                
+                # 等待一小段时间后重试
+                import time
+                time.sleep(0.1)
+                
+                # 简单检查文件是否存在
+                if self.config_path.exists():
+                    return False
+                else:
+                    # 如果仍然不存在，尝试创建（可能会失败，但这是最后的尝试）
+                    self.create_default_config_template()
+                    return True
+            
+            finally:
+                # 清理锁文件
+                try:
+                    if lock_file.exists():
+                        lock_file.unlink()
+                except:
+                    pass
+                
+        except Exception as e:
+            # 如果出现任何错误，作为最后的保障
+            if not self.is_mcp_mode:
+                self.colored_print(f"❌ 配置文件处理失败: {e}", Fore.RED)
+            
+            # 只有在配置文件确实不存在时才尝试创建
+            if not self.config_path.exists():
+                try:
+                    self.create_default_config_template()
+                    return True
+                except Exception as create_error:
+                    if not self.is_mcp_mode:
+                        self.colored_print(f"❌ 创建默认配置失败: {create_error}", Fore.RED)
+                    raise
+            
+            return False
 
     def create_default_config_template(self):
-        """创建默认配置模板 - 终极简化版本
+        """创建默认配置模板 - 超级安全版本
         
-        最简单策略：
-        1. 总是创建/覆盖配置文件
-        2. 不进行任何检查
+        安全策略：
+        1. 检查文件是否已存在，如果存在则拒绝覆盖
+        2. 只在文件真正不存在时才创建
+        3. 添加详细日志以便调试
         """
         config_file = self.config_dir / 'config.yaml'
+        
+        # 安全检查：如果文件已存在，拒绝覆盖
+        if config_file.exists():
+            if not self.is_mcp_mode:
+                self.colored_print("⚠️ 配置文件已存在，拒绝覆盖以保护用户数据", Fore.YELLOW)
+            return
             
         default_config = {
             "servers": {
@@ -3118,6 +3181,12 @@ servers:
         }
         
         try:
+            # 再次检查文件是否存在（防止竞争条件）
+            if config_file.exists():
+                if not self.is_mcp_mode:
+                    self.colored_print("⚠️ 配置文件在创建过程中已被其他进程创建，跳过", Fore.YELLOW)
+                return
+            
             with open(config_file, 'w', encoding='utf-8') as f:
                 # 写入注释和配置
                 f.write("# Remote Terminal MCP Configuration Template\n")
