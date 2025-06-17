@@ -66,7 +66,10 @@ class EnhancedConfigManager:
         
         # 设置config_dir - 必须在ensure_directories()之前
         self.config_dir = self.config_path.parent
-        self.templates_dir = Path(__file__).parent / "templates"
+        # 模板目录应该在用户配置目录下，而不是项目目录
+        self.templates_dir = self.config_dir / "templates"
+        # 项目模板目录用于复制初始模板
+        self.project_templates_dir = Path(__file__).parent / "templates"
         
         # 在创建目录之前，先检查是否需要迁移旧配置
         self.migrate_legacy_config()
@@ -475,6 +478,14 @@ class EnhancedConfigManager:
         self.config_dir.mkdir(exist_ok=True)
         self.templates_dir.mkdir(exist_ok=True)
         
+        # 创建docker_configs目录
+        docker_configs_dir = self.config_dir / 'docker_configs'
+        docker_configs_dir.mkdir(exist_ok=True)
+        
+        # 创建其他可能需要的目录
+        scripts_dir = self.config_dir / 'scripts'
+        scripts_dir.mkdir(exist_ok=True)
+        
         # 简化版本：移除复杂的NPM配置恢复逻辑
         # 只创建模板文件
         self.create_default_templates()
@@ -486,6 +497,24 @@ class EnhancedConfigManager:
     
     def create_default_templates(self):
         """创建默认配置模板文件"""
+        # 确保模板目录存在
+        self.templates_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 先尝试从项目模板目录复制现有模板
+        if self.project_templates_dir.exists():
+            import shutil
+            for template_file in self.project_templates_dir.glob("*.yaml"):
+                target_file = self.templates_dir / template_file.name
+                if not target_file.exists():
+                    try:
+                        shutil.copy2(template_file, target_file)
+                        if not self.is_mcp_mode:
+                            self.colored_print(f"📄 复制模板: {template_file.name}", Fore.CYAN)
+                    except Exception as e:
+                        if not self.is_mcp_mode:
+                            self.colored_print(f"⚠️ 复制模板失败 {template_file.name}: {e}", Fore.YELLOW)
+        
+        # 如果项目模板不存在或复制失败，创建基本模板
         templates = {
             "ssh_server.yaml": {
                 "servers": {
@@ -550,11 +579,18 @@ class EnhancedConfigManager:
             }
         }
         
+        # 只创建不存在的模板文件
         for template_name, content in templates.items():
             template_path = self.templates_dir / template_name
             if not template_path.exists():
-                with open(template_path, 'w', encoding='utf-8') as f:
-                    yaml.dump(content, f, default_flow_style=False, allow_unicode=True)
+                try:
+                    with open(template_path, 'w', encoding='utf-8') as f:
+                        yaml.dump(content, f, default_flow_style=False, allow_unicode=True)
+                    if not self.is_mcp_mode:
+                        self.colored_print(f"📄 创建模板: {template_name}", Fore.GREEN)
+                except Exception as e:
+                    if not self.is_mcp_mode:
+                        self.colored_print(f"❌ 创建模板失败 {template_name}: {e}", Fore.RED)
     
     def main_menu(self):
         """主菜单 - 简化版"""
