@@ -60,27 +60,86 @@ class EnhancedConfigManager:
         if config_path:
             self.config_path = Path(config_path)
         else:
-            # 优先使用用户主目录下的配置
-            user_config = Path.home() / '.remote-terminal' / 'config.yaml'
-            # 后备选项：当前目录下的配置
-            local_config = Path.cwd() / 'config' / 'servers.local.yaml'
-            
-            if user_config.exists():
-                self.config_path = user_config
-            elif local_config.exists():
-                self.config_path = local_config
-            else:
-                # 默认使用用户配置路径（会自动创建）
-                self.config_path = user_config
+            # 统一使用 ~/.remote-terminal 作为标准配置目录
+            self.config_path = Path.home() / '.remote-terminal' / 'config.yaml'
         
         # 设置config_dir - 必须在ensure_directories()之前
-            self.config_dir = self.config_path.parent
+        self.config_dir = self.config_path.parent
         self.templates_dir = Path(__file__).parent / "templates"
+        
+        # 在创建目录之前，先检查是否需要迁移旧配置
+        self.migrate_legacy_config()
+        
         self.ensure_directories()
         
         # Docker配置现在统一在enhanced_config_manager中处理
         # 不再需要独立的docker_manager
         
+    def migrate_legacy_config(self):
+        """迁移旧的配置文件到新的标准位置"""
+        legacy_config_dir = Path.home() / '.remote-terminal-mcp'
+        legacy_config_file = legacy_config_dir / 'config.yaml'
+        new_config_file = self.config_path
+        
+        # 如果新配置文件不存在，但旧配置文件存在，则进行迁移
+        if not new_config_file.exists() and legacy_config_file.exists():
+            try:
+                # 确保新配置目录存在
+                new_config_file.parent.mkdir(parents=True, exist_ok=True)
+                
+                # 复制配置文件
+                import shutil
+                shutil.copy2(legacy_config_file, new_config_file)
+                
+                # 迁移其他相关文件
+                legacy_docker_dir = legacy_config_dir / 'docker_configs'
+                new_docker_dir = self.config_dir / 'docker_configs'
+                if legacy_docker_dir.exists():
+                    shutil.copytree(legacy_docker_dir, new_docker_dir, dirs_exist_ok=True)
+                
+                legacy_templates_dir = legacy_config_dir / 'templates'
+                new_templates_dir = self.config_dir / 'templates'
+                if legacy_templates_dir.exists():
+                    shutil.copytree(legacy_templates_dir, new_templates_dir, dirs_exist_ok=True)
+                
+                legacy_docker_templates_dir = legacy_config_dir / 'docker_templates'
+                new_docker_templates_dir = self.config_dir / 'docker_templates'
+                if legacy_docker_templates_dir.exists():
+                    shutil.copytree(legacy_docker_templates_dir, new_docker_templates_dir, dirs_exist_ok=True)
+                
+                if not self.is_mcp_mode:
+                    self.colored_print("✅ 已成功迁移旧配置到新位置", Fore.GREEN)
+                    self.colored_print(f"   从: {legacy_config_file}", Fore.CYAN)
+                    self.colored_print(f"   到: {new_config_file}", Fore.CYAN)
+                    
+            except Exception as e:
+                if not self.is_mcp_mode:
+                    self.colored_print(f"❌ 配置迁移失败: {e}", Fore.RED)
+    
+    def has_user_config(self) -> bool:
+        """检查是否存在用户配置（非模板配置）"""
+        if not self.config_path.exists():
+            return False
+            
+        try:
+            with open(self.config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f) or {}
+            
+            # 检查是否有真实的服务器配置（非示例配置）
+            servers = config.get('servers', {})
+            if not servers:
+                return False
+                
+            # 如果只有 example-server，认为是模板配置
+            if len(servers) == 1 and 'example-server' in servers:
+                return False
+                
+            # 如果有其他服务器配置，认为是用户配置
+            return True
+            
+        except Exception:
+            return False
+    
     def colored_print(self, text: str, color=Fore.WHITE, style=""):
         """彩色打印 - 在MCP模式下使用纯文本"""
         if self.is_mcp_mode:
@@ -164,7 +223,7 @@ class EnhancedConfigManager:
                     return user, host
         return None, None
     
-    def _configure_server(self, server_type: str, ask_for_name: bool = True) -> dict:
+    def _configure_server(self, server_type: str, ask_for_name: bool = True, enable_sync: bool = True) -> dict:
         """配置服务器信息的辅助方法"""
         self.colored_print(f"\n📝 配置{server_type}信息", Fore.CYAN)
         
@@ -225,8 +284,10 @@ class EnhancedConfigManager:
         else:
             self.colored_print("✅ 将使用SSH密钥认证", Fore.GREEN)
         
-        # 同步功能配置
-        sync_config = self._configure_sync(server_name)
+        # 同步功能配置 - 只在启用同步的情况下配置
+        sync_config = None
+        if enable_sync:
+            sync_config = self._configure_sync(server_name)
         
         server_config = {
             "name": server_name,
@@ -432,8 +493,13 @@ class EnhancedConfigManager:
         self.create_default_templates()
     
     def restore_npm_config_if_needed(self):
-        """在 MCP 模式下恢复 NPM 创建的配置文件"""
+        """在 MCP 模式下恢复 NPM 创建的配置文件，但保护用户现有配置"""
         config_file = self.config_dir / 'config.yaml'
+        
+        # 如果已经有用户配置，不做任何操作
+        if self.has_user_config():
+            return
+        
         backup_file = self.config_dir / 'config.yaml.backup'
         persistent_backup = Path.home() / '.remote-terminal-config-backup.yaml'
         persistent_marker = Path.home() / '.remote-terminal-npm-installed'
@@ -441,8 +507,8 @@ class EnhancedConfigManager:
         # 检查是否有 NPM 安装的标记
         has_npm_marker = persistent_marker.exists()
         
-        # 如果主配置文件不存在但有 NPM 安装标记，尝试恢复
-        if not config_file.exists() and has_npm_marker:
+        # 如果主配置文件不存在或只有示例配置，且有 NPM 安装标记，尝试恢复
+        if (not config_file.exists() or not self.has_user_config()) and has_npm_marker:
             try:
                 # 优先从本地备份恢复，如果不存在则从持久备份恢复
                 source_backup = backup_file if backup_file.exists() else persistent_backup
@@ -464,15 +530,91 @@ class EnhancedConfigManager:
                     if not self.is_mcp_mode:  # 只在非 MCP 模式下打印
                         self.colored_print("✅ 已从备份恢复配置文件", Fore.GREEN)
                 else:
-                    if not self.is_mcp_mode:  # 只在非 MCP 模式下打印
-                        self.colored_print("❌ 找不到备份文件", Fore.RED)
+                    # 如果没有备份，且没有用户配置，创建默认模板
+                    if not config_file.exists():
+                        self.create_default_config_template()
                         
             except Exception as e:
                 if not self.is_mcp_mode:  # 只在非 MCP 模式下打印
                     self.colored_print(f"❌ 恢复配置文件失败: {e}", Fore.RED)
+        elif not config_file.exists():
+            # 如果没有配置文件且没有 NPM 标记，创建默认模板
+            self.create_default_config_template()
+    
+    def create_default_config_template(self):
+        """创建默认配置模板（仅在没有用户配置时）"""
+        config_file = self.config_dir / 'config.yaml'
+        
+        # 确保不覆盖用户配置
+        if self.has_user_config():
+            return
+            
+        default_config = {
+            "# Remote Terminal MCP Configuration Template": None,
+            "# This file is automatically created when no config exists": None,
+            f"# Generated at: {__import__('datetime').datetime.now().isoformat()}": None,
+            "servers": {
+                "example-server": {
+                    "type": "script_based",
+                    "host": "example.com",
+                    "port": 22,
+                    "username": "your-username",
+                    "description": "示例服务器配置 - 请修改为你的实际服务器信息",
+                    "session": {
+                        "name": "example-server_dev"
+                    },
+                    "specs": {
+                        "connection": {
+                            "type": "ssh",
+                            "timeout": 30
+                        },
+                        "environment_setup": {
+                            "shell": "bash",
+                            "working_directory": "/home/your-username"
+                        }
+                    }
+                }
+            },
+            "global_settings": {
+                "default_timeout": 30,
+                "auto_recovery": True,
+                "log_level": "INFO",
+                "default_shell": "bash"
+            },
+            "security_settings": {
+                "strict_host_key_checking": False,
+                "connection_timeout": 30,
+                "max_retry_attempts": 3
+            }
+        }
+        
+        try:
+            with open(config_file, 'w', encoding='utf-8') as f:
+                # 写入注释和配置
+                f.write("# Remote Terminal MCP Configuration Template\n")
+                f.write("# This file is automatically created when no config exists\n")
+                f.write(f"# Generated at: {__import__('datetime').datetime.now().isoformat()}\n\n")
+                
+                # 写入实际配置
+                yaml.dump({
+                    "servers": default_config["servers"],
+                    "global_settings": default_config["global_settings"],
+                    "security_settings": default_config["security_settings"]
+                }, f, default_flow_style=False, allow_unicode=True)
+                
+                # 添加使用说明
+                f.write("\n# 使用说明:\n")
+                f.write("# 1. 修改 example-server 的配置信息为你的实际服务器\n")
+                f.write("# 2. 或者删除 example-server，添加你自己的服务器配置\n")
+                f.write("# 3. 保存文件后，使用 remote-terminal-mcp 工具连接服务器\n")
+                f.write("# 4. 更多配置选项请参考文档\n")
+                
+        except Exception as e:
+            if not self.is_mcp_mode:
+                self.colored_print(f"❌ 创建默认配置失败: {e}", Fore.RED)
     
     def create_default_templates(self):
-        """创建默认配置模板"""
+        """创建默认配置模板文件"""
         templates = {
             "ssh_server.yaml": {
                 "servers": {
@@ -737,53 +879,104 @@ class EnhancedConfigManager:
             # Relay跳板机连接
             self.colored_print("\n🛰️ 第2步：配置Relay连接", Fore.CYAN, Style.BRIGHT)
             
-            # 配置目标服务器
-            target_server = self._configure_server("目标服务器")
-            if not target_server:
+            # 先询问是否需要二级跳板机
+            self.colored_print("\n🔗 连接架构选择:", Fore.YELLOW)
+            self.colored_print("1. 单级跳板: relay-cli → 目标服务器", Fore.GREEN)
+            self.colored_print("2. 二级跳板: relay-cli → 中继服务器 → 目标服务器", Fore.BLUE)
+            
+            jump_type = self.smart_input("选择连接架构", 
+                                       validator=lambda x: x in ['1', '2'],
+                                       default='1',
+                                       show_suggestions=False)
+            if not jump_type:
                 return
-                
-            # 询问是否需要二级跳板
-            use_jump = self.smart_input("是否需要二级跳板机 (y/n)", 
-                                      validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'] or x == '',
-                                      default='n',
-                                      show_suggestions=False)
             
-            # 初始化配置
-            config = {"servers": {target_server["name"]: {
-                "host": target_server["host"],
-                "username": target_server["user"],  # 修正字段名
-                "port": int(target_server.get("port", 22)),
-                "private_key_path": "~/.ssh/id_rsa",
-                "type": "script_based",  # 统一使用script_based
-                "connection_type": "relay",  # 添加连接类型标识
-                "description": f"Relay连接: {target_server['name']}",
-                "specs": {
-                    "connection": {
-                        "tool": "relay-cli",
-                        "target": {"host": target_server["host"]}
-                    }
-                }
-            }}}
+            # 配置服务器名称
+            server_name = self.smart_input("🏷️ 服务器配置名称", 
+                                         validator=lambda x: bool(x and len(x) > 0),
+                                         show_suggestions=False)
+            if not server_name:
+                return
             
-            # 添加密码配置到主配置中
-            if target_server.get("password"):
-                config["servers"][target_server["name"]]["password"] = target_server["password"]
-            
-            # 如果需要二级跳板，配置中继服务器
-            if use_jump and use_jump.lower() in ['y', 'yes']:
+            if jump_type == "2":
+                # 二级跳板：先配置中继服务器（第一级跳板机）
                 self.colored_print("\n🏃 配置中继服务器 (第一级跳板机)", Fore.MAGENTA)
                 self.colored_print("💡 连接流程: relay-cli → 中继服务器 → 目标服务器", Fore.YELLOW)
                 
-                relay_server = self._configure_server("中继服务器", ask_for_name=False)
-                if relay_server:
-                    # 在specs中配置中继服务器信息
-                    config["servers"][target_server["name"]]["specs"]["connection"]["jump_host"] = {
-                        "host": relay_server["host"],
-                        "username": relay_server["user"]
+                relay_server = self._configure_server("中继服务器", ask_for_name=False, enable_sync=False)
+                if not relay_server:
+                    return
+                
+                # 然后配置目标服务器
+                self.colored_print("\n📝 配置目标服务器信息", Fore.CYAN)
+                target_server = self._configure_server("目标服务器", ask_for_name=False)
+                if not target_server:
+                    return
+                
+                # 生成二级跳板配置
+                config = {"servers": {server_name: {
+                    "host": target_server["host"],
+                    "username": target_server["user"],
+                    "port": int(target_server.get("port", 22)),
+                    "private_key_path": "~/.ssh/id_rsa",
+                    "type": "script_based",
+                    "connection_type": "relay",
+                    "description": f"Relay连接: {server_name}",
+                    "session": {
+                        "name": f"{server_name}_session",
+                        "shell": "/bin/bash",
+                        "working_directory": "~"
+                    },
+                    "specs": {
+                        "connection": {
+                            "tool": "relay-cli",
+                            "target": {"host": target_server["host"]},
+                            "jump_host": {
+                                "host": relay_server["host"],
+                                "username": relay_server["user"]
+                            }
+                        }
                     }
-                    # 如果中继服务器有密码，也要保存
-                    if relay_server.get("password"):
-                        config["servers"][target_server["name"]]["specs"]["connection"]["jump_host"]["password"] = relay_server["password"]
+                }}}
+                
+                # 添加密码配置
+                if target_server.get("password"):
+                    config["servers"][server_name]["password"] = target_server["password"]
+                if relay_server.get("password"):
+                    config["servers"][server_name]["specs"]["connection"]["jump_host"]["password"] = relay_server["password"]
+                    
+            else:
+                # 单级跳板：直接配置目标服务器
+                self.colored_print("\n📝 配置目标服务器信息", Fore.CYAN)
+                target_server = self._configure_server("目标服务器", ask_for_name=False)
+                if not target_server:
+                    return
+                
+                # 生成单级跳板配置
+                config = {"servers": {server_name: {
+                    "host": target_server["host"],
+                    "username": target_server["user"],
+                    "port": int(target_server.get("port", 22)),
+                    "private_key_path": "~/.ssh/id_rsa",
+                    "type": "script_based",
+                    "connection_type": "relay",
+                    "description": f"Relay连接: {server_name}",
+                    "session": {
+                        "name": f"{server_name}_session",
+                        "shell": "/bin/bash",
+                        "working_directory": "~"
+                    },
+                    "specs": {
+                        "connection": {
+                            "tool": "relay-cli",
+                            "target": {"host": target_server["host"]}
+                        }
+                    }
+                }}}
+                
+                # 添加密码配置
+                if target_server.get("password"):
+                    config["servers"][server_name]["password"] = target_server["password"]
                     
         else:
             # SSH直连 - 只需配置目标服务器
@@ -794,16 +987,25 @@ class EnhancedConfigManager:
                 
             config = {"servers": {server_config["name"]: {
                 "host": server_config["host"],
-                "username": server_config["user"],  # 修正字段名
+                "username": server_config["user"],
                 "port": int(server_config.get("port", 22)),
                 "private_key_path": "~/.ssh/id_rsa",
-                "type": "script_based",  # 统一使用script_based
-                "connection_type": "ssh",  # 添加连接类型标识
+                "type": "script_based",
+                "connection_type": "ssh",
                 "description": f"SSH直连: {server_config['name']}",
+                "session": {
+                    "name": f"{server_config['name']}_session",
+                    "shell": "/bin/bash",
+                    "working_directory": "~"
+                },
                 "specs": {
                     "connection": {
-                        "tool": "ssh",
-                        "target": {"host": server_config["host"]}
+                        "type": "ssh",
+                        "timeout": 30
+                    },
+                    "environment_setup": {
+                        "shell": "bash",
+                        "working_directory": f"/home/{server_config['user']}"
                     }
                 }
             }}}
@@ -818,9 +1020,8 @@ class EnhancedConfigManager:
         # 第3步：Docker配置 (智能选择)
         self.colored_print("\n🐳 第3步：Docker配置 (可选)", Fore.CYAN)
         use_docker_input = self.smart_input("是否使用Docker容器 (y/n)", 
-                                           validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'] or x == '', 
-                                           default='n',
-                                           show_suggestions=False)
+                                           validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
+                                           default='n')
         if not use_docker_input:
             use_docker_input = 'n'
             
@@ -1138,7 +1339,7 @@ servers:
         post_connect_commands:
           - "cd /workspace"
           - "source activate pytorch"
-          - "echo 'ML environment ready!'"
+          - "echo 'Environment ready!'"
     session:
       name: "ml_work"
       working_directory: "/workspace"
