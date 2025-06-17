@@ -13,7 +13,7 @@ import shutil
 import json
 
 # 添加项目根目录到Python路径
-project_root = Path(__file__).parent.parent
+project_root = Path(__file__).parent.parent.parent  # 需要再上一级到项目根目录
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / 'python'))
 
@@ -127,6 +127,203 @@ class TestDockerConfigRegression(unittest.TestCase):
             self.assertTrue(True, "Docker命令生成方法正常执行")
         except Exception as e:
             self.fail(f"Docker命令生成方法执行失败: {e}")
+
+class TestConfigurationPersistenceRegression(unittest.TestCase):
+    """测试配置持久化回归问题 - 防止用户配置意外丢失"""
+    
+    def setUp(self):
+        """设置测试环境"""
+        self.test_dir = Path(tempfile.mkdtemp(prefix="config_persistence_test_"))
+        self.config_dir = self.test_dir / ".remote-terminal"
+        self.config_file = self.config_dir / "config.yaml"
+        self.original_home = os.environ.get('HOME')
+        
+    def tearDown(self):
+        """清理测试环境"""
+        if self.original_home:
+            os.environ['HOME'] = self.original_home
+        try:
+            shutil.rmtree(self.test_dir)
+        except Exception:
+            pass
+    
+    def test_modified_example_server_detection(self):
+        """测试修改过的示例服务器能被正确识别为用户配置"""
+        # 设置测试环境
+        os.environ['HOME'] = str(self.test_dir)
+        self.config_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 创建修改过的示例服务器配置
+        modified_config = """# Remote Terminal MCP Configuration
+global_settings:
+  auto_recovery: true
+  default_shell: zsh  # Modified from bash
+  default_timeout: 60  # Modified from 30
+  log_level: DEBUG    # Modified from INFO
+
+security_settings:
+  connection_timeout: 45  # Modified from 30
+  max_retry_attempts: 5   # Modified from 3
+  strict_host_key_checking: true  # Modified from false
+
+servers:
+  example-server:
+    description: "我的生产服务器"  # Modified description
+    host: my-prod-server.com       # Modified host
+    port: 2222                     # Modified port
+    username: admin                # Modified username
+    session:
+      name: prod_session           # Modified session name
+    specs:
+      connection:
+        timeout: 45               # Modified timeout
+        type: ssh
+      environment_setup:
+        shell: zsh                # Modified shell
+        working_directory: /opt/app  # Modified directory
+    type: script_based
+"""
+        
+        with open(self.config_file, "w") as f:
+            f.write(modified_config)
+        
+        # 测试has_user_config检测
+        from enhanced_config_manager import EnhancedConfigManager
+        manager = EnhancedConfigManager()
+        
+        is_user_config = manager.has_user_config()
+        self.assertTrue(is_user_config, 
+                       "修改过的示例服务器配置应该被识别为用户配置")
+    
+    def test_ensure_config_exists_preserves_user_config(self):
+        """测试ensure_config_exists不会覆盖用户配置"""
+        # 设置测试环境
+        os.environ['HOME'] = str(self.test_dir)
+        self.config_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 创建用户配置
+        user_config = """# User Configuration
+global_settings:
+  auto_recovery: true
+  default_shell: zsh
+  default_timeout: 90
+  log_level: DEBUG
+  default_server: "production"
+
+servers:
+  example-server:
+    description: "我的开发服务器"
+    host: dev.mycompany.com
+    port: 2222
+    username: developer
+    type: script_based
+    
+  production:
+    description: "生产服务器"
+    host: prod.mycompany.com
+    port: 22
+    username: admin
+    type: script_based
+"""
+        
+        with open(self.config_file, "w") as f:
+            f.write(user_config)
+        
+        # 记录原始状态
+        original_mtime = self.config_file.stat().st_mtime
+        original_content = self.config_file.read_text()
+        
+        # 多次调用ensure_config_exists
+        from enhanced_config_manager import EnhancedConfigManager
+        manager = EnhancedConfigManager()
+        
+        for _ in range(5):
+            manager.ensure_config_exists()
+        
+        # 验证配置未被修改
+        current_mtime = self.config_file.stat().st_mtime
+        current_content = self.config_file.read_text()
+        
+        self.assertEqual(original_mtime, current_mtime,
+                        "ensure_config_exists不应修改用户配置文件的时间戳")
+        self.assertEqual(original_content, current_content,
+                        "ensure_config_exists不应修改用户配置文件的内容")
+    
+    def test_get_existing_servers_preserves_user_modifications(self):
+        """测试get_existing_servers保留用户修改"""
+        # 设置测试环境
+        os.environ['HOME'] = str(self.test_dir)
+        self.config_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 创建包含用户修改的配置
+        user_config = """servers:
+  example-server:
+    description: "我的测试服务器"
+    host: test.example.com
+    port: 2222
+    username: testuser
+    type: script_based
+  custom-server:
+    description: "自定义服务器"
+    host: custom.example.com
+    port: 22
+    username: admin
+    type: script_based
+"""
+        
+        with open(self.config_file, "w") as f:
+            f.write(user_config)
+        
+        # 多次调用get_existing_servers
+        from enhanced_config_manager import EnhancedConfigManager
+        manager = EnhancedConfigManager()
+        
+        for i in range(3):
+            servers = manager.get_existing_servers()
+            
+            # 验证用户修改被保留
+            self.assertIn('example-server', servers,
+                         "example-server应该存在")
+            self.assertIn('custom-server', servers,
+                         "custom-server应该存在")
+            
+            example_server = servers['example-server']
+            self.assertEqual(example_server.get('host'), 'test.example.com',
+                           "用户修改的host应该被保留")
+            self.assertEqual(example_server.get('username'), 'testuser',
+                           "用户修改的username应该被保留")
+    
+    def test_npm_installation_protection(self):
+        """测试NPM安装后的配置保护机制"""
+        # 设置测试环境
+        os.environ['HOME'] = str(self.test_dir)
+        self.config_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 创建NPM标记文件（模拟新安装）
+        npm_marker = self.config_dir / ".npm_install_marker"
+        npm_marker.touch()
+        
+        # 创建基本配置
+        basic_config = """servers:
+  example-server:
+    description: "示例服务器配置"
+    host: example.com
+    port: 22
+    username: your-username
+    type: script_based
+"""
+        
+        with open(self.config_file, "w") as f:
+            f.write(basic_config)
+        
+        # 测试NPM保护机制
+        from enhanced_config_manager import EnhancedConfigManager
+        manager = EnhancedConfigManager()
+        
+        # 即使是默认配置，在NPM保护期内也应该被识别为用户配置
+        is_user_config = manager.has_user_config()
+        self.assertTrue(is_user_config,
+                       "NPM安装保护期内的配置应该被识别为用户配置")
 
 class TestUserExperienceRegression(unittest.TestCase):
     """测试用户体验相关的回归问题"""
