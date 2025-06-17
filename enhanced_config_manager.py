@@ -130,12 +130,12 @@ class EnhancedConfigManager:
             if not servers:
                 return False
                 
-            # 如果只有 example-server，认为是模板配置
-            if len(servers) == 1 and 'example-server' in servers:
-                return False
-                
-            # 如果有其他服务器配置，认为是用户配置
-            return True
+            # 如果有任何非示例服务器，认为是用户配置
+            non_example_servers = [name for name in servers.keys() 
+                                  if name != 'example-server']
+            
+            # 只要有非示例服务器，就认为是用户配置
+            return len(non_example_servers) > 0
             
         except Exception:
             return False
@@ -1638,14 +1638,27 @@ servers:
                 if not self.is_mcp_mode:
                     self.colored_print(f"📋 已创建配置备份: {backup_path}", Fore.CYAN)
             
-            # 保存配置
-            with open(self.config_path, 'w', encoding='utf-8') as f:
-                yaml.dump(final_config, f, default_flow_style=False, allow_unicode=True)
-                
+            # 确保目录存在
+            self.config_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # 原子性保存：先写临时文件，再重命名
+            temp_path = f"{self.config_path}.tmp"
+            with open(temp_path, 'w', encoding='utf-8') as f:
+                yaml.dump(final_config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+                f.flush()
+                os.fsync(f.fileno())
+            
+            # 原子性重命名
+            os.rename(temp_path, self.config_path)
+            
             if not self.is_mcp_mode:
                 self.colored_print(f"✅ 配置已保存到: {self.config_path}", Fore.GREEN)
                 
         except Exception as e:
+            # 清理临时文件
+            temp_path = f"{self.config_path}.tmp"
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
             if not self.is_mcp_mode:
                 self.colored_print(f"{ConfigError.ERROR} 保存配置失败: {e}", Fore.RED)
             raise
@@ -1728,23 +1741,30 @@ servers:
         return True  # 继续创建流程
     
     def get_existing_servers(self) -> dict:
-        """获取现有服务器配置"""
+        """获取现有服务器配置 - 智能配置管理"""
         try:
-            if not os.path.exists(self.config_path):
-                return {}
+            # 确保配置文件存在，如果不存在则创建默认配置
+            self.ensure_config_exists()
             
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 config = yaml.safe_load(f)
             
             return config.get('servers', {}) if config else {}
         except Exception:
-            return {}
+            # 如果仍然出错，尝试重新创建配置文件
+            try:
+                self.create_default_config_template()
+                with open(self.config_path, 'r', encoding='utf-8') as f:
+                    config = yaml.safe_load(f)
+                return config.get('servers', {}) if config else {}
+            except Exception:
+                return {}
     
     def get_existing_docker_configs(self) -> dict:
-        """获取现有Docker配置"""
+        """获取现有Docker配置 - 智能配置管理"""
         try:
-            if not self.config_path.exists():
-                return {}
+            # 确保配置文件存在，如果不存在则创建默认配置
+            self.ensure_config_exists()
             
             with open(self.config_path, 'r', encoding='utf-8') as f:
                     config = yaml.safe_load(f)
@@ -3144,6 +3164,102 @@ servers:
             
         except Exception as e:
             self.colored_print(f"❌ 更新服务器Docker配置失败: {e}", Fore.RED)
+
+    def ensure_config_exists(self):
+        """确保配置文件存在 - 智能配置初始化
+        
+        设计原则：
+        1. 如果有用户配置，完全保持不变
+        2. 如果没有配置文件，创建默认配置
+        3. 如果有损坏的配置，尝试修复或重建
+        """
+        # 如果配置文件不存在，创建默认配置
+        if not self.config_path.exists():
+            # 确保目录存在
+            self.config_path.parent.mkdir(parents=True, exist_ok=True)
+            # 创建默认配置模板
+            self.create_default_config_template()
+            return True
+        
+        # 如果配置文件存在，检查其有效性
+        try:
+            with open(self.config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            
+            # 如果配置文件为空，创建默认配置
+            if not config:
+                self.create_default_config_template()
+                return True
+                
+            # 如果配置文件有效但没有servers节点，只添加servers节点而不覆盖整个文件
+            if 'servers' not in config:
+                config['servers'] = {
+                    "example-server": {
+                        "type": "script_based",
+                        "host": "example.com",
+                        "port": 22,
+                        "username": "your-username",
+                        "description": "示例服务器配置 - 请修改为你的实际服务器信息",
+                        "session": {
+                            "name": "example-server_dev"
+                        },
+                        "specs": {
+                            "connection": {
+                                "type": "ssh",
+                                "timeout": 30
+                            },
+                            "environment_setup": {
+                                "shell": "bash",
+                                "working_directory": "/home/your-username"
+                            }
+                        }
+                    }
+                }
+                
+                # 保存修复后的配置
+                with open(self.config_path, 'w', encoding='utf-8') as f:
+                    yaml.dump(config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+                
+                return True
+            
+            # 如果servers节点存在但为空，添加示例服务器
+            elif not config['servers']:
+                config['servers']['example-server'] = {
+                    "type": "script_based",
+                    "host": "example.com",
+                    "port": 22,
+                    "username": "your-username",
+                    "description": "示例服务器配置 - 请修改为你的实际服务器信息",
+                    "session": {
+                        "name": "example-server_dev"
+                    },
+                    "specs": {
+                        "connection": {
+                            "type": "ssh",
+                            "timeout": 30
+                        },
+                        "environment_setup": {
+                            "shell": "bash",
+                            "working_directory": "/home/your-username"
+                        }
+                    }
+                }
+                
+                # 保存修复后的配置
+                with open(self.config_path, 'w', encoding='utf-8') as f:
+                    yaml.dump(config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+                
+                return True
+            else:
+                # 配置文件正常且有服务器配置，无需修改
+                return False
+                
+        except Exception as e:
+            # 如果配置文件损坏，重新创建
+            if not self.is_mcp_mode:
+                self.colored_print(f"⚠️ 配置文件损坏，正在重新创建: {e}", Fore.YELLOW)
+            self.create_default_config_template()
+            return True
 
 def main():
     """主函数"""
