@@ -141,11 +141,10 @@ class EnhancedConfigManager:
             return False
     
     def colored_print(self, text: str, color=Fore.WHITE, style=""):
-        """彩色打印 - 在MCP模式下使用纯文本"""
+        """彩色打印 - 在MCP模式下禁止输出"""
         if self.is_mcp_mode:
-            # 在MCP模式下，移除表情符号和颜色，仅输出纯文本
-            clean_text = re.sub(r'[🎯🔗🖥️🐳⚙️📋💡🚀✅❌⏰🎉🔧📝📍🔍💻🎨🎯🔥🌉🏃🛰️]', '', text)
-            print(clean_text)
+            # 在MCP模式下，完全禁止输出以避免JSON格式错误
+            return True
         else:
             print(f"{color}{style}{text}{Style.RESET_ALL}")
         return True
@@ -741,6 +740,28 @@ class EnhancedConfigManager:
     
     def quick_setup(self):
         """快速配置 - 改进版"""
+        # 在MCP模式下，使用预设默认值快速创建配置
+        if self.is_mcp_mode:
+            try:
+                # MCP模式：使用预设默认值创建一个示例服务器配置
+                server_name = "mcp-server"
+                server_host = "localhost"
+                username = "user"
+                
+                config = {"servers": {server_name: {
+                    "host": server_host,
+                    "user": username,
+                    "port": 22,
+                    "type": "ssh", 
+                    "description": f"Quick setup: {server_name} via SSH"
+                }}}
+                
+                # 保存配置
+                self.save_config(config)
+                return True  # 成功返回
+            except Exception as e:
+                return False  # 失败返回
+        
         self.colored_print("\n⚡ 快速配置模式", Fore.YELLOW, Style.BRIGHT)
         self.colored_print("只需回答几个关键问题，5分钟完成配置", Fore.YELLOW)
         self.colored_print("-" * 40, Fore.YELLOW)
@@ -752,19 +773,19 @@ class EnhancedConfigManager:
                                      validator=lambda x: bool(x and len(x) > 0),
                                      suggestions=["gpu-server-1", "dev-server", "ml-server"])
         if not server_name:
-            return
+            return False
             
         server_host = self.smart_input("服务器地址", 
                                      validator=self.validate_hostname,
                                      suggestions=["192.168.1.100", "server.example.com"])
         if not server_host:
-            return
+            return False
             
         username = self.smart_input("用户名", 
                                    validator=self.validate_username,
                                    suggestions=["ubuntu", "root", os.getenv('USER', 'user')])
         if not username:
-            return
+            return False
         
         self.show_progress(2, 5, "选择连接方式")
         
@@ -777,7 +798,7 @@ class EnhancedConfigManager:
                                          validator=lambda x: x in ['1', '2'],
                                          suggestions=['1 (推荐)', '2 (内网)'])
         if not connection_type:
-            return
+            return False
         
         self.show_progress(3, 5, "Docker配置")
         
@@ -787,7 +808,7 @@ class EnhancedConfigManager:
                                            suggestions=['y (推荐)', 'n'],
                                            default='n')
         if not use_docker_input:
-            return
+            return False
             
         use_docker = use_docker_input.lower() in ['y', 'yes']
         
@@ -814,7 +835,7 @@ class EnhancedConfigManager:
                                    validator=self.validate_port,
                                    default="22")
             if not port:
-                return
+                return False
                 
             config["servers"][server_name] = {
                 "host": server_host,
@@ -842,7 +863,8 @@ class EnhancedConfigManager:
         self.save_config(config)
         self.colored_print(f"\n{ConfigError.SUCCESS} 快速配置完成！", Fore.GREEN, Style.BRIGHT)
         self.colored_print(f"配置已保存到: {self.config_path}", Fore.GREEN)
-        
+        return True
+    
     def guided_setup(self):
         """向导配置 - 重新设计的配置体验"""
         
@@ -1613,16 +1635,19 @@ servers:
                 backup_path = f"{self.config_path}.backup_{int(__import__('time').time())}"
                 import shutil
                 shutil.copy2(self.config_path, backup_path)
-                self.colored_print(f"📋 已创建配置备份: {backup_path}", Fore.CYAN)
+                if not self.is_mcp_mode:
+                    self.colored_print(f"📋 已创建配置备份: {backup_path}", Fore.CYAN)
             
             # 保存配置
             with open(self.config_path, 'w', encoding='utf-8') as f:
                 yaml.dump(final_config, f, default_flow_style=False, allow_unicode=True)
                 
-            self.colored_print(f"✅ 配置已保存到: {self.config_path}", Fore.GREEN)
+            if not self.is_mcp_mode:
+                self.colored_print(f"✅ 配置已保存到: {self.config_path}", Fore.GREEN)
                 
         except Exception as e:
-            self.colored_print(f"{ConfigError.ERROR} 保存配置失败: {e}", Fore.RED)
+            if not self.is_mcp_mode:
+                self.colored_print(f"{ConfigError.ERROR} 保存配置失败: {e}", Fore.RED)
             raise
     
     def show_existing_configurations_overview(self):
@@ -2468,6 +2493,10 @@ servers:
 
     def edit_server_config(self, server_name: str = None):
         """编辑现有服务器配置"""
+        # 在MCP模式下，不运行交互式编辑
+        if self.is_mcp_mode:
+            return True  # 直接返回成功，避免交互式操作
+        
         self.colored_print("\n📝 编辑服务器配置", Fore.YELLOW, Style.BRIGHT)
         self.colored_print("=" * 50, Fore.YELLOW)
         
@@ -2476,7 +2505,7 @@ servers:
         if not existing_servers:
             self.colored_print("❌ 没有找到现有的服务器配置", Fore.RED)
             self.colored_print("💡 请先使用向导配置创建服务器配置", Fore.YELLOW)
-            return
+            return False
         
         # 如果指定了服务器名称，直接使用；否则让用户选择
         if server_name and server_name in existing_servers:
