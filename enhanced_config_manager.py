@@ -829,29 +829,29 @@ class EnhancedConfigManager:
                 return
             
             if jump_type == "2":
-                # 二级跳板：先配置中继服务器（第一级跳板机）
-                self.colored_print("\n🏃 配置中继服务器 (第一级跳板机)", Fore.MAGENTA)
-                self.colored_print("💡 连接流程: relay-cli → 中继服务器 → 目标服务器", Fore.YELLOW)
+                # 二级跳板：先配置第一级跳板机（relay-cli直接连接的服务器）
+                self.colored_print("\n🏃 配置第一级跳板机", Fore.MAGENTA)
+                self.colored_print("💡 连接流程: 本地 → relay-cli → 第一级跳板机 → 最终目标服务器", Fore.YELLOW)
                 
-                relay_server = self._configure_server("中继服务器", ask_for_name=False, enable_sync=False)
-                if not relay_server:
+                first_jump_server = self._configure_server("第一级跳板机", ask_for_name=False, enable_sync=False)
+                if not first_jump_server:
                     return
                 
-                # 然后配置目标服务器
-                self.colored_print("\n📝 配置目标服务器信息", Fore.CYAN)
-                target_server = self._configure_server("目标服务器", ask_for_name=False)
-                if not target_server:
+                # 然后配置最终目标服务器
+                self.colored_print("\n🎯 配置最终目标服务器", Fore.CYAN)
+                final_target_server = self._configure_server("最终目标服务器", ask_for_name=False, enable_sync=False)
+                if not final_target_server:
                     return
                 
                 # 生成二级跳板配置
                 config = {"servers": {server_name: {
-                    "host": target_server["host"],
-                    "username": target_server["user"],
-                    "port": int(target_server.get("port", 22)),
+                    "host": first_jump_server["host"],  # relay-cli连接到第一级跳板机
+                    "username": first_jump_server["user"],
+                    "port": int(first_jump_server.get("port", 22)),
                     "private_key_path": "~/.ssh/id_rsa",
                     "type": "script_based",
                     "connection_type": "relay",
-                    "description": f"Relay连接: {server_name}",
+                    "description": f"Relay二级跳板: {server_name}",
                     "session": {
                         "name": f"{server_name}_session",
                         "shell": "/bin/bash",
@@ -860,25 +860,26 @@ class EnhancedConfigManager:
                     "specs": {
                         "connection": {
                             "tool": "relay-cli",
-                            "target": {"host": target_server["host"]},
-                            "jump_host": {
-                                "host": relay_server["host"],
-                                "username": relay_server["user"]
+                            "target": {"host": first_jump_server["host"]},  # relay-cli连接的第一级跳板机
+                            "jump_host": {  # 第一级跳板机再连接到的最终目标
+                                "host": final_target_server["host"],
+                                "username": final_target_server["user"]
                             }
                         }
                     }
                 }}}
                 
                 # 添加密码配置
-                if target_server.get("password"):
-                    config["servers"][server_name]["password"] = target_server["password"]
-                if relay_server.get("password"):
-                    config["servers"][server_name]["specs"]["connection"]["jump_host"]["password"] = relay_server["password"]
+                if first_jump_server.get("password"):
+                    config["servers"][server_name]["password"] = first_jump_server["password"]
+                if final_target_server.get("password"):
+                    config["servers"][server_name]["specs"]["connection"]["jump_host"]["password"] = final_target_server["password"]
                     
             else:
-                # 单级跳板：直接配置目标服务器
-                self.colored_print("\n📝 配置目标服务器信息", Fore.CYAN)
-                target_server = self._configure_server("目标服务器", ask_for_name=False)
+                # 单级跳板：只需要配置一个目标服务器
+                self.colored_print("\n🎯 配置目标服务器", Fore.CYAN)
+                self.colored_print("💡 连接流程: 本地 → relay-cli → 目标服务器", Fore.YELLOW)
+                target_server = self._configure_server("目标服务器", ask_for_name=False, enable_sync=True)
                 if not target_server:
                     return
                 
@@ -890,7 +891,7 @@ class EnhancedConfigManager:
                     "private_key_path": "~/.ssh/id_rsa",
                     "type": "script_based",
                     "connection_type": "relay",
-                    "description": f"Relay连接: {server_name}",
+                    "description": f"Relay单级跳板: {server_name}",
                     "session": {
                         "name": f"{server_name}_session",
                         "shell": "/bin/bash",
@@ -907,7 +908,7 @@ class EnhancedConfigManager:
                 # 添加密码配置
                 if target_server.get("password"):
                     config["servers"][server_name]["password"] = target_server["password"]
-                    
+        
         else:
             # SSH直连 - 只需配置目标服务器
             self.colored_print("\n🖥️ 第2步：配置目标服务器", Fore.CYAN, Style.BRIGHT)
@@ -2510,41 +2511,86 @@ servers:
         else:
             # Relay跳板机连接配置
             self.colored_print("\n🔗 Relay跳板机连接配置", Fore.CYAN, Style.BRIGHT)
-            self.colored_print("需要配置两级连接：本地 → 跳板机 → 目标服务器", Fore.YELLOW)
             
             # 获取当前的specs配置
             current_specs = current_config.get('specs', {}).get('connection', {})
             current_jump_host = current_specs.get('jump_host', {})
             current_target = current_specs.get('target', {})
             
-            # 配置跳板机信息
-            self.colored_print("\n📍 第一级：跳板机配置", Fore.CYAN)
-            jump_host_config = self._configure_relay_host(
-                "跳板机", 
-                current_jump_host,
-                default_host=current_config.get('host', ''),
-                default_user=current_config.get('user', current_config.get('username', ''))
-            )
-            if not jump_host_config:
-                self.colored_print("❌ 跳板机配置失败", Fore.RED)
+            # 判断当前是单级跳板还是二级跳板
+            is_two_level = bool(current_jump_host)
+            
+            self.colored_print("\n🔗 连接架构选择:", Fore.YELLOW)
+            self.colored_print("1. 单级跳板: relay-cli → 目标服务器", Fore.GREEN)
+            self.colored_print("2. 二级跳板: relay-cli → 第一级跳板机 → 最终目标服务器", Fore.BLUE)
+            
+            jump_type = self.smart_input("选择连接架构", 
+                                       validator=lambda x: x in ['1', '2'],
+                                       default='2' if is_two_level else '1',
+                                       show_suggestions=False)
+            if not jump_type:
                 return
             
-            # 配置目标服务器信息
-            self.colored_print("\n🎯 第二级：目标服务器配置", Fore.CYAN)
-            target_config = self._configure_relay_host(
-                "目标服务器",
-                current_target,
-                default_host=current_target.get('host', ''),
-                default_user=current_target.get('username', 'root')
-            )
-            if not target_config:
-                self.colored_print("❌ 目标服务器配置失败", Fore.RED)
-                return
-            
-            # 对于Relay连接，主配置使用跳板机信息
-            new_host = jump_host_config['host']
-            new_user = jump_host_config['username']
-            new_port = jump_host_config.get('port', 22)
+            if jump_type == "2":
+                # 二级跳板配置
+                self.colored_print("\n💡 连接流程: 本地 → relay-cli → 第一级跳板机 → 最终目标服务器", Fore.YELLOW)
+                
+                # 配置第一级跳板机（relay-cli直接连接的服务器）
+                self.colored_print("\n🏃 第一级跳板机配置", Fore.MAGENTA)
+                first_jump_config = self._configure_relay_host(
+                    "第一级跳板机", 
+                    current_target,  # 在二级跳板中，target是第一级跳板机
+                    default_host=current_config.get('host', ''),
+                    default_user=current_config.get('user', current_config.get('username', ''))
+                )
+                if not first_jump_config:
+                    self.colored_print("❌ 第一级跳板机配置失败", Fore.RED)
+                    return
+                
+                # 配置最终目标服务器
+                self.colored_print("\n🎯 最终目标服务器配置", Fore.CYAN)
+                final_target_config = self._configure_relay_host(
+                    "最终目标服务器",
+                    current_jump_host,  # 在二级跳板中，jump_host是最终目标
+                    default_host=current_jump_host.get('host', ''),
+                    default_user=current_jump_host.get('username', 'root')
+                )
+                if not final_target_config:
+                    self.colored_print("❌ 最终目标服务器配置失败", Fore.RED)
+                    return
+                
+                # 对于二级跳板，主配置使用第一级跳板机信息
+                new_host = first_jump_config['host']
+                new_user = first_jump_config['username'] 
+                new_port = first_jump_config.get('port', 22)
+                
+                # 设置specs配置
+                jump_host_config = final_target_config  # jump_host是最终目标
+                target_config = first_jump_config       # target是第一级跳板机
+                
+            else:
+                # 单级跳板配置
+                self.colored_print("\n💡 连接流程: 本地 → relay-cli → 目标服务器", Fore.YELLOW)
+                
+                # 只需要配置目标服务器
+                self.colored_print("\n🎯 目标服务器配置", Fore.CYAN)
+                target_config = self._configure_relay_host(
+                    "目标服务器",
+                    current_target,
+                    default_host=current_config.get('host', ''),
+                    default_user=current_config.get('user', current_config.get('username', ''))
+                )
+                if not target_config:
+                    self.colored_print("❌ 目标服务器配置失败", Fore.RED)
+                    return
+                
+                # 对于单级跳板，主配置使用目标服务器信息
+                new_host = target_config['host']
+                new_user = target_config['username']
+                new_port = target_config.get('port', 22)
+                
+                # 单级跳板不需要jump_host
+                jump_host_config = None
         
         # 构建新配置
         updated_config = {
@@ -2563,14 +2609,24 @@ servers:
         # 如果是relay连接，添加relay相关配置
         if new_type == 'script_based':
             updated_config['connection_type'] = 'relay'
-            # 构建specs配置（使用之前配置的jump_host_config和target_config）
-            updated_config['specs'] = {
-                "connection": {
-                    "tool": "relay-cli",
-                    "jump_host": jump_host_config,
-                    "target": target_config
+            # 构建specs配置
+            if jump_host_config:
+                # 二级跳板配置
+                updated_config['specs'] = {
+                    "connection": {
+                        "tool": "relay-cli",
+                        "target": target_config,      # 第一级跳板机
+                        "jump_host": jump_host_config  # 最终目标服务器
+                    }
                 }
-            }
+            else:
+                # 单级跳板配置
+                updated_config['specs'] = {
+                    "connection": {
+                        "tool": "relay-cli",
+                        "target": target_config  # 直接目标服务器
+                    }
+                }
         
         # 询问是否配置同步功能
         self.colored_print("\n🔄 文件同步功能配置", Fore.CYAN, Style.BRIGHT)

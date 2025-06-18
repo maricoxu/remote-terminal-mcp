@@ -1,6 +1,6 @@
 {
   "name": "@xuyehua/remote-terminal-mcp",
-  "version": "0.13.11",
+  "version": "0.13.12",
   "description": "A remote terminal MCP for Cursor",
   "main": "index.js",
   "bin": {
