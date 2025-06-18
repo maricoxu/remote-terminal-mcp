@@ -3225,7 +3225,7 @@ servers:
         """确保配置文件存在 - 超级保护版本
         
         保护策略：
-        1. 优先检查：如果配置文件存在，直接返回，绝不覆盖
+        1. 优先检查：如果配置文件存在且有效，直接返回，绝不覆盖
         2. 智能检测：使用has_user_config检测是否有用户配置
         3. 多重保护：文件锁、备份检查、npm标记检查
         4. 只在真正的首次安装时创建配置
@@ -3233,15 +3233,70 @@ servers:
         """
         import fcntl
         import tempfile
+        import time
         
         try:
-            # 🛡️ 第一道防线：如果配置文件存在，直接返回，绝不覆盖
+            # 🛡️ 第一道防线：如果配置文件存在，检查是否有效
             if self.config_path.exists():
-                if not self.is_mcp_mode:
-                    self.colored_print("✅ 配置文件已存在，保护用户数据不被覆盖", Fore.GREEN)
-                return False
+                try:
+                    with open(self.config_path, 'r', encoding='utf-8') as f:
+                        content = f.read().strip()
+                    
+                    # 如果文件不为空且包含基本结构，认为是有效用户配置
+                    if content and ('servers:' in content or 'global_settings:' in content):
+                        # 进一步检查是否为有效YAML
+                        try:
+                            import yaml
+                            yaml.safe_load(content)
+                            if not self.is_mcp_mode:
+                                self.colored_print("✅ 配置文件已存在且有效，保护用户数据不被覆盖", Fore.GREEN)
+                            return False
+                        except yaml.YAMLError:
+                            # YAML格式错误，需要重新创建
+                            if not self.is_mcp_mode:
+                                self.colored_print("⚠️ 配置文件格式错误，将重新创建", Fore.YELLOW)
+                            # 备份损坏的文件
+                            backup_path = self.config_path.parent / f'config.yaml.corrupted.{int(time.time())}'
+                            try:
+                                import shutil
+                                shutil.copy2(self.config_path, backup_path)
+                                if not self.is_mcp_mode:
+                                    self.colored_print(f"📁 已备份损坏文件到: {backup_path}", Fore.CYAN)
+                            except:
+                                pass
+                            # 删除损坏文件，继续创建新的
+                            self.config_path.unlink()
+                    else:
+                        # 文件为空或不包含基本结构
+                        if not self.is_mcp_mode:
+                            self.colored_print("⚠️ 配置文件为空或格式不正确，将重新创建", Fore.YELLOW)
+                        # 备份空文件
+                        backup_path = self.config_path.parent / f'config.yaml.empty.{int(time.time())}'
+                        try:
+                            import shutil
+                            shutil.copy2(self.config_path, backup_path)
+                        except:
+                            pass
+                        # 删除空文件，继续创建新的
+                        self.config_path.unlink()
+                        
+                except Exception as e:
+                    if not self.is_mcp_mode:
+                        self.colored_print(f"⚠️ 配置文件读取失败，将重新创建: {e}", Fore.YELLOW)
+                    # 备份无法读取的文件
+                    backup_path = self.config_path.parent / f'config.yaml.unreadable.{int(time.time())}'
+                    try:
+                        import shutil
+                        shutil.copy2(self.config_path, backup_path)
+                    except:
+                        pass
+                    # 删除无法读取的文件，继续创建新的
+                    try:
+                        self.config_path.unlink()
+                    except:
+                        pass
             
-            # 🛡️ 第二道防线：检查是否有用户配置
+            # 🛡️ 第二道防线：检查是否有用户配置（通过备份等方式）
             if self.has_user_config():
                 if not self.is_mcp_mode:
                     self.colored_print("✅ 检测到用户配置，保护不被覆盖", Fore.GREEN)
@@ -3252,15 +3307,17 @@ servers:
             persistent_marker = Path.home() / '.remote-terminal-npm-installed'
             
             if npm_marker.exists() or persistent_marker.exists():
-                if not self.is_mcp_mode:
-                    self.colored_print("✅ 检测到npm包更新场景 - 保留现有配置", Fore.GREEN)
-                return False
+                # 检查是否真的有配置文件，如果没有就创建
+                if not self.config_path.exists():
+                    if not self.is_mcp_mode:
+                        self.colored_print("⚠️ npm场景但配置文件不存在，创建默认配置", Fore.YELLOW)
+                else:
+                    if not self.is_mcp_mode:
+                        self.colored_print("✅ 检测到npm包更新场景 - 保留现有配置", Fore.GREEN)
+                    return False
             
-            # 🛡️ 确保目录存在（但不创建模板）
+            # 🛡️ 确保目录存在
             self.config_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            # 🛡️ 只在真正需要创建配置时才创建目录结构
-            # 避免在检查阶段就创建模板文件
             
             # 使用临时文件作为锁机制
             lock_file = self.config_path.parent / '.config_lock'
@@ -3270,7 +3327,7 @@ servers:
                 with open(lock_file, 'w') as lock_fd:
                     fcntl.flock(lock_fd.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
                     
-                    # 在锁保护下检查配置文件
+                    # 在锁保护下再次检查配置文件
                     if self.config_path.exists():
                         # 文件存在，检查是否为有效配置
                         try:
@@ -3282,9 +3339,6 @@ servers:
                                 if not self.is_mcp_mode:
                                     self.colored_print("✅ 发现有效用户配置文件，保持不变", Fore.GREEN)
                                 return False
-                            else:
-                                if not self.is_mcp_mode:
-                                    self.colored_print("⚠️ 配置文件为空或损坏，重新创建", Fore.YELLOW)
                         except Exception as e:
                             if not self.is_mcp_mode:
                                 self.colored_print(f"⚠️ 配置文件读取失败，重新创建: {e}", Fore.YELLOW)
@@ -3395,23 +3449,24 @@ servers:
             
         default_config = {
             "servers": {
-                "example-server": {
-                    "type": "script_based",
-                    "host": "example.com",
+                "test": {
+                    "description": "aa",
+                    "host": "test.com",
                     "port": 22,
-                    "username": "your-username",
-                    "description": "示例服务器配置 - 请修改为你的实际服务器信息",
-                    "session": {
-                        "name": "example-server_dev"
-                    },
+                    "username": "xuyehua",
                     "specs": {
                         "connection": {
-                            "type": "ssh",
-                            "timeout": 30
+                            "target": {
+                                "host": "test.com"
+                            },
+                            "tool": "relay"
                         },
-                        "environment_setup": {
-                            "shell": "bash",
-                            "working_directory": "/home/your-username"
+                        "docker": {
+                            "container": "xyh_pytorch"
+                        },
+                        "environment": {
+                            "BOS_BUCKET": "bos:/klx-pytorch-work-bd-bj/xuyehua/template",
+                            "TMUX_SESSION_PREFIX": "test_dev"
                         }
                     }
                 }
