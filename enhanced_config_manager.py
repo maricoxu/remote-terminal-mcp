@@ -74,7 +74,9 @@ class EnhancedConfigManager:
         # 在创建目录之前，先检查是否需要迁移旧配置
         self.migrate_legacy_config()
         
-        self.ensure_directories()
+        # 🛡️ 重要修复：只在需要时才创建目录和模板
+        # 不在初始化时无条件创建，避免意外覆盖用户配置
+        # self.ensure_directories()  # 移到需要时再调用
         
         # Docker配置现在统一在enhanced_config_manager中处理
         # 不再需要独立的docker_manager
@@ -129,9 +131,98 @@ class EnhancedConfigManager:
         3. 如果配置文件有用户自定义的全局设置，也认为是用户配置
         4. 特殊保护：npm安装标记和最近修改时间（仅在不确定时作为保护机制）
         """
-        # 简化版本中，我们暂时移除了这个复杂的检测逻辑
-        # 直接使用简单的默认覆盖策略
-        return False
+        try:
+            # 如果配置文件不存在，肯定没有用户配置
+            if not self.config_path.exists():
+                return False
+            
+            # 尝试读取并解析配置文件
+            with open(self.config_path, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+            
+            # 如果文件为空，没有用户配置
+            if not content:
+                return False
+            
+            # 尝试解析YAML
+            try:
+                config = yaml.safe_load(content)
+                if not config or not isinstance(config, dict):
+                    return False
+            except yaml.YAMLError:
+                # 如果YAML格式错误，认为没有有效用户配置
+                return False
+            
+            # 检查是否有servers配置
+            servers = config.get('servers', {})
+            if not servers:
+                return False
+            
+            # 1. 如果有非example-server的服务器，肯定是用户配置
+            non_example_servers = [name for name in servers.keys() if name != 'example-server']
+            if non_example_servers:
+                if not self.is_mcp_mode:
+                    self.colored_print(f"✅ 检测到用户服务器配置: {', '.join(non_example_servers)}", Fore.GREEN)
+                return True
+            
+            # 2. 如果只有example-server，检查其配置是否被修改过
+            if 'example-server' in servers:
+                example_config = servers['example-server']
+                
+                # 检查关键字段是否被修改
+                default_indicators = [
+                    example_config.get('host') == 'example.com',
+                    example_config.get('username') == 'your-username',
+                    '示例服务器配置' in example_config.get('description', '')
+                ]
+                
+                # 如果有任何关键字段被修改，认为是用户配置
+                if not all(default_indicators):
+                    if not self.is_mcp_mode:
+                        self.colored_print("✅ 检测到example-server配置已被用户修改", Fore.GREEN)
+                    return True
+            
+            # 3. 检查是否有用户自定义的全局设置
+            global_settings = config.get('global_settings', {})
+            if global_settings:
+                # 检查是否有非默认的全局设置
+                default_global = {
+                    'default_timeout': 30,
+                    'auto_recovery': True,
+                    'log_level': 'INFO',
+                    'default_shell': 'bash'
+                }
+                
+                for key, value in global_settings.items():
+                    if key not in default_global or default_global[key] != value:
+                        if not self.is_mcp_mode:
+                            self.colored_print(f"✅ 检测到用户自定义全局设置: {key}={value}", Fore.GREEN)
+                        return True
+            
+            # 4. 特殊保护：检查文件修改时间
+            try:
+                import os
+                import time
+                file_mtime = os.path.getmtime(self.config_path)
+                current_time = time.time()
+                
+                # 如果文件在过去24小时内被修改过，且不是刚刚创建的，认为可能有用户配置
+                if current_time - file_mtime < 86400 and current_time - file_mtime > 60:
+                    if not self.is_mcp_mode:
+                        self.colored_print("✅ 检测到配置文件最近被修改，可能包含用户配置", Fore.YELLOW)
+                    return True
+                    
+            except Exception:
+                pass
+            
+            # 如果所有检查都通过，认为是默认配置
+            return False
+            
+        except Exception as e:
+            if not self.is_mcp_mode:
+                self.colored_print(f"⚠️ 检查用户配置时出错: {e}", Fore.YELLOW)
+            # 出错时保守处理，认为有用户配置以避免覆盖
+            return True
     
     def colored_print(self, text: str, color=Fore.WHITE, style=""):
         """彩色打印 - 在MCP模式下禁止输出"""
@@ -474,7 +565,7 @@ class EnhancedConfigManager:
         return bool(re.match(r'^[a-zA-Z0-9_-]+$', username))
 
     def ensure_directories(self):
-        """确保必要的目录存在 - 简化版本"""
+        """确保必要的目录存在 - 超级保护版本"""
         self.config_dir.mkdir(exist_ok=True)
         self.templates_dir.mkdir(exist_ok=True)
         
@@ -486,9 +577,10 @@ class EnhancedConfigManager:
         scripts_dir = self.config_dir / 'scripts'
         scripts_dir.mkdir(exist_ok=True)
         
-        # 简化版本：移除复杂的NPM配置恢复逻辑
-        # 只创建模板文件
-        self.create_default_templates()
+        # 🛡️ 重要修复：只在没有用户配置时才创建模板
+        # 避免在有用户配置时意外触发覆盖逻辑
+        if not self.config_path.exists() and not self.has_user_config():
+            self.create_default_templates()
 
     def restore_npm_config_if_needed(self):
         """简化版本：移除复杂的NPM配置恢复逻辑"""
@@ -3130,12 +3222,12 @@ servers:
             self.colored_print(f"❌ 更新服务器Docker配置失败: {e}", Fore.RED)
 
     def ensure_config_exists(self):
-        """确保配置文件存在 - 增强用户配置保护版本
+        """确保配置文件存在 - 超级保护版本
         
         保护策略：
-        1. 如果用户配置目录存在且包含config.yaml，完全不触碰
-        2. 使用文件锁防止并发修改
-        3. 多重检查防止竞争条件
+        1. 优先检查：如果配置文件存在，直接返回，绝不覆盖
+        2. 智能检测：使用has_user_config检测是否有用户配置
+        3. 多重保护：文件锁、备份检查、npm标记检查
         4. 只在真正的首次安装时创建配置
         5. 详细日志记录所有操作
         """
@@ -3143,18 +3235,32 @@ servers:
         import tempfile
         
         try:
-            # 首先检查是否是npm包更新场景
+            # 🛡️ 第一道防线：如果配置文件存在，直接返回，绝不覆盖
+            if self.config_path.exists():
+                if not self.is_mcp_mode:
+                    self.colored_print("✅ 配置文件已存在，保护用户数据不被覆盖", Fore.GREEN)
+                return False
+            
+            # 🛡️ 第二道防线：检查是否有用户配置
+            if self.has_user_config():
+                if not self.is_mcp_mode:
+                    self.colored_print("✅ 检测到用户配置，保护不被覆盖", Fore.GREEN)
+                return False
+            
+            # 🛡️ 第三道防线：检查npm更新场景
             npm_marker = self.config_path.parent / '.npm-installed'
             persistent_marker = Path.home() / '.remote-terminal-npm-installed'
             
-            # 如果配置文件已存在，且有npm安装标记，说明是更新场景
-            if self.config_path.exists() and (npm_marker.exists() or persistent_marker.exists()):
+            if npm_marker.exists() or persistent_marker.exists():
                 if not self.is_mcp_mode:
-                    self.colored_print("✅ 检测到npm包更新 - 保留现有用户配置不变", Fore.GREEN)
+                    self.colored_print("✅ 检测到npm包更新场景 - 保留现有配置", Fore.GREEN)
                 return False
             
-            # 确保目录存在
+            # 🛡️ 确保目录存在（但不创建模板）
             self.config_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # 🛡️ 只在真正需要创建配置时才创建目录结构
+            # 避免在检查阶段就创建模板文件
             
             # 使用临时文件作为锁机制
             lock_file = self.config_path.parent / '.config_lock'
@@ -3192,11 +3298,29 @@ servers:
                             self.colored_print("⚠️ 检测到备份配置，说明用户曾经有配置 - 不覆盖", Fore.YELLOW)
                         return False
                     
+                    # 🛡️ 第四道防线：创建前再次确认文件不存在
+                    if self.config_path.exists():
+                        if not self.is_mcp_mode:
+                            self.colored_print("⚠️ 配置文件在创建过程中突然出现，保护不覆盖", Fore.YELLOW)
+                        return False
+                    
                     # 只有在真正的首次安装时才创建
                     if not self.is_mcp_mode:
                         self.colored_print("📝 首次安装 - 创建新的配置文件...", Fore.CYAN)
+                    
+                    # 🛡️ 只在真正需要创建配置时才创建目录结构
+                    self.ensure_directories()
                     self.create_default_config_template()
-                    return True
+                    
+                    # 🛡️ 创建后验证
+                    if self.config_path.exists():
+                        if not self.is_mcp_mode:
+                            self.colored_print("✅ 默认配置文件创建成功", Fore.GREEN)
+                        return True
+                    else:
+                        if not self.is_mcp_mode:
+                            self.colored_print("❌ 配置文件创建失败", Fore.RED)
+                        return False
                     
             except (IOError, OSError):
                 # 无法获取锁，可能有其他进程在操作
@@ -3213,7 +3337,8 @@ servers:
                         self.colored_print("✅ 配置文件已存在，保持不变", Fore.GREEN)
                     return False
                 else:
-                    # 如果仍然不存在，尝试创建（可能会失败，但这是最后的尝试）
+                    # 🛡️ 如果仍然不存在，先确保目录结构再尝试创建
+                    self.ensure_directories()
                     self.create_default_config_template()
                     return True
             
@@ -3241,6 +3366,8 @@ servers:
                     return False
                 
                 try:
+                    # 🛡️ 最后的保障：确保目录结构存在
+                    self.ensure_directories()
                     self.create_default_config_template()
                     return True
                 except Exception as create_error:
