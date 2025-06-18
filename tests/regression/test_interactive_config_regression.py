@@ -14,7 +14,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 # 添加项目根目录到Python路径
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from enhanced_config_manager import EnhancedConfigManager
 
@@ -235,7 +235,8 @@ class TestMCPServerIntegration(unittest.TestCase):
     def test_interactive_config_wizard_tool_schema(self):
         """测试MCP工具schema是否正确"""
         # 导入MCP服务器模块
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'python'))
+        python_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'python')
+        sys.path.insert(0, python_dir)
         from mcp_server import create_tools_list
         
         tools = create_tools_list()
