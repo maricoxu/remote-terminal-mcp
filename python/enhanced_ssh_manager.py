@@ -338,7 +338,7 @@ class EnhancedSSHManager:
         if not server:
             return False, f"服务器 {server_name} 不存在"
         
-        session_name = server.session.get('name', f"{server_name}_dev") if server.session else f"{server_name}_dev"
+        session_name = server.session.get('name', f"{server_name}_session") if server.session else f"{server_name}_session"
         
         # 初始化连接状态
         self.connection_states[server_name] = ConnectionState(
