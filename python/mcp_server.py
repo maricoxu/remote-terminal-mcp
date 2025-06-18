@@ -183,6 +183,51 @@ def create_tools_list():
                         "type": "boolean",
                         "description": "Use quick configuration mode with smart defaults (default: true)",
                         "default": True
+                    },
+                    "server_name": {
+                        "type": "string",
+                        "description": "Server name (optional, auto-generated if not provided)"
+                    },
+                    "host": {
+                        "type": "string",
+                        "description": "Server hostname or IP address (optional for guided mode)"
+                    },
+                    "username": {
+                        "type": "string",
+                        "description": "Username for SSH connection (optional for guided mode)"
+                    },
+                    "port": {
+                        "type": "integer",
+                        "description": "SSH port (default: 22)",
+                        "default": 22
+                    },
+                    "connection_type": {
+                        "type": "string",
+                        "enum": ["ssh", "relay"],
+                        "description": "Connection type: ssh (direct) or relay (via relay-cli)",
+                        "default": "ssh"
+                    },
+                    "relay_target_host": {
+                        "type": "string",
+                        "description": "Target host when using relay connection"
+                    },
+                    "use_docker": {
+                        "type": "boolean",
+                        "description": "Enable Docker container support",
+                        "default": False
+                    },
+                    "docker_image": {
+                        "type": "string",
+                        "description": "Docker image for container",
+                        "default": "ubuntu:20.04"
+                    },
+                    "docker_container": {
+                        "type": "string",
+                        "description": "Docker container name (auto-generated if not provided)"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Server description (optional, auto-generated if not provided)"
                     }
                 },
                 "required": []
@@ -476,10 +521,30 @@ async def handle_request(request):
                         if quick_mode:
                             # 快速模式：使用预设模板创建配置
                             result = config_manager.quick_setup()
+                            content = f"✅ 快速配置向导完成！\n\n服务器配置已创建成功"
                         else:
-                            # 完整向导模式：需要交互式输入
-                            result = config_manager.guided_setup()
-                        content = f"✅ 配置向导完成！\n\n服务器配置已创建成功"
+                            # MCP引导模式：基于参数的智能配置
+                            config_params = {
+                                'server_name': tool_arguments.get('server_name'),
+                                'host': tool_arguments.get('host'),
+                                'username': tool_arguments.get('username'),
+                                'port': tool_arguments.get('port', 22),
+                                'connection_type': tool_arguments.get('connection_type', 'ssh'),
+                                'relay_target_host': tool_arguments.get('relay_target_host'),
+                                'use_docker': tool_arguments.get('use_docker', False),
+                                'docker_image': tool_arguments.get('docker_image', 'ubuntu:20.04'),
+                                'docker_container': tool_arguments.get('docker_container'),
+                                'description': tool_arguments.get('description')
+                            }
+                            
+                            result = config_manager.mcp_guided_setup(**config_params)
+                            if result:
+                                content = f"✅ MCP智能配置向导完成！\n\n服务器配置已创建成功\n\n💡 使用的参数:\n"
+                                for key, value in config_params.items():
+                                    if value is not None:
+                                        content += f"  • {key}: {value}\n"
+                            else:
+                                content = f"❌ MCP配置向导失败，请检查参数"
                     except Exception as e:
                         content = f"❌ 配置向导失败: {str(e)}\n\n💡 建议：请直接在终端中运行 'python3 enhanced_config_manager.py' 获得完整交互体验"
                 

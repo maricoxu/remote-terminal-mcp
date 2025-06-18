@@ -1174,6 +1174,99 @@ class EnhancedConfigManager:
         self.colored_print(f"\n{ConfigError.SUCCESS} 向导配置完成！", Fore.GREEN, Style.BRIGHT)
         self.colored_print(f"配置已保存到: {self.config_path}", Fore.GREEN)
     
+    def mcp_guided_setup(self, **kwargs):
+        """MCP环境下的智能配置向导 - 基于参数的非交互式配置"""
+        
+        self.colored_print("\n🎯 MCP智能配置向导", Fore.CYAN, Style.BRIGHT)
+        self.colored_print("🤖 基于参数的智能配置，无需交互式输入", Fore.CYAN)
+        self.colored_print("=" * 50, Fore.CYAN)
+        
+        try:
+            # 从参数获取配置信息
+            server_name = kwargs.get('server_name', f'mcp-server-{int(time.time())}')
+            host = kwargs.get('host', '192.168.1.100')
+            username = kwargs.get('username', 'ubuntu')
+            port = kwargs.get('port', 22)
+            connection_type = kwargs.get('connection_type', 'ssh')
+            description = kwargs.get('description', f'{connection_type.upper()}连接: {server_name}')
+            use_docker = kwargs.get('use_docker', False)
+            docker_image = kwargs.get('docker_image', 'ubuntu:20.04')
+            docker_container = kwargs.get('docker_container', f'{server_name}_container')
+            
+            self.colored_print(f"\n📋 配置摘要:", Fore.YELLOW)
+            self.colored_print(f"  服务器名称: {server_name}", Fore.WHITE)
+            self.colored_print(f"  服务器地址: {host}", Fore.WHITE)
+            self.colored_print(f"  用户名: {username}", Fore.WHITE)
+            self.colored_print(f"  端口: {port}", Fore.WHITE)
+            self.colored_print(f"  连接类型: {connection_type}", Fore.WHITE)
+            if use_docker:
+                self.colored_print(f"  Docker镜像: {docker_image}", Fore.WHITE)
+                self.colored_print(f"  容器名称: {docker_container}", Fore.WHITE)
+            
+            # 构建配置
+            server_config = {
+                "host": host,
+                "username": username,
+                "port": int(port),
+                "private_key_path": "~/.ssh/id_rsa",
+                "type": "script_based",
+                "connection_type": connection_type,
+                "description": description,
+                "session": {
+                    "name": f"{server_name}_session",
+                    "shell": "/bin/bash",
+                    "working_directory": "~"
+                },
+                "specs": {
+                    "connection": {
+                        "type": connection_type,
+                        "timeout": 30
+                    },
+                    "environment_setup": {
+                        "shell": "bash",
+                        "working_directory": f"/home/{username}"
+                    }
+                }
+            }
+            
+            # 根据连接类型调整配置
+            if connection_type == "relay":
+                relay_target_host = kwargs.get('relay_target_host', host)
+                server_config["specs"]["connection"]["tool"] = "relay-cli"
+                server_config["specs"]["connection"]["target"] = {"host": relay_target_host}
+            
+            # Docker配置
+            if use_docker:
+                server_config["specs"]["docker"] = {
+                    "container_name": docker_container,
+                    "image": docker_image,
+                    "auto_create": True,
+                    "ports": ["8080:8080", "8888:8888"],
+                    "volumes": ["/home:/home"],
+                    "working_directory": "/workspace",
+                    "privileged": True
+                }
+            
+            # 构建完整配置
+            config = {
+                "servers": {
+                    server_name: server_config
+                }
+            }
+            
+            # 保存配置
+            self.save_config(config, merge_mode=True)
+            
+            self.colored_print(f"\n✅ MCP配置向导完成！", Fore.GREEN, Style.BRIGHT)
+            self.colored_print(f"📁 配置已保存到: {self.config_path}", Fore.GREEN)
+            self.colored_print(f"🚀 服务器 '{server_name}' 可以开始使用了！", Fore.GREEN)
+            
+            return True
+            
+        except Exception as e:
+            self.colored_print(f"\n❌ MCP配置向导失败: {str(e)}", Fore.RED)
+            return False
+    
     def template_setup(self):
         """模板配置 - 真正的填空式体验"""
         self.colored_print("\n📋 模板配置模式", Fore.YELLOW, Style.BRIGHT)
