@@ -868,9 +868,10 @@ class EnhancedConfigManager:
     def guided_setup(self):
         """向导配置 - 重新设计的配置体验"""
         
-        # 在MCP模式下，不运行交互式配置
+        # 在MCP模式下，不运行交互式配置（除非明确临时启用）
         if self.is_mcp_mode:
             self.colored_print("MCP模式下的配置向导已被调用，但无法进行交互式配置", Fore.YELLOW)
+            self.colored_print("💡 提示：请使用带参数的智能配置或quick_mode", Fore.YELLOW)
             return False
         
         self.colored_print("\n🎯 向导配置模式", Fore.YELLOW, Style.BRIGHT)

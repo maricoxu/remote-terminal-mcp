@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "remote-terminal-mcp-local": {
+      "command": "node",
+      "args": ["/Users/xuyehua/Code/remote-terminal-mcp/index.js"],
+      "env": {
+        "MCP_DEBUG": "1",
+        "PYTHONPATH": "/Users/xuyehua/Code/remote-terminal-mcp",
+        "MCP_LOCAL_MODE": "true"
+      }
+    }
+  }
+} 
