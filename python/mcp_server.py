@@ -523,7 +523,7 @@ async def handle_request(request):
                             result = config_manager.quick_setup()
                             content = f"✅ 快速配置向导完成！\n\n服务器配置已创建成功"
                         else:
-                            # MCP引导模式：基于参数的智能配置
+                            # MCP引导模式：基于参数的智能配置 - 如果没有参数，则启动完整交互
                             config_params = {
                                 'server_name': tool_arguments.get('server_name'),
                                 'host': tool_arguments.get('host'),
@@ -537,14 +537,38 @@ async def handle_request(request):
                                 'description': tool_arguments.get('description')
                             }
                             
-                            result = config_manager.mcp_guided_setup(**config_params)
-                            if result:
-                                content = f"✅ MCP智能配置向导完成！\n\n服务器配置已创建成功\n\n💡 使用的参数:\n"
-                                for key, value in config_params.items():
-                                    if value is not None:
-                                        content += f"  • {key}: {value}\n"
+                            # 检查是否有足够的参数进行智能配置
+                            has_essential_params = bool(config_params.get('server_name') or 
+                                                      config_params.get('host') or 
+                                                      config_params.get('username'))
+                            
+                            if has_essential_params:
+                                # 有参数 - 使用智能配置
+                                result = config_manager.mcp_guided_setup(**config_params)
+                                if result:
+                                    content = f"✅ MCP智能配置向导完成！\n\n服务器配置已创建成功\n\n💡 使用的参数:\n"
+                                    for key, value in config_params.items():
+                                        if value is not None:
+                                            content += f"  • {key}: {value}\n"
+                                else:
+                                    content = f"❌ MCP配置向导失败，请检查参数"
                             else:
-                                content = f"❌ MCP配置向导失败，请检查参数"
+                                # 没有参数 - 提供友好的提示和默认配置选项
+                                content = f"🎯 交互式配置向导\n\n"
+                                content += f"❗ 检测到没有提供配置参数\n\n"
+                                content += f"🚀 建议的解决方案:\n\n"
+                                content += f"1️⃣ **使用快速模式** (推荐):\n"
+                                content += f"   - 设置 quick_mode = true\n"
+                                content += f"   - 将创建一个默认的 'mcp-server' 配置\n\n"
+                                content += f"2️⃣ **提供具体参数**:\n"
+                                content += f"   - server_name: '你的服务器名称'\n"
+                                content += f"   - host: '服务器IP或域名'\n"
+                                content += f"   - username: '登录用户名'\n"
+                                content += f"   - port: 22 (可选)\n"
+                                content += f"   - connection_type: 'ssh' (可选)\n\n"
+                                content += f"3️⃣ **示例调用**:\n"
+                                content += f"   server_name='my-server', host='192.168.1.100', username='ubuntu'\n\n"
+                                content += f"💡 提示: 在MCP环境中无法进行真正的交互式配置，请使用参数化配置方式"
                     except Exception as e:
                         content = f"❌ 配置向导失败: {str(e)}\n\n💡 建议：请直接在终端中运行 'python3 enhanced_config_manager.py' 获得完整交互体验"
                 
