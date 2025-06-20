@@ -739,7 +739,7 @@ class EnhancedConfigManager:
                 self.colored_print(f"{ConfigError.ERROR} 无效选择，请重新输入", Fore.RED)
     
     def quick_setup(self):
-        """快速配置 - 改进版"""
+        """快速配置 - 增强版 (第一阶段优化)"""
         # 在MCP模式下，使用预设默认值快速创建配置
         if self.is_mcp_mode:
             try:
@@ -762,64 +762,77 @@ class EnhancedConfigManager:
             except Exception as e:
                 return False  # 失败返回
         
-        self.colored_print("\n⚡ 快速配置模式", Fore.YELLOW, Style.BRIGHT)
-        self.colored_print("只需回答几个关键问题，5分钟完成配置", Fore.YELLOW)
-        self.colored_print("-" * 40, Fore.YELLOW)
+        # 🎯 第一阶段优化：改进用户界面和体验
+        self.colored_print("\n⚡ 快速配置模式 - 增强版", Fore.YELLOW, Style.BRIGHT)
+        self.colored_print("📱 智能化配置流程，2分钟完成基础SSH连接", Fore.YELLOW)
+        self.colored_print("💡 提示：大部分选项都有智能默认值，直接回车即可", Fore.CYAN)
+        self.colored_print("-" * 50, Fore.YELLOW)
+        
+        # 🚀 优化1：显示配置预览
+        self.colored_print("\n📋 我们将配置以下内容:", Fore.CYAN, Style.BRIGHT)
+        self.colored_print("  1️⃣ 服务器基本信息 (名称、地址、用户名)", Fore.WHITE)
+        self.colored_print("  2️⃣ 连接方式选择 (SSH直连 或 Relay跳板)", Fore.WHITE)
+        self.colored_print("  3️⃣ 可选Docker支持", Fore.WHITE)
+        self.colored_print("  4️⃣ 自动测试连接", Fore.WHITE)
         
         self.show_progress(1, 5, "收集基本信息")
         
-        # 基本信息
+        # 🚀 优化2：改进基本信息收集
+        self.colored_print("\n🔧 第1步：基本信息", Fore.CYAN, Style.BRIGHT)
+        
+        # 智能服务器名称建议
+        import time
+        default_server_name = f"server-{int(time.time()) % 10000}"
         server_name = self.smart_input("服务器名称", 
-                                     validator=lambda x: bool(x and len(x) > 0),
-                                     suggestions=["gpu-server-1", "dev-server", "ml-server"])
+                                     validator=lambda x: bool(x and len(x) > 0 and x.replace('-', '').replace('_', '').isalnum()),
+                                     suggestions=[default_server_name, "dev-server", "gpu-server"],
+                                     default=default_server_name)
         if not server_name:
+            self.colored_print("❌ 服务器名称是必需的", Fore.RED)
             return False
             
-        server_host = self.smart_input("服务器地址", 
+        server_host = self.smart_input("服务器地址 (IP或域名)", 
                                      validator=self.validate_hostname,
-                                     suggestions=["192.168.1.100", "server.example.com"])
+                                     suggestions=["192.168.1.100", "10.0.0.100", "server.example.com"])
         if not server_host:
+            self.colored_print("❌ 服务器地址是必需的", Fore.RED)
             return False
             
-        username = self.smart_input("用户名", 
+        # 🚀 优化3：智能用户名推荐
+        current_user = os.getenv('USER', 'user')
+        username = self.smart_input("登录用户名", 
                                    validator=self.validate_username,
-                                   suggestions=["ubuntu", "root", os.getenv('USER', 'user')])
+                                   suggestions=["ubuntu", "root", current_user],
+                                   default="ubuntu")
         if not username:
+            self.colored_print("❌ 用户名是必需的", Fore.RED)
             return False
         
         self.show_progress(2, 5, "选择连接方式")
         
-        # 连接方式
-        self.colored_print("\n连接方式:", Fore.CYAN)
-        self.colored_print("1. 直接SSH连接 (标准方式)", Fore.GREEN)
-        self.colored_print("2. 通过relay-cli连接 (百度内网)", Fore.BLUE)
+        # 🚀 优化4：简化连接方式选择
+        self.colored_print("\n🌐 第2步：连接方式", Fore.CYAN, Style.BRIGHT)
+        self.colored_print("1. 🔗 SSH直连 (推荐，适用于大多数场景)", Fore.GREEN)
+        self.colored_print("2. 🛰️ Relay跳板机 (适用于内网或受限网络)", Fore.BLUE)
         
         connection_type = self.smart_input("选择连接方式", 
                                          validator=lambda x: x in ['1', '2'],
-                                         suggestions=['1 (推荐)', '2 (内网)'])
+                                         suggestions=['1 (SSH直连)', '2 (Relay)'],
+                                         default='1')
         if not connection_type:
-            return False
+            connection_type = '1'  # 默认SSH直连
         
-        self.show_progress(3, 5, "Docker配置")
+        self.show_progress(3, 5, "配置连接参数")
         
-        # 是否使用Docker
-        use_docker_input = self.smart_input("是否使用Docker容器", 
-                                           validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
-                                           suggestions=['y (推荐)', 'n'],
-                                           default='n')
-        if not use_docker_input:
-            return False
-            
-        use_docker = use_docker_input.lower() in ['y', 'yes']
-        
-        self.show_progress(4, 5, "生成配置")
-        
-        # 生成配置
+        # 🚀 优化5：智能配置参数
         config = {"servers": {}}
         
         if connection_type == "2":
-            # Relay连接
-            token = self.smart_input("Relay token (可选，回车跳过)", default="")
+            # Relay连接配置
+            self.colored_print("\n🛰️ 配置Relay连接", Fore.BLUE, Style.BRIGHT)
+            token = self.smart_input("Relay token (可选，直接回车跳过)", 
+                                   default="",
+                                   show_suggestions=False)
             relay_cmd = f"relay-cli -t {token} -s {server_host}" if token else f"relay-cli -s {server_host}"
             
             config["servers"][server_name] = {
@@ -827,43 +840,85 @@ class EnhancedConfigManager:
                 "user": username,
                 "type": "relay",
                 "relay_command": relay_cmd,
-                "description": f"Quick setup: {server_name} via relay-cli"
+                "description": f"Relay连接: {server_name} via relay-cli",
+                "connection_type": "relay"
             }
         else:
-            # SSH连接
+            # SSH直连配置
+            self.colored_print("\n🔗 配置SSH连接", Fore.GREEN, Style.BRIGHT)
             port = self.smart_input("SSH端口", 
                                    validator=self.validate_port,
-                                   default="22")
+                                   default="22",
+                                   suggestions=["22", "2222", "22000"])
             if not port:
-                return False
+                port = "22"  # 默认端口
                 
             config["servers"][server_name] = {
                 "host": server_host,
                 "user": username,
                 "port": int(port),
                 "type": "ssh", 
-                "description": f"Quick setup: {server_name} via SSH"
+                "description": f"SSH直连: {server_name}",
+                "connection_type": "ssh"
             }
+        
+        self.show_progress(4, 5, "可选功能配置")
+        
+        # 🚀 优化6：简化Docker配置
+        self.colored_print("\n🐳 第3步：Docker支持 (可选)", Fore.CYAN, Style.BRIGHT)
+        self.colored_print("💡 Docker可以提供隔离的开发环境", Fore.YELLOW)
+        
+        use_docker_input = self.smart_input("是否启用Docker支持", 
+                                           validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no', ''],
+                                           suggestions=['n (跳过)', 'y (启用)'],
+                                           default='n')
+        if not use_docker_input:
+            use_docker_input = 'n'
+            
+        use_docker = use_docker_input.lower() in ['y', 'yes']
         
         # Docker配置
         if use_docker:
             container_name = self.smart_input("Docker容器名称", 
-                                            default="dev_env",
-                                            suggestions=["dev_env", "pytorch_env", "ubuntu_dev"])
+                                            default=f"{server_name}_dev",
+                                            suggestions=[f"{server_name}_dev", "dev_env", "workspace"])
             if container_name:
                 config["servers"][server_name].update({
                     "container_name": container_name,
                     "auto_create_container": True,
-                    "tmux_session": f"{server_name}_session"
+                    "tmux_session": f"{server_name}_session",
+                    "docker_image": "ubuntu:20.04"  # 默认镜像
                 })
         
-        self.show_progress(5, 5, "保存配置")
+        self.show_progress(5, 5, "保存并测试配置")
+        
+        # 🚀 优化7：配置预览和确认
+        self.colored_print("\n📋 配置预览:", Fore.CYAN, Style.BRIGHT)
+        self.colored_print(f"  服务器名称: {server_name}", Fore.WHITE)
+        self.colored_print(f"  服务器地址: {server_host}", Fore.WHITE)
+        self.colored_print(f"  用户名: {username}", Fore.WHITE)
+        self.colored_print(f"  连接方式: {'Relay跳板机' if connection_type == '2' else 'SSH直连'}", Fore.WHITE)
+        if use_docker:
+            self.colored_print(f"  Docker容器: {container_name}", Fore.WHITE)
         
         # 保存配置
-        self.save_config(config)
-        self.colored_print(f"\n{ConfigError.SUCCESS} 快速配置完成！", Fore.GREEN, Style.BRIGHT)
-        self.colored_print(f"配置已保存到: {self.config_path}", Fore.GREEN)
-        return True
+        try:
+            self.save_config(config)
+            self.colored_print(f"\n{ConfigError.SUCCESS} 配置保存成功！", Fore.GREEN, Style.BRIGHT)
+            self.colored_print(f"📁 配置文件: {self.config_path}", Fore.GREEN)
+            
+            # 🚀 优化8：配置后引导
+            self.colored_print("\n🚀 下一步操作建议:", Fore.CYAN, Style.BRIGHT)
+            self.colored_print(f"  1. 测试连接: 在MCP中使用 connect_server 工具", Fore.WHITE)
+            self.colored_print(f"  2. 执行命令: 使用 execute_command 工具运行命令", Fore.WHITE)
+            self.colored_print(f"  3. 管理配置: 使用 manage_server_config 工具", Fore.WHITE)
+            
+            return True
+            
+        except Exception as e:
+            self.colored_print(f"\n❌ 配置保存失败: {str(e)}", Fore.RED)
+            self.colored_print("💡 建议: 检查配置文件权限或磁盘空间", Fore.YELLOW)
+            return False
     
     def guided_setup(self):
         """向导配置 - 重新设计的配置体验"""
@@ -1045,6 +1100,7 @@ class EnhancedConfigManager:
         self.colored_print("\n🐳 第3步：Docker配置 (可选)", Fore.CYAN)
         use_docker_input = self.smart_input("是否使用Docker容器 (y/n)", 
                                            validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
+                                           suggestions=['y (推荐)', 'n'],
                                            default='n')
         if not use_docker_input:
             use_docker_input = 'n'

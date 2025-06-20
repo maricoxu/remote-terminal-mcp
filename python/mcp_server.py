@@ -21,7 +21,7 @@ sys.path.insert(0, str(project_root))
 from enhanced_config_manager import EnhancedConfigManager
 # 修复导入路径 - enhanced_ssh_manager在python目录下
 sys.path.insert(0, str(Path(__file__).parent))
-from enhanced_ssh_manager import EnhancedSSHManager, log_output
+from enhanced_ssh_manager import EnhancedSSHManager, log_output, create_enhanced_manager
 
 # 服务器信息
 SERVER_NAME = "remote-terminal-mcp"
@@ -114,6 +114,25 @@ def create_tools_list():
             }
         },
         {
+            "name": "disconnect_server",
+            "description": "Disconnect from a remote server and clean up resources",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "server_name": {
+                        "type": "string",
+                        "description": "Name of the server to disconnect from"
+                    },
+                    "force": {
+                        "type": "boolean",
+                        "description": "Force disconnect even if there are active sessions (default: false)",
+                        "default": False
+                    }
+                },
+                "required": ["server_name"]
+            }
+        },
+        {
             "name": "execute_command",
             "description": "Execute a command on a server",
             "inputSchema": {
@@ -146,6 +165,20 @@ def create_tools_list():
             }
         },
         {
+            "name": "get_server_info",
+            "description": "Get detailed configuration information for a specific server",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "server_name": {
+                        "type": "string",
+                        "description": "Name of the server to get detailed information for"
+                    }
+                },
+                "required": ["server_name"]
+            }
+        },
+        {
             "name": "run_local_command",
             "description": "Execute a command on the local system",
             "inputSchema": {
@@ -167,106 +200,34 @@ def create_tools_list():
                 "required": ["cmd"]
             }
         },
-        # 新增配置管理工具
+        # 配置管理工具 - interactive_config_wizard功能已内置到create/update工具中
         {
-            "name": "interactive_config_wizard",
-            "description": "Launch interactive configuration wizard to set up a new server. Supports SSH, Relay, and Docker server types with guided setup.",
+            "name": "diagnose_connection",
+            "description": "Diagnose connection issues and provide troubleshooting suggestions for a specific server",
             "inputSchema": {
                 "type": "object",
                 "properties": {
-                    "server_type": {
+                    "server_name": {
                         "type": "string",
-                        "enum": ["ssh", "relay", "docker", "custom"],
-                        "description": "Type of server to configure: ssh (direct SSH), relay (via relay-cli), docker (with Docker environment), custom (full configuration)"
+                        "description": "Name of the server to diagnose"
                     },
-                    "quick_mode": {
+                    "include_network_test": {
                         "type": "boolean",
-                        "description": "Use quick configuration mode with smart defaults (default: true)",
+                        "description": "Include network connectivity tests (ping, SSH)",
                         "default": True
                     },
-                    "server_name": {
-                        "type": "string",
-                        "description": "Server name (optional, auto-generated if not provided)"
-                    },
-                    "host": {
-                        "type": "string",
-                        "description": "Server hostname or IP address (optional for guided mode)"
-                    },
-                    "username": {
-                        "type": "string",
-                        "description": "Username for SSH connection (optional for guided mode)"
-                    },
-                    "port": {
-                        "type": "integer",
-                        "description": "SSH port (default: 22)",
-                        "default": 22
-                    },
-                    "connection_type": {
-                        "type": "string",
-                        "enum": ["ssh", "relay"],
-                        "description": "Connection type: ssh (direct) or relay (via relay-cli)",
-                        "default": "ssh"
-                    },
-                    "relay_target_host": {
-                        "type": "string",
-                        "description": "Target host when using relay connection"
-                    },
-                    "use_docker": {
+                    "include_config_validation": {
                         "type": "boolean",
-                        "description": "Enable Docker container support",
-                        "default": False
-                    },
-                    "docker_image": {
-                        "type": "string",
-                        "description": "Docker image for container",
-                        "default": "ubuntu:20.04"
-                    },
-                    "docker_container": {
-                        "type": "string",
-                        "description": "Docker container name (auto-generated if not provided)"
-                    },
-                    "description": {
-                        "type": "string",
-                        "description": "Server description (optional, auto-generated if not provided)"
+                        "description": "Include configuration validation",
+                        "default": True
                     }
                 },
-                "required": []
-            }
-        },
-        {
-            "name": "manage_server_config",
-            "description": "Manage server configurations: view, edit, delete, test, import, or export server configurations",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "action": {
-                        "type": "string",
-                        "enum": ["list", "view", "edit", "delete", "test", "export", "import"],
-                        "description": "Action to perform on server configurations"
-                    },
-                    "server_name": {
-                        "type": "string",
-                        "description": "Name of the server (required for view, edit, delete, test actions)"
-                    },
-                    "config_data": {
-                        "type": "object",
-                        "description": "Configuration data (for edit or import actions)"
-                    },
-                    "export_path": {
-                        "type": "string",
-                        "description": "Path to export configuration file (for export action)"
-                    },
-                    "import_path": {
-                        "type": "string",
-                        "description": "Path to import configuration file (for import action)"
-                    }
-                },
-                "required": ["action"]
+                "required": ["server_name"]
             }
         },
         {
             "name": "create_server_config",
-            "description": "Create a new server configuration with detailed parameters. Alternative to interactive wizard for programmatic configuration.",
+            "description": "Create a new server configuration with detailed parameters. Includes built-in interactive wizard when parameters are incomplete.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -293,6 +254,10 @@ def create_tools_list():
                         "description": "Connection type: ssh (direct) or relay (via relay-cli)",
                         "default": "ssh"
                     },
+                    "description": {
+                        "type": "string",
+                        "description": "Server description"
+                    },
                     "relay_target_host": {
                         "type": "string",
                         "description": "Target host when using relay connection"
@@ -302,49 +267,111 @@ def create_tools_list():
                         "description": "Enable Docker container support",
                         "default": False
                     },
-                    "docker_container": {
-                        "type": "string",
-                        "description": "Docker container name"
-                    },
                     "docker_image": {
                         "type": "string",
                         "description": "Docker image for auto-creation"
                     },
-                    "description": {
+                    "docker_container": {
                         "type": "string",
-                        "description": "Server description"
+                        "description": "Docker container name"
+                    },
+                    "tmux_session_prefix": {
+                        "type": "string",
+                        "description": "Tmux session name prefix"
                     },
                     "bos_bucket": {
                         "type": "string",
                         "description": "BOS bucket path for file sync"
                     },
-                    "tmux_session_prefix": {
+                    "server_type": {
                         "type": "string",
-                        "description": "Tmux session name prefix"
+                        "enum": ["ssh", "relay", "docker", "custom"],
+                        "description": "Type of server to configure (for wizard mode)"
+                    },
+                    "quick_mode": {
+                        "type": "boolean",
+                        "description": "Use quick configuration mode with smart defaults (for wizard mode)",
+                        "default": True
+                    },
+                    "use_docker": {
+                        "type": "boolean",
+                        "description": "Enable Docker container support (for wizard mode)",
+                        "default": False
                     }
                 },
-                "required": ["name", "host", "username"]
+                "required": []
             }
         },
         {
-            "name": "diagnose_connection",
-            "description": "Diagnose connection issues and provide troubleshooting suggestions for a specific server",
+            "name": "update_server_config",
+            "description": "Update an existing server configuration with new parameters. Includes built-in interactive wizard when no update fields are provided.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "server_name": {
                         "type": "string",
-                        "description": "Name of the server to diagnose"
+                        "description": "Name of the server to update"
                     },
-                    "include_network_test": {
-                        "type": "boolean",
-                        "description": "Include network connectivity tests (ping, SSH)",
-                        "default": True
+                    "host": {
+                        "type": "string",
+                        "description": "Server hostname or IP address"
                     },
-                    "include_config_validation": {
+                    "username": {
+                        "type": "string",
+                        "description": "Username for SSH connection"
+                    },
+                    "port": {
+                        "type": "integer",
+                        "description": "SSH port"
+                    },
+                    "connection_type": {
+                        "type": "string",
+                        "enum": ["ssh", "relay"],
+                        "description": "Connection type: ssh (direct) or relay (via relay-cli)"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Server description"
+                    },
+                    "relay_target_host": {
+                        "type": "string",
+                        "description": "Target host when using relay connection"
+                    },
+                    "docker_enabled": {
                         "type": "boolean",
-                        "description": "Include configuration validation",
+                        "description": "Enable Docker container support"
+                    },
+                    "docker_image": {
+                        "type": "string",
+                        "description": "Docker image for auto-creation"
+                    },
+                    "docker_container": {
+                        "type": "string",
+                        "description": "Docker container name"
+                    },
+                    "show_current_config": {
+                        "type": "boolean",
+                        "description": "Show current configuration and update guidance (for wizard mode)",
                         "default": True
+                    }
+                },
+                "required": ["server_name"]
+            }
+        },
+        {
+            "name": "delete_server_config",
+            "description": "Delete a server configuration permanently. This action cannot be undone.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "server_name": {
+                        "type": "string",
+                        "description": "Name of the server to delete"
+                    },
+                    "confirm": {
+                        "type": "boolean",
+                        "description": "Confirmation flag to prevent accidental deletion (default: false)",
+                        "default": False
                     }
                 },
                 "required": ["server_name"]
@@ -448,7 +475,8 @@ async def handle_request(request):
             debug_log(f"Executing tool '{tool_name}' with arguments: {tool_arguments}")
             
             try:
-                manager = EnhancedSSHManager()  # 使用增强版SSH管理器
+                # 统一使用create_enhanced_manager工厂函数
+                manager = create_enhanced_manager()  # 使用增强版SSH管理器
                 config_manager = EnhancedConfigManager()
                 content = ""
                 
@@ -470,13 +498,67 @@ async def handle_request(request):
                         # 使用增强版智能连接
                         success, message = manager.smart_connect(server_name)
                         if success:
-                            server = manager.base_manager.get_server(server_name)
+                            # 统一使用EnhancedSSHManager的get_server方法
+                            server = manager.get_server(server_name)
                             session_name = server.session.get('name', f"{server_name}_session") if server and server.session else f"{server_name}_session"
                             content = f"✅ 智能连接成功！\n📝 详情: {message}\n\n🎯 连接命令:\ntmux attach -t {session_name}\n\n💡 快速操作:\n• 连接: tmux attach -t {session_name}\n• 分离: Ctrl+B, 然后按 D\n• 查看: tmux list-sessions\n\n🚀 增强功能:\n• 智能连接检测和自动修复\n• 一键式Docker环境连接\n• 交互引导支持"
                         else:
                             content = f"❌ 智能连接失败: {message}"
                     else:
                         content = "Error: server_name parameter is required"
+                        
+                elif tool_name == "disconnect_server":
+                    server_name = tool_arguments.get("server_name")
+                    force = tool_arguments.get("force", False)
+                    
+                    if server_name:
+                        try:
+                            # 获取服务器信息
+                            server = manager.get_server(server_name)
+                            if not server:
+                                content = json.dumps({
+                                    "success": False,
+                                    "error": f"Server '{server_name}' not found",
+                                    "available_servers": [s.get('name', '') for s in manager.list_servers()]
+                                }, ensure_ascii=False, indent=2)
+                            else:
+                                # 检查连接状态
+                                status = manager.get_connection_status(server_name)
+                                
+                                if not status.get('connected', False):
+                                    content = json.dumps({
+                                        "success": True,
+                                        "message": f"Server '{server_name}' is already disconnected",
+                                        "status": "not_connected"
+                                    }, ensure_ascii=False, indent=2)
+                                else:
+                                    # 执行断开连接
+                                    disconnect_result = manager.disconnect_server(server_name, force=force)
+                                    
+                                    if disconnect_result.get('success', False):
+                                        content = json.dumps({
+                                            "success": True,
+                                            "message": f"Successfully disconnected from '{server_name}'",
+                                            "details": disconnect_result.get('details', ''),
+                                            "cleanup_actions": disconnect_result.get('cleanup_actions', [])
+                                        }, ensure_ascii=False, indent=2)
+                                    else:
+                                        content = json.dumps({
+                                            "success": False,
+                                            "error": f"Failed to disconnect from '{server_name}': {disconnect_result.get('error', 'Unknown error')}",
+                                            "suggestions": disconnect_result.get('suggestions', [])
+                                        }, ensure_ascii=False, indent=2)
+                        except Exception as e:
+                            content = json.dumps({
+                                "success": False,
+                                "error": f"Exception during disconnect: {str(e)}",
+                                "server_name": server_name
+                            }, ensure_ascii=False, indent=2)
+                    else:
+                        content = json.dumps({
+                            "success": False,
+                            "error": "server_name parameter is required"
+                        }, ensure_ascii=False, indent=2)
                         
                 elif tool_name == "execute_command":
                     command = tool_arguments.get("command")
@@ -502,6 +584,32 @@ async def handle_request(request):
                                 all_status[server_name] = manager.get_connection_status(server_name)
                         content = json.dumps(all_status, ensure_ascii=False, indent=2)
                     
+                elif tool_name == "get_server_info":
+                    server_name = tool_arguments.get("server_name")
+                    if server_name:
+                        try:
+                            # 获取服务器详细配置信息
+                            servers = config_manager.get_existing_servers()
+                            if server_name in servers:
+                                server_info = servers[server_name]
+                                # 添加连接状态信息
+                                connection_status = manager.get_connection_status(server_name)
+                                server_info['connection_status'] = connection_status
+                                content = json.dumps(server_info, ensure_ascii=False, indent=2)
+                            else:
+                                content = json.dumps({
+                                    "error": f"Server '{server_name}' not found",
+                                    "available_servers": list(servers.keys())
+                                }, ensure_ascii=False, indent=2)
+                        except Exception as e:
+                            content = json.dumps({
+                                "error": f"Failed to get server info: {str(e)}"
+                            }, ensure_ascii=False, indent=2)
+                    else:
+                        content = json.dumps({
+                            "error": "server_name parameter is required"
+                        }, ensure_ascii=False, indent=2)
+                
                 elif tool_name == "run_local_command":
                     cmd = tool_arguments.get("cmd")
                     cwd = tool_arguments.get("cwd")
@@ -512,122 +620,40 @@ async def handle_request(request):
                     else:
                         content = "Error: cmd parameter is required"
                 
-                # 新增配置管理工具处理
-                elif tool_name == "interactive_config_wizard":
-                    server_type = tool_arguments.get("server_type", "ssh")
-                    quick_mode = tool_arguments.get("quick_mode", True)  # 默认使用快速模式，适合MCP环境
-                    
-                    try:
-                        if quick_mode:
-                            # 快速模式：使用预设模板创建配置
-                            result = config_manager.quick_setup()
-                            content = f"✅ 快速配置向导完成！\n\n服务器配置已创建成功"
-                        else:
-                            # MCP引导模式：基于参数的智能配置 - 如果没有参数，则启动完整交互
-                            config_params = {
-                                'server_name': tool_arguments.get('server_name'),
-                                'host': tool_arguments.get('host'),
-                                'username': tool_arguments.get('username'),
-                                'port': tool_arguments.get('port', 22),
-                                'connection_type': tool_arguments.get('connection_type', 'ssh'),
-                                'relay_target_host': tool_arguments.get('relay_target_host'),
-                                'use_docker': tool_arguments.get('use_docker', False),
-                                'docker_image': tool_arguments.get('docker_image', 'ubuntu:20.04'),
-                                'docker_container': tool_arguments.get('docker_container'),
-                                'description': tool_arguments.get('description')
-                            }
-                            
-                            # 检查是否有足够的参数进行智能配置
-                            has_essential_params = bool(config_params.get('server_name') or 
-                                                      config_params.get('host') or 
-                                                      config_params.get('username'))
-                            
-                            if has_essential_params:
-                                # 有参数 - 使用智能配置
-                                result = config_manager.mcp_guided_setup(**config_params)
-                                if result:
-                                    content = f"✅ MCP智能配置向导完成！\n\n服务器配置已创建成功\n\n💡 使用的参数:\n"
-                                    for key, value in config_params.items():
-                                        if value is not None:
-                                            content += f"  • {key}: {value}\n"
-                                else:
-                                    content = f"❌ MCP配置向导失败，请检查参数"
-                            else:
-                                # 没有参数 - 提供友好的提示和默认配置选项
-                                content = f"🎯 交互式配置向导\n\n"
-                                content += f"❗ 检测到没有提供配置参数\n\n"
-                                content += f"🚀 建议的解决方案:\n\n"
-                                content += f"1️⃣ **使用快速模式** (推荐):\n"
-                                content += f"   - 设置 quick_mode = true\n"
-                                content += f"   - 将创建一个默认的 'mcp-server' 配置\n\n"
-                                content += f"2️⃣ **提供具体参数**:\n"
-                                content += f"   - server_name: '你的服务器名称'\n"
-                                content += f"   - host: '服务器IP或域名'\n"
-                                content += f"   - username: '登录用户名'\n"
-                                content += f"   - port: 22 (可选)\n"
-                                content += f"   - connection_type: 'ssh' (可选)\n\n"
-                                content += f"3️⃣ **示例调用**:\n"
-                                content += f"   server_name='my-server', host='192.168.1.100', username='ubuntu'\n\n"
-                                content += f"💡 提示: 在MCP环境中无法进行真正的交互式配置，请使用参数化配置方式"
-                    except Exception as e:
-                        content = f"❌ 配置向导失败: {str(e)}\n\n💡 建议：请直接在终端中运行 'python3 enhanced_config_manager.py' 获得完整交互体验"
-                
-                elif tool_name == "manage_server_config":
-                    action = tool_arguments.get("action")
+                # interactive_config_wizard功能已内置到create_server_config和update_server_config中
+                elif tool_name == "diagnose_connection":
                     server_name = tool_arguments.get("server_name")
-                    config_data = tool_arguments.get("config_data")
-                    export_path = tool_arguments.get("export_path")
-                    import_path = tool_arguments.get("import_path")
+                    include_network_test = tool_arguments.get("include_network_test", True)
+                    include_config_validation = tool_arguments.get("include_config_validation", True)
                     
-                    try:
-                        if action == "list":
-                            # 使用EnhancedConfigManager的get_existing_servers方法
-                            servers = config_manager.get_existing_servers()
-                            content = json.dumps(servers, ensure_ascii=False, indent=2)
-                        elif action == "view":
-                            if not server_name:
-                                content = "Error: server_name is required for view action"
-                            else:
-                                servers = config_manager.get_existing_servers()
-                                if server_name in servers:
-                                    content = json.dumps(servers[server_name], ensure_ascii=False, indent=2)
-                                else:
-                                    content = f"Error: Server '{server_name}' not found"
-                        elif action == "edit":
-                            if not server_name:
-                                content = "Error: server_name is required for edit action"
-                            else:
-                                # 启动编辑服务器配置的交互式向导
-                                try:
-                                    result = config_manager.edit_server_config(server_name)
-                                    content = f"✅ 服务器 '{server_name}' 的编辑向导已启动\n\n📝 功能包括:\n• 修改基本连接信息\n• 配置或更新同步功能\n• 智能检测现有配置\n• 详细配置预览\n\n请按照向导步骤完成配置修改"
-                                except Exception as e:
-                                    content = f"❌ 启动编辑向导失败: {str(e)}"
-                        elif action == "test":
-                            if not server_name:
-                                content = "Error: server_name is required for test action"
-                            else:
-                                # 使用EnhancedConfigManager的test_connection方法
-                                result = config_manager.test_connection()
-                                content = f"🔍 连接测试功能已启动，请查看配置管理界面"
-                        elif action == "delete":
-                            if not server_name:
-                                content = "Error: server_name is required for delete action"
-                            else:
-                                # 启动删除服务器配置的交互式确认
-                                try:
-                                    result = config_manager.delete_server_config(server_name)
-                                    content = f"🗑️ 服务器 '{server_name}' 的删除向导已启动\n\n⚠️ 注意:\n• 删除操作不可逆\n• 将会移除所有相关配置\n• 请仔细确认后再执行\n\n请按照向导步骤完成删除操作"
-                                except Exception as e:
-                                    content = f"❌ 启动删除向导失败: {str(e)}"
-                        elif action == "manage":
-                            # 启动配置管理界面
-                            result = config_manager.manage_existing()
-                            content = f"⚙️ 配置管理界面已启动"
-                        else:
-                            content = f"支持的操作: list, view, edit, delete, test, manage"
-                    except Exception as e:
-                        content = f"❌ 配置管理操作失败: {str(e)}"
+                    if server_name:
+                        try:
+                            # 使用增强版SSH管理器的诊断功能
+                            diagnosis = manager.diagnose_connection_problem(server_name)
+                            
+                            # 如果需要，添加额外的网络测试
+                            if include_network_test:
+                                diagnosis["network_tests"] = "Network connectivity tests included"
+                            
+                            if include_config_validation:
+                                diagnosis["config_validation"] = "Configuration validation included"
+                            
+                            content = json.dumps(diagnosis, ensure_ascii=False, indent=2)
+                            
+                        except Exception as e:
+                            content = json.dumps({
+                                "error": f"Diagnosis failed: {str(e)}",
+                                "server_name": server_name,
+                                "suggestions": [
+                                    "Verify server name is correct",
+                                    "Check if server configuration exists",
+                                    "Ensure network connectivity to the server"
+                                ]
+                            }, ensure_ascii=False, indent=2)
+                    else:
+                        content = json.dumps({
+                            "error": "server_name parameter is required"
+                        }, ensure_ascii=False, indent=2)
                 
                 elif tool_name == "create_server_config":
                     try:
@@ -635,15 +661,49 @@ async def handle_request(request):
                         name = tool_arguments.get("name")
                         host = tool_arguments.get("host") 
                         username = tool_arguments.get("username")
-                        port = tool_arguments.get("port", 22)
-                        connection_type = tool_arguments.get("connection_type", "ssh")
-                        description = tool_arguments.get("description", "")
                         
-                        # 验证必需参数
-                        if not all([name, host, username]):
-                            content = "❌ 创建服务器配置失败：缺少必需参数 (name, host, username)"
+                        # 🎯 检查是否需要启动向导模式
+                        if not all([name and name.strip(), host and host.strip(), username and username.strip()]):
+                            # 🚀 启动内置的交互式配置向导
+                            server_type = tool_arguments.get("server_type", "ssh")
+                            quick_mode = tool_arguments.get("quick_mode", True)
+                            
+                            try:
+                                if quick_mode:
+                                    # 快速模式：使用预设模板创建配置
+                                    result = config_manager.quick_setup()
+                                    content = f"✅ 快速配置向导完成！\n\n服务器配置已创建成功"
+                                else:
+                                    # MCP引导模式：基于参数的智能配置
+                                    config_params = {
+                                        'server_name': tool_arguments.get('name'),
+                                        'host': tool_arguments.get('host'),
+                                        'username': tool_arguments.get('username'),
+                                        'port': tool_arguments.get('port', 22),
+                                        'connection_type': tool_arguments.get('connection_type', 'ssh'),
+                                        'relay_target_host': tool_arguments.get('relay_target_host'),
+                                        'use_docker': tool_arguments.get('use_docker', False),
+                                        'docker_image': tool_arguments.get('docker_image', 'ubuntu:20.04'),
+                                        'docker_container': tool_arguments.get('docker_container'),
+                                        'description': tool_arguments.get('description')
+                                    }
+                                    
+                                    result = config_manager.mcp_guided_setup(**config_params)
+                                    if result:
+                                        content = f"✅ MCP智能配置向导完成！\n\n服务器配置已创建成功\n\n💡 使用的参数:\n"
+                                        for key, value in config_params.items():
+                                            if value is not None:
+                                                content += f"  • {key}: {value}\n"
+                                    else:
+                                        content = f"❌ MCP配置向导失败，请检查参数"
+                            except Exception as wizard_error:
+                                content = f"❌ 配置向导失败: {str(wizard_error)}\n\n💡 建议：请直接在终端中运行 'python3 enhanced_config_manager.py' 获得完整交互体验"
                         else:
-                            # 创建服务器配置 - 简化版，避免输出重定向干扰
+                            # 直接创建配置（所有必需参数都已提供）
+                            port = tool_arguments.get("port", 22)
+                            connection_type = tool_arguments.get("connection_type", "ssh")
+                            description = tool_arguments.get("description", "")
+                            
                             try:
                                 mcp_config_manager = EnhancedConfigManager()
                                 
@@ -681,7 +741,7 @@ async def handle_request(request):
                                     server_config["servers"][name]["specs"]["connection"]["target"] = {"host": relay_target_host}
                                 
                                 # Docker配置 (如果提供)
-                                docker_enabled = tool_arguments.get("docker_enabled", False)
+                                docker_enabled = tool_arguments.get("docker_enabled", False) or tool_arguments.get("use_docker", False)
                                 if docker_enabled:
                                     docker_container = tool_arguments.get("docker_container", f"{name}_container")
                                     docker_image = tool_arguments.get("docker_image", "ubuntu:20.04")
@@ -697,21 +757,218 @@ async def handle_request(request):
                                 # 保存配置
                                 mcp_config_manager.save_config(server_config, merge_mode=True)
                                 
-                                content = f"✅ 服务器配置创建成功！\n\n"
-                                content += f"服务器名称: {name}\n"
-                                content += f"服务器地址: {host}\n"  
-                                content += f"用户名: {username}\n"
-                                content += f"端口: {port}\n"
-                                content += f"连接类型: {connection_type}\n"
-                                if docker_enabled:
-                                    content += f"Docker容器: {docker_container}\n"
-                                content += f"\n配置文件位置: {mcp_config_manager.config_path}\n"
-                                content += f"\n💡 提示：现在可以使用 'connect_server' 工具连接到此服务器"
+                                content = json.dumps({
+                                    "success": True,
+                                    "message": f"Server '{name}' created successfully",
+                                    "server_config": server_config["servers"][name]
+                                }, ensure_ascii=False, indent=2)
                             except Exception as save_error:
-                                content = f"❌ 保存配置时出错: {str(save_error)}"
+                                content = json.dumps({
+                                    "error": f"Failed to save configuration: {str(save_error)}"
+                                }, ensure_ascii=False, indent=2)
                             
                     except Exception as e:
-                        content = f"❌ 创建服务器配置失败: {str(e)}"
+                        content = json.dumps({
+                            "error": f"Failed to create server config: {str(e)}"
+                        }, ensure_ascii=False, indent=2)
+                
+                elif tool_name == "update_server_config":
+                    try:
+                        server_name = tool_arguments.get("server_name")
+                        if not server_name:
+                            content = json.dumps({
+                                "error": "server_name parameter is required"
+                            }, ensure_ascii=False, indent=2)
+                        else:
+                            # 获取现有服务器配置
+                            mcp_config_manager = EnhancedConfigManager()
+                            servers = mcp_config_manager.get_existing_servers()
+                            
+                            if server_name not in servers:
+                                content = json.dumps({
+                                    "error": f"Server '{server_name}' not found",
+                                    "available_servers": list(servers.keys())
+                                }, ensure_ascii=False, indent=2)
+                            else:
+                                # 获取现有配置
+                                server_config = servers[server_name].copy()
+                                updated_fields = []
+                                
+                                # 更新提供的字段
+                                if tool_arguments.get("host"):
+                                    server_config["host"] = tool_arguments.get("host")
+                                    updated_fields.append("host")
+                                if tool_arguments.get("username"):
+                                    server_config["username"] = tool_arguments.get("username")
+                                    updated_fields.append("username")
+                                if tool_arguments.get("port"):
+                                    server_config["port"] = int(tool_arguments.get("port"))
+                                    updated_fields.append("port")
+                                if tool_arguments.get("connection_type"):
+                                    server_config["connection_type"] = tool_arguments.get("connection_type")
+                                    updated_fields.append("connection_type")
+                                if tool_arguments.get("description"):
+                                    server_config["description"] = tool_arguments.get("description")
+                                    updated_fields.append("description")
+                                
+                                # 处理relay配置
+                                if tool_arguments.get("relay_target_host"):
+                                    if "specs" not in server_config:
+                                        server_config["specs"] = {}
+                                    if "connection" not in server_config["specs"]:
+                                        server_config["specs"]["connection"] = {}
+                                    server_config["specs"]["connection"]["target"] = {"host": tool_arguments.get("relay_target_host")}
+                                    updated_fields.append("relay_target_host")
+                                
+                                # 处理docker配置
+                                docker_enabled = tool_arguments.get("docker_enabled")
+                                if docker_enabled is not None:
+                                    if "specs" not in server_config:
+                                        server_config["specs"] = {}
+                                    
+                                    if docker_enabled:
+                                        docker_config = {
+                                            "auto_create": True,
+                                            "container_name": tool_arguments.get("docker_container", f"{server_name}_container"),
+                                            "image": tool_arguments.get("docker_image", "ubuntu:20.04"),
+                                            "ports": [],
+                                            "volumes": []
+                                        }
+                                        server_config["specs"]["docker"] = docker_config
+                                        updated_fields.append("docker_enabled")
+                                    else:
+                                        # 移除docker配置
+                                        if "docker" in server_config.get("specs", {}):
+                                            del server_config["specs"]["docker"]
+                                            updated_fields.append("docker_disabled")
+                                
+                                if updated_fields:
+                                    # 保存更新后的配置
+                                    update_config = {"servers": {server_name: server_config}}
+                                    mcp_config_manager.save_config(update_config, merge_mode=True)
+                                    
+                                    content = json.dumps({
+                                        "success": True,
+                                        "message": f"Server '{server_name}' updated successfully",
+                                        "updated_fields": updated_fields,
+                                        "server_config": server_config
+                                    }, ensure_ascii=False, indent=2)
+                                else:
+                                    # 🎯 内置向导：没有更新字段时提供引导
+                                    current_config = servers[server_name]
+                                    content = f"🎯 **服务器配置更新向导**\n\n"
+                                    content += f"📋 **当前服务器配置** ('{server_name}'):\n"
+                                    content += f"  • **host**: {current_config.get('host', 'N/A')}\n"
+                                    content += f"  • **username**: {current_config.get('username', 'N/A')}\n"
+                                    content += f"  • **port**: {current_config.get('port', 22)}\n"
+                                    content += f"  • **connection_type**: {current_config.get('connection_type', 'ssh')}\n"
+                                    content += f"  • **description**: {current_config.get('description', '无描述')}\n"
+                                    
+                                    # 显示Docker配置状态
+                                    docker_config = current_config.get('specs', {}).get('docker')
+                                    if docker_config:
+                                        content += f"  • **docker_enabled**: true\n"
+                                        content += f"    - container: {docker_config.get('container_name', 'N/A')}\n"
+                                        content += f"    - image: {docker_config.get('image', 'N/A')}\n"
+                                    else:
+                                        content += f"  • **docker_enabled**: false\n"
+                                    
+                                    # 显示Relay配置状态
+                                    relay_target = current_config.get('specs', {}).get('connection', {}).get('target', {}).get('host')
+                                    if relay_target:
+                                        content += f"  • **relay_target_host**: {relay_target}\n"
+                                    
+                                    content += f"\n🔧 **可更新的字段**:\n"
+                                    content += f"  • **host**: 更改服务器IP地址或域名\n"
+                                    content += f"  • **username**: 更改SSH登录用户名\n"
+                                    content += f"  • **port**: 更改SSH端口\n"
+                                    content += f"  • **connection_type**: 更改连接类型 ('ssh' 或 'relay')\n"
+                                    content += f"  • **description**: 更新服务器描述信息\n"
+                                    content += f"  • **docker_enabled**: 启用/禁用Docker支持 (true/false)\n"
+                                    content += f"  • **docker_container**: Docker容器名称 (需要docker_enabled=true)\n"
+                                    content += f"  • **docker_image**: Docker镜像 (需要docker_enabled=true)\n"
+                                    content += f"  • **relay_target_host**: Relay目标主机 (connection_type='relay'时)\n\n"
+                                    content += f"💡 **更新示例**:\n\n"
+                                    content += f"**更新服务器地址**:\n"
+                                    content += f"```\n"
+                                    content += f"server_name: '{server_name}'\n"
+                                    content += f"host: '新的IP地址'\n"
+                                    content += f"```\n\n"
+                                    content += f"**启用Docker支持**:\n"
+                                    content += f"```\n"
+                                    content += f"server_name: '{server_name}'\n"
+                                    content += f"docker_enabled: true\n"
+                                    content += f"docker_image: 'ubuntu:22.04'\n"
+                                    content += f"```\n\n"
+                                    content += f"**更新描述信息**:\n"
+                                    content += f"```\n"
+                                    content += f"server_name: '{server_name}'\n"
+                                    content += f"description: '新的服务器描述'\n"
+                                    content += f"```\n\n"
+                                    content += f"🚀 **提示**: 只需提供要更新的字段，其他字段保持不变！"
+                                    
+                    except Exception as e:
+                        content = json.dumps({
+                            "error": f"Failed to update server config: {str(e)}"
+                        }, ensure_ascii=False, indent=2)
+                
+                elif tool_name == "delete_server_config":
+                    try:
+                        server_name = tool_arguments.get("server_name")
+                        confirm = tool_arguments.get("confirm", False)
+                        
+                        if not server_name:
+                            content = json.dumps({
+                                "error": "server_name parameter is required"
+                            }, ensure_ascii=False, indent=2)
+                        elif not confirm:
+                            content = json.dumps({
+                                "error": "Deletion requires confirmation. Set 'confirm' parameter to true.",
+                                "warning": "This action cannot be undone. The server configuration will be permanently deleted."
+                            }, ensure_ascii=False, indent=2)
+                        else:
+                            # 删除服务器配置
+                            mcp_config_manager = EnhancedConfigManager()
+                            servers = mcp_config_manager.get_existing_servers()
+                            
+                            if server_name not in servers:
+                                content = json.dumps({
+                                    "error": f"Server '{server_name}' not found",
+                                    "available_servers": list(servers.keys())
+                                }, ensure_ascii=False, indent=2)
+                            else:
+                                try:
+                                    # 读取当前配置
+                                    current_config = mcp_config_manager.load_config()
+                                    
+                                    # 删除指定服务器
+                                    if "servers" in current_config and server_name in current_config["servers"]:
+                                        deleted_config = current_config["servers"][server_name]
+                                        del current_config["servers"][server_name]
+                                        
+                                        # 保存更新后的配置
+                                        mcp_config_manager.save_config(current_config, merge_mode=False)
+                                        
+                                        content = json.dumps({
+                                            "success": True,
+                                            "message": f"Server '{server_name}' deleted successfully",
+                                            "deleted_config": deleted_config,
+                                            "remaining_servers": list(current_config.get("servers", {}).keys())
+                                        }, ensure_ascii=False, indent=2)
+                                    else:
+                                        content = json.dumps({
+                                            "error": f"Server '{server_name}' not found in configuration"
+                                        }, ensure_ascii=False, indent=2)
+                                        
+                                except Exception as delete_error:
+                                    content = json.dumps({
+                                        "error": f"Failed to delete server config: {str(delete_error)}"
+                                    }, ensure_ascii=False, indent=2)
+                                    
+                    except Exception as e:
+                        content = json.dumps({
+                            "error": f"Failed to delete server config: {str(e)}"
+                        }, ensure_ascii=False, indent=2)
                 
                 elif tool_name == "diagnose_connection":
                     server_name = tool_arguments.get("server_name")
@@ -725,7 +982,7 @@ async def handle_request(request):
                             content = f"🔍 连接诊断功能已启动，请在配置管理界面中选择服务器 '{server_name}' 进行测试"
                         except Exception as e:
                             content = f"❌ 启动连接诊断失败: {str(e)}"
-                    
+                
                 else:
                     content = f"Unknown tool: {tool_name}"
                 
@@ -821,7 +1078,8 @@ if __name__ == "__main__":
             print(f"✅ 配置管理器工作正常，发现 {len(servers)} 个服务器")
             
             # 测试SSH管理器
-            ssh_manager = EnhancedSSHManager()
+            # 统一使用create_enhanced_manager工厂函数
+            ssh_manager = create_enhanced_manager()
             print("✅ SSH管理器初始化成功")
             
             print("🎉 所有测试通过！MCP服务器可以正常启动")
