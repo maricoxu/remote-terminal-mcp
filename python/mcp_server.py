@@ -718,29 +718,127 @@ async def handle_request(request):
                             content += f"• 使用 `get_server_info` 查看详细信息\n"
                             
                         else:
-                            # 启动交互式向导模式
-                            debug_log("Launching interactive guided setup with force_interactive=True")
+                            # 启动交互式向导模式 - 在新终端窗口中运行
+                            debug_log("Launching interactive guided setup in new terminal window")
                             
                             try:
-                                # 🔧 使用force_interactive=True强制启用交互模式
-                                result = config_manager.guided_setup(force_interactive=True)
+                                import tempfile
+                                import os
                                 
-                                if result:
-                                    content = f"✅ **配置向导完成！**\n\n"
-                                    content += f"🎉 服务器配置已成功创建\n\n"
-                                    content += f"📋 **后续步骤**:\n"
-                                    content += f"• 使用 `list_servers` 查看所有服务器\n"
-                                    content += f"• 使用 `connect_server` 连接到新服务器\n"
-                                    content += f"• 使用 `get_server_info` 查看服务器详细信息\n\n"
-                                    content += f"💡 **提示**: 配置文件保存在 ~/.remote-terminal/ 目录中"
+                                # 创建交互式配置脚本
+                                script_content = f'''#!/usr/bin/env python3
+"""
+Remote Terminal MCP - 交互式服务器配置向导
+像interval工具一样的交互式体验
+"""
+
+import sys
+import os
+
+# 添加项目路径
+project_root = "{os.path.dirname(os.path.abspath(__file__))}"
+sys.path.insert(0, project_root)
+
+from enhanced_config_manager import EnhancedConfigManager
+
+def main():
+    print("🚀 Remote Terminal MCP - 交互式服务器配置向导")
+    print("=" * 60)
+    print("💡 像interval工具一样的交互式配置体验")
+    print("📝 请按照提示逐步输入服务器配置信息")
+    print("=" * 60)
+    print()
+    
+    try:
+        # 创建配置管理器实例
+        config_manager = EnhancedConfigManager()
+        
+        # 启动向导配置（不使用MCP模式限制）
+        result = config_manager.guided_setup(force_interactive=False)
+        
+        if result:
+            print()
+            print("✅ 服务器配置创建成功！")
+            print("🎉 你可以返回Cursor使用 list_servers 查看配置")
+            print("🚀 使用 connect_server 连接到新服务器")
+        else:
+            print()
+            print("⚠️ 配置过程已取消")
+            print("💡 如需重新配置，请再次运行此工具")
+            
+    except KeyboardInterrupt:
+        print()
+        print("⚠️ 用户中断了配置过程")
+        print("💡 如需重新配置，请再次运行此工具")
+    except Exception as e:
+        print()
+        print(f"❌ 配置过程出现错误: {{e}}")
+        print("💡 请检查配置并重试")
+    
+    print()
+    input("按Enter键关闭此窗口...")
+
+if __name__ == "__main__":
+    main()
+'''
+                                
+                                # 写入临时脚本文件
+                                with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+                                    f.write(script_content)
+                                    temp_script = f.name
+                                
+                                # 获取当前工作目录
+                                current_dir = os.getcwd()
+                                
+                                # 在新的终端窗口中运行交互式配置
+                                # 使用AppleScript在macOS上打开新的Terminal窗口
+                                applescript = f'''
+                                tell application "Terminal"
+                                    do script "cd '{current_dir}' && python3 '{temp_script}' && rm '{temp_script}'"
+                                    activate
+                                end tell
+                                '''
+                                
+                                # 执行AppleScript
+                                result = subprocess.run(['osascript', '-e', applescript], 
+                                                      capture_output=True, text=True, timeout=10)
+                                
+                                if result.returncode == 0:
+                                    content = f"🚀 **交互式配置向导已启动！**\n\n"
+                                    content += f"📱 **操作说明**:\n"
+                                    content += f"• 新的Terminal窗口已打开\n"
+                                    content += f"• 请在新窗口中按照提示进行配置\n"
+                                    content += f"• 这就像interval工具一样的交互式体验\n"
+                                    content += f"• 配置完成后，返回这里查看结果\n\n"
+                                    content += f"🎯 **后续步骤**:\n"
+                                    content += f"• 配置完成后使用 `list_servers` 查看新服务器\n"
+                                    content += f"• 使用 `connect_server` 连接到服务器\n\n"
+                                    content += f"💡 **提示**: 如果没有看到新窗口，请检查Terminal.app权限"
                                 else:
-                                    content = f"⚠️ **配置向导退出**\n\n"
-                                    content += f"💡 用户取消了配置过程，如需重新配置请再次运行工具"
+                                    raise Exception(f"AppleScript执行失败: {result.stderr}")
                                     
-                            except Exception as interactive_error:
-                                debug_log(f"Interactive setup failed: {str(interactive_error)}")
-                                content = f"❌ **交互式配置失败**: {str(interactive_error)}\n\n"
-                                content += f"💡 **建议**: 请提供参数进行直接配置或检查终端环境"
+                            except Exception as e:
+                                debug_log(f"Failed to launch interactive terminal: {str(e)}")
+                                
+                                # 降级到参数提示模式
+                                content = f"❌ **无法启动交互式终端窗口**\n\n"
+                                content += f"错误: {str(e)}\n\n"
+                                content += f"💡 **请提供以下参数来直接创建配置**:\n\n"
+                                content += f"**必需参数**:\n"
+                                content += f"• `name`: 服务器名称 (例如: 'dev-server')\n"
+                                content += f"• `host`: 服务器地址 (例如: '192.168.1.100')\n"
+                                content += f"• `username`: 用户名 (例如: 'ubuntu')\n\n"
+                                content += f"**可选参数**:\n"
+                                content += f"• `port`: SSH端口 (默认: 22)\n"
+                                content += f"• `connection_type`: 连接类型 ('ssh' 或 'relay')\n"
+                                content += f"• `description`: 服务器描述\n\n"
+                                content += f"**示例**:\n"
+                                content += f"```\n"
+                                content += f"name: my-server\n"
+                                content += f"host: 192.168.1.100\n"
+                                content += f"username: ubuntu\n"
+                                content += f"description: 我的开发服务器\n"
+                                content += f"```"
                             
                     except Exception as e:
                         debug_log(f"Error in create_server_config: {str(e)}")
