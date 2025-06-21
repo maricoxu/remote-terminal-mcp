@@ -2,7 +2,8 @@
 import yaml
 import os
 
-config_path = os.path.expanduser('~/.remote-terminal-mcp/config.yaml')
+# 使用标准配置目录而不是硬编码的.remote-terminal-mcp
+config_path = os.path.expanduser('~/.remote-terminal/config.yaml')
 
 # 读取现有配置
 with open(config_path, 'r') as f:

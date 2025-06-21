@@ -41,8 +41,8 @@ def read_bos_config():
     
     # 2. 尝试从配置文件读取
     config_files = [
-        '/Users/xuyehua/.remote-terminal-mcp/config.yaml',
-        '/Users/xuyehua/.remote-terminal-mcp/bos_config.yaml',
+        '/Users/xuyehua/.remote-terminal/config.yaml',
+        '/Users/xuyehua/.remote-terminal/bos_config.yaml',
         './bos_config.yaml'
     ]
     

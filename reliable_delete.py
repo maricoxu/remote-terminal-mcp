@@ -86,7 +86,7 @@ def delete_servers(servers_to_delete, config_path):
         return False
 
 if __name__ == "__main__":
-    config_path = os.path.expanduser('~/.remote-terminal-mcp/config.yaml')
+    config_path = os.path.expanduser('~/.remote-terminal/config.yaml')
     servers_to_delete = ['hg-222', 'newtest']
     
     print("🚀 Remote Terminal 服务器配置删除工具")

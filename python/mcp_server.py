@@ -719,14 +719,11 @@ async def handle_request(request):
                             
                         else:
                             # 启动交互式向导模式
-                            debug_log("Launching interactive guided setup")
-                            
-                            # 临时移除MCP_QUIET环境变量以启用交互
-                            mcp_quiet = os.environ.pop('MCP_QUIET', None)
+                            debug_log("Launching interactive guided setup with force_interactive=True")
                             
                             try:
-                                # 直接调用向导配置
-                                result = config_manager.guided_setup()
+                                # 🔧 使用force_interactive=True强制启用交互模式
+                                result = config_manager.guided_setup(force_interactive=True)
                                 
                                 if result:
                                     content = f"✅ **配置向导完成！**\n\n"
@@ -740,10 +737,10 @@ async def handle_request(request):
                                     content = f"⚠️ **配置向导退出**\n\n"
                                     content += f"💡 用户取消了配置过程，如需重新配置请再次运行工具"
                                     
-                            finally:
-                                # 恢复MCP_QUIET环境变量
-                                if mcp_quiet is not None:
-                                    os.environ['MCP_QUIET'] = mcp_quiet
+                            except Exception as interactive_error:
+                                debug_log(f"Interactive setup failed: {str(interactive_error)}")
+                                content = f"❌ **交互式配置失败**: {str(interactive_error)}\n\n"
+                                content += f"💡 **建议**: 请提供参数进行直接配置或检查终端环境"
                             
                     except Exception as e:
                         debug_log(f"Error in create_server_config: {str(e)}")

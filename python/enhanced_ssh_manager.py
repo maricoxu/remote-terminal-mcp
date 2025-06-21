@@ -2231,7 +2231,7 @@ class EnhancedSSHManager:
                         "验证配置文件是否存在"
                     ],
                     "troubleshooting_steps": [
-                        "1. 检查 ~/.config/remote-terminal-mcp/config.json 文件",
+                        "1. 检查 ~/.remote-terminal/config.yaml 文件",
                         "2. 运行配置向导重新创建服务器配置",
                         "3. 确认服务器名称拼写正确"
                     ]

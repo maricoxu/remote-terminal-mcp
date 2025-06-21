@@ -242,33 +242,47 @@ class EnhancedConfigManager:
     def smart_input(self, prompt: str, validator=None, suggestions=None, default="", show_suggestions=True):
         """智能输入函数，支持验证和建议"""
         
-        # 在MCP模式下，避免交互式输入
+        # 在MCP模式下，避免交互式输入（除非是强制交互模式）
         if self.is_mcp_mode:
-            if default:
-                return default
-            else:
-                # 为MCP模式提供合理的默认值
-                mcp_defaults = {
-                    "服务器名称": "mcp-server",
-                    "服务器地址": "localhost", 
-                    "用户名": "user",
-                    "SSH端口": "22",
-                    "选择操作": "0",  # 退出
-                    "选择连接方式": "1",  # SSH
-                    "是否使用Docker容器": "n",
-                    "是否启用文件同步功能": "n",
-                    "容器名称": "dev-container",
-                    "Docker镜像": "ubuntu:20.04",
-                    "Shell环境": "bash",
-                    "配置方式": "1",  # 快速配置
-                    "选择配置方式": "1",
-                    "选择Docker配置方式": "1"
-                }
-                # 从提示中匹配合适的默认值
-                for key, value in mcp_defaults.items():
-                    if key in prompt:
-                        return value
-                return ""  # 最后的默认值
+            # 检查是否在强制交互模式中（通过检查是否有交互环境）
+            try:
+                import sys
+                # 如果标准输入可用且是终端，尝试真实交互
+                if hasattr(sys.stdin, 'isatty') and sys.stdin.isatty():
+                    # 尝试进行真实的用户交互
+                    pass  # 继续到下面的正常交互逻辑
+                else:
+                    # 没有交互环境，使用默认值
+                    if default:
+                        return default
+                    else:
+                        # 为MCP模式提供合理的默认值
+                        mcp_defaults = {
+                            "服务器名称": "mcp-server",
+                            "服务器地址": "localhost", 
+                            "用户名": "user",
+                            "SSH端口": "22",
+                            "选择操作": "0",  # 退出
+                            "选择连接方式": "1",  # SSH
+                            "是否使用Docker容器": "n",
+                            "是否启用文件同步功能": "n",
+                            "容器名称": "dev-container",
+                            "Docker镜像": "ubuntu:20.04",
+                            "Shell环境": "bash",
+                            "配置方式": "1",  # 快速配置
+                            "选择配置方式": "1",
+                            "选择Docker配置方式": "1"
+                        }
+                        # 从提示中匹配合适的默认值
+                        for key, value in mcp_defaults.items():
+                            if key in prompt:
+                                return value
+                        return ""  # 最后的默认值
+            except:
+                # 异常情况下使用默认值
+                if default:
+                    return default
+                return ""
         
         if suggestions and show_suggestions:
             self.colored_print(f"💡 建议: {', '.join(suggestions)}", Fore.CYAN)
@@ -284,6 +298,11 @@ class EnhancedConfigManager:
                 if not value and default:
                     value = default
                 
+                # 如果值为空且没有默认值，提供更友好的提示
+                if not value and not default:
+                    self.colored_print(f"{ConfigError.WARNING} 请输入有效的值", Fore.YELLOW)
+                    continue
+                
                 if validator:
                     if validator(value):
                         return value
@@ -294,6 +313,12 @@ class EnhancedConfigManager:
                     return value
             except KeyboardInterrupt:
                 self.colored_print(f"\n{ConfigError.INFO} 操作已取消", Fore.YELLOW)
+                return None
+            except EOFError:
+                # 处理EOF错误（例如在非交互环境中）
+                self.colored_print(f"\n{ConfigError.WARNING} 检测到非交互环境，使用默认值", Fore.YELLOW)
+                if default:
+                    return default
                 return None
     
     def parse_user_host(self, user_host_input: str) -> tuple:
@@ -920,316 +945,237 @@ class EnhancedConfigManager:
             self.colored_print("💡 建议: 检查配置文件权限或磁盘空间", Fore.YELLOW)
             return False
     
-    def guided_setup(self):
-        """向导配置 - 重新设计的配置体验"""
+    def guided_setup(self, force_interactive=False):
+        """向导配置 - 重新设计的配置体验
         
-        # 在MCP模式下，不运行交互式配置（除非明确临时启用）
-        if self.is_mcp_mode:
+        Args:
+            force_interactive: 强制启用交互模式，即使在MCP环境中
+        """
+        
+        # 在MCP模式下，检查是否强制启用交互模式
+        if self.is_mcp_mode and not force_interactive:
             self.colored_print("MCP模式下的配置向导已被调用，但无法进行交互式配置", Fore.YELLOW)
             self.colored_print("💡 提示：请使用带参数的智能配置或quick_mode", Fore.YELLOW)
             return False
         
-        self.colored_print("\n🎯 向导配置模式", Fore.YELLOW, Style.BRIGHT)
-        self.colored_print("📋 逐步引导，轻松完成服务器配置", Fore.YELLOW)
-        self.colored_print("=" * 50, Fore.YELLOW)
+        # 如果强制交互模式，临时禁用MCP模式检测以启用交互
+        original_mcp_mode = None
+        if force_interactive and self.is_mcp_mode:
+            original_mcp_mode = self.is_mcp_mode
+            self.is_mcp_mode = False
+            self.colored_print("🔧 强制启用交互模式", Fore.CYAN)
         
-        # 显示现有配置概览
-        self.show_existing_configurations_overview()
-        
-        self.show_progress(1, 4, "选择连接方式")
-        
-        # 第1步：连接方式选择
-        self.colored_print("\n🔗 第1步：连接方式选择", Fore.CYAN, Style.BRIGHT)
-        self.colored_print("1. Relay跳板机连接 - 通过代理/跳板机连接 (推荐)", Fore.BLUE)
-        self.colored_print("2. SSH直连 - 直接连接服务器", Fore.GREEN)
-        
-        connection_type = self.smart_input("选择连接方式", 
-                                         validator=lambda x: x in ['1', '2'], 
-                                         default='1',
-                                         show_suggestions=False)
-        if not connection_type:
-            return
-        
-        self.show_progress(2, 4, "配置服务器信息")
-        
-        # 第2步：根据连接方式配置服务器
-        if connection_type == "1":
-            # Relay跳板机连接
-            self.colored_print("\n🛰️ 第2步：配置Relay连接", Fore.CYAN, Style.BRIGHT)
+        try:
+            self.colored_print("\n🎯 向导配置模式", Fore.YELLOW, Style.BRIGHT)
+            self.colored_print("📋 逐步引导，轻松完成服务器配置", Fore.YELLOW)
+            self.colored_print("=" * 50, Fore.YELLOW)
             
-            # 先询问是否需要二级跳板机
-            self.colored_print("\n🔗 连接架构选择:", Fore.YELLOW)
-            self.colored_print("1. 单级跳板: relay-cli → 目标服务器", Fore.GREEN)
-            self.colored_print("2. 二级跳板: relay-cli → 中继服务器 → 目标服务器", Fore.BLUE)
+            # 显示现有配置概览
+            self.show_existing_configurations_overview()
             
-            jump_type = self.smart_input("选择连接架构", 
-                                       validator=lambda x: x in ['1', '2'],
-                                       default='1',
-                                       show_suggestions=False)
-            if not jump_type:
-                return
+            self.show_progress(1, 4, "选择连接方式")
             
-            # 配置服务器名称
-            server_name = self.smart_input("🏷️ 服务器配置名称", 
-                                         validator=lambda x: bool(x and len(x) > 0),
-                                         show_suggestions=False)
-            if not server_name:
-                return
+            # 第1步：连接方式选择
+            self.colored_print("\n🔗 第1步：连接方式选择", Fore.CYAN, Style.BRIGHT)
+            self.colored_print("1. Relay跳板机连接 - 通过代理/跳板机连接 (推荐)", Fore.BLUE)
+            self.colored_print("2. SSH直连 - 直接连接服务器", Fore.GREEN)
             
-            if jump_type == "2":
-                # 二级跳板：先配置第一级跳板机（relay-cli直接连接的服务器）
-                self.colored_print("\n🏃 配置第一级跳板机", Fore.MAGENTA)
-                self.colored_print("💡 连接流程: 本地 → relay-cli → 第一级跳板机 → 最终目标服务器", Fore.YELLOW)
+            connection_type = self.smart_input("选择连接方式", 
+                                             validator=lambda x: x in ['1', '2'], 
+                                             default='1',
+                                             show_suggestions=False)
+            if not connection_type:
+                return False
+            
+            self.show_progress(2, 4, "配置服务器信息")
+            
+            # 第2步：根据连接方式配置服务器
+            if connection_type == "1":
+                # Relay跳板机连接
+                self.colored_print("\n🛰️ 第2步：配置Relay连接", Fore.CYAN, Style.BRIGHT)
                 
-                first_jump_server = self._configure_server("第一级跳板机", ask_for_name=False, enable_sync=False)
-                if not first_jump_server:
-                    return
+                # 先询问是否需要二级跳板机
+                self.colored_print("\n🔗 连接架构选择:", Fore.YELLOW)
+                self.colored_print("1. 单级跳板: relay-cli → 目标服务器", Fore.GREEN)
+                self.colored_print("2. 二级跳板: relay-cli → 中继服务器 → 目标服务器", Fore.BLUE)
                 
-                # 然后配置最终目标服务器
-                self.colored_print("\n🎯 配置最终目标服务器", Fore.CYAN)
-                final_target_server = self._configure_server("最终目标服务器", ask_for_name=False, enable_sync=False)
-                if not final_target_server:
-                    return
+                jump_type = self.smart_input("选择连接架构", 
+                                           validator=lambda x: x in ['1', '2'],
+                                           default='1',
+                                           show_suggestions=False)
+                if not jump_type:
+                    return False
                 
-                # 生成二级跳板配置
-                config = {"servers": {server_name: {
-                    "host": first_jump_server["host"],  # relay-cli连接到第一级跳板机
-                    "username": first_jump_server["user"],
-                    "port": int(first_jump_server.get("port", 22)),
-                    "private_key_path": "~/.ssh/id_rsa",
-                    "type": "script_based",
-                    "connection_type": "relay",
-                    "description": f"Relay二级跳板: {server_name}",
-                    "session": {
-                        "name": f"{server_name}_session",
-                        "shell": "/bin/bash",
-                        "working_directory": "~"
-                    },
-                    "specs": {
-                        "connection": {
-                            "tool": "relay-cli",
-                            "target": {"host": first_jump_server["host"]},  # relay-cli连接的第一级跳板机
-                            "jump_host": {  # 第一级跳板机再连接到的最终目标
-                                "host": final_target_server["host"],
-                                "username": final_target_server["user"]
+                # 配置服务器名称
+                server_name = self.smart_input("🏷️ 服务器配置名称", 
+                                             validator=lambda x: bool(x and len(x) > 0),
+                                             show_suggestions=False)
+                if not server_name:
+                    return False
+                
+                if jump_type == "2":
+                    # 二级跳板：先配置第一级跳板机（relay-cli直接连接的服务器）
+                    self.colored_print("\n🏃 配置第一级跳板机", Fore.MAGENTA)
+                    self.colored_print("💡 连接流程: 本地 → relay-cli → 第一级跳板机 → 最终目标服务器", Fore.YELLOW)
+                    
+                    first_jump_server = self._configure_server("第一级跳板机", ask_for_name=False, enable_sync=False)
+                    if not first_jump_server:
+                        return False
+                    
+                    # 然后配置最终目标服务器
+                    self.colored_print("\n🎯 配置最终目标服务器", Fore.CYAN)
+                    final_target_server = self._configure_server("最终目标服务器", ask_for_name=False, enable_sync=False)
+                    if not final_target_server:
+                        return False
+                    
+                    # 生成二级跳板配置
+                    config = {"servers": {server_name: {
+                        "host": first_jump_server["host"],  # relay-cli连接到第一级跳板机
+                        "username": first_jump_server["user"],
+                        "port": int(first_jump_server.get("port", 22)),
+                        "private_key_path": "~/.ssh/id_rsa",
+                        "type": "script_based",
+                        "connection_type": "relay",
+                        "description": f"Relay二级跳板: {server_name}",
+                        "session": {
+                            "name": f"{server_name}_session",
+                            "shell": "/bin/bash",
+                            "working_directory": "~"
+                        },
+                        "specs": {
+                            "connection": {
+                                "tool": "relay-cli",
+                                "target": {"host": first_jump_server["host"]},  # relay-cli连接的第一级跳板机
+                                "jump_host": {  # 第一级跳板机再连接到的最终目标
+                                    "host": final_target_server["host"],
+                                    "username": final_target_server["user"]
+                                }
                             }
                         }
-                    }
-                }}}
-                
-                # 添加密码配置
-                if first_jump_server.get("password"):
-                    config["servers"][server_name]["password"] = first_jump_server["password"]
-                if final_target_server.get("password"):
-                    config["servers"][server_name]["specs"]["connection"]["jump_host"]["password"] = final_target_server["password"]
+                    }}}
                     
-            else:
-                # 单级跳板：只需要配置一个目标服务器
-                self.colored_print("\n🎯 配置目标服务器", Fore.CYAN)
-                self.colored_print("💡 连接流程: 本地 → relay-cli → 目标服务器", Fore.YELLOW)
-                target_server = self._configure_server("目标服务器", ask_for_name=False, enable_sync=True)
-                if not target_server:
-                    return
-                
-                # 生成单级跳板配置
-                config = {"servers": {server_name: {
-                    "host": target_server["host"],
-                    "username": target_server["user"],
-                    "port": int(target_server.get("port", 22)),
-                    "private_key_path": "~/.ssh/id_rsa",
-                    "type": "script_based",
-                    "connection_type": "relay",
-                    "description": f"Relay单级跳板: {server_name}",
-                    "session": {
-                        "name": f"{server_name}_session",
-                        "shell": "/bin/bash",
-                        "working_directory": "~"
-                    },
-                    "specs": {
-                        "connection": {
-                            "tool": "relay-cli",
-                            "target": {"host": target_server["host"]}
-                        }
-                    }
-                }}}
-                
-                # 添加密码配置
-                if target_server.get("password"):
-                    config["servers"][server_name]["password"] = target_server["password"]
-        
-        else:
-            # SSH直连 - 只需配置目标服务器
-            self.colored_print("\n🖥️ 第2步：配置目标服务器", Fore.CYAN, Style.BRIGHT)
-            server_config = self._configure_server("目标服务器")
-            if not server_config:
-                return
-                
-            config = {"servers": {server_config["name"]: {
-                "host": server_config["host"],
-                "username": server_config["user"],
-                "port": int(server_config.get("port", 22)),
-                "private_key_path": "~/.ssh/id_rsa",
-                "type": "script_based",
-                "connection_type": "ssh",
-                "description": f"SSH直连: {server_config['name']}",
-                "session": {
-                    "name": f"{server_config['name']}_session",
-                    "shell": "/bin/bash",
-                    "working_directory": "~"
-                },
-                "specs": {
-                    "connection": {
-                        "type": "ssh",
-                        "timeout": 30
-                    },
-                    "environment_setup": {
-                        "shell": "bash",
-                        "working_directory": f"/home/{server_config['user']}"
-                    }
-                }
-            }}}
-            
-            # 添加密码配置到SSH直连中
-            if server_config.get("password"):
-                config["servers"][server_config["name"]]["password"] = server_config["password"]
-
-        
-        self.show_progress(3, 4, "Docker配置")
-        
-        # 第3步：Docker配置 (智能选择)
-        self.colored_print("\n🐳 第3步：Docker配置 (可选)", Fore.CYAN)
-        use_docker_input = self.smart_input("是否使用Docker容器 (y/n)", 
-                                           validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
-                                           suggestions=['y (推荐)', 'n'],
-                                           default='n')
-        if not use_docker_input:
-            use_docker_input = 'n'
-            
-        # 获取主服务器名称（用于容器命名和tmux会话）
-        main_server_name = list(config["servers"].keys())[0]
-        main_server_user = config["servers"][main_server_name]["username"]
-            
-        if use_docker_input.lower() in ['y', 'yes']:
-            # 检查现有Docker配置
-            existing_docker_configs = self.get_existing_docker_configs()
-            
-            if existing_docker_configs:
-                self.colored_print("\n🐳 发现现有Docker配置:", Fore.BLUE, Style.BRIGHT)
-                docker_list = list(existing_docker_configs.items())
-                for i, (config_name, config_info) in enumerate(docker_list, 1):
-                    image = config_info.get('image', 'unknown')
-                    container_name = config_info.get('container_name', config_name)
-                    self.colored_print(f"  {i}. {container_name} - {image}", Fore.WHITE)
-                
-                self.colored_print("\n📋 Docker配置选项:", Fore.CYAN)
-                self.colored_print("  1. 使用现有Docker配置", Fore.GREEN)
-                self.colored_print("  2. 创建新的Docker配置", Fore.YELLOW)
-                
-                docker_choice = self.smart_input("选择Docker配置方式", 
-                                                validator=lambda x: x in ['1', '2'],
-                                                show_suggestions=False)
-                
-                if docker_choice == "1":
-                    # 使用现有配置
-                    if len(docker_list) == 1:
-                        # 只有一个配置，直接使用
-                        selected_config_name, selected_config = docker_list[0]
-                        self.colored_print(f"✅ 已选择Docker配置: {selected_config['container_name']}", Fore.GREEN)
-                    else:
-                        # 多个配置，让用户选择
-                        self.colored_print(f"\n📋 请选择要使用的Docker配置:", Fore.CYAN)
-                        # 重新显示配置列表供选择
-                        for i, (config_name, config_info) in enumerate(docker_list, 1):
-                            image = config_info.get('image', 'unknown')
-                            container_name = config_info.get('container_name', config_name)
-                            self.colored_print(f"  {i}. {container_name} - {image}", Fore.WHITE)
+                    # 添加密码配置
+                    if first_jump_server.get("password"):
+                        config["servers"][server_name]["password"] = first_jump_server["password"]
+                    if final_target_server.get("password"):
+                        config["servers"][server_name]["specs"]["connection"]["jump_host"]["password"] = final_target_server["password"]
                         
-                        config_choice = self.smart_input(f"选择Docker配置 (1-{len(docker_list)})", 
-                                                        validator=lambda x: x.isdigit() and 1 <= int(x) <= len(docker_list))
-                        if not config_choice:
-                            return
-                        selected_config_name, selected_config = docker_list[int(config_choice) - 1]
-                        self.colored_print(f"✅ 已选择Docker配置: {selected_config['container_name']}", Fore.GREEN)
-                    
-                    # 使用选中的Docker配置
-                    if "specs" not in config["servers"][main_server_name]:
-                        config["servers"][main_server_name]["specs"] = {}
-                    config["servers"][main_server_name]["specs"]["docker"] = {
-                        "container_name": selected_config['container_name'],
-                        "image": selected_config['image'],
-                        "auto_create": True,
-                        "ports": selected_config.get('ports', []),
-                        "volumes": selected_config.get('volumes', [])
-                    }
-                    
-                elif docker_choice == "2":
-                    # 创建新配置 - 跳转到Docker向导
-                    self.colored_print("\n🚀 跳转到Docker配置向导...", Fore.CYAN)
-                    docker_config_result = self.docker_wizard_setup(called_from_guided_setup=True)
-                    
-                    # Docker向导完成后，获取最新的Docker配置并应用到当前服务器
-                    if docker_config_result:
-                        updated_docker_configs = self.get_existing_docker_configs()
-                        if updated_docker_configs:
-                            # 获取最新创建的配置（假设是最后一个）
-                            latest_config_name = list(updated_docker_configs.keys())[-1]
-                            latest_config = updated_docker_configs[latest_config_name]
-                            
-                            if "specs" not in config["servers"][main_server_name]:
-                                config["servers"][main_server_name]["specs"] = {}
-                            config["servers"][main_server_name]["specs"]["docker"] = {
-                                "container_name": latest_config['container_name'],
-                                "image": latest_config['image'],
-                                "auto_create": True,
-                                "ports": latest_config.get('ports', []),
-                                "volumes": latest_config.get('volumes', [])
-                            }
-                            self.colored_print(f"✅ 已应用新Docker配置: {latest_config['container_name']}", Fore.GREEN)
-                    else:
-                        # 用户取消了Docker配置，继续当前流程
-                        self.colored_print("⚠️ Docker配置被取消，将继续不使用Docker", Fore.YELLOW)
-                    
-            else:
-                # 没有现有配置，直接创建新配置
-                self.colored_print("\n💡 未发现现有Docker配置，创建新配置", Fore.YELLOW)
-                self.colored_print("🚀 跳转到Docker配置向导...", Fore.CYAN)
-                docker_config_result = self.docker_wizard_setup(called_from_guided_setup=True)
-                
-                # Docker向导完成后，获取配置并应用到当前服务器
-                if docker_config_result:
-                    docker_configs = self.get_existing_docker_configs()
-                    if docker_configs:
-                        # 获取最新创建的配置
-                        latest_config_name = list(docker_configs.keys())[-1]
-                        latest_config = docker_configs[latest_config_name]
-                        
-                        if "specs" not in config["servers"][main_server_name]:
-                            config["servers"][main_server_name]["specs"] = {}
-                        config["servers"][main_server_name]["specs"]["docker"] = {
-                            "container_name": latest_config['container_name'],
-                            "image": latest_config['image'],
-                            "auto_create": True,
-                            "ports": latest_config.get('ports', []),
-                            "volumes": latest_config.get('volumes', [])
-                        }
-                        self.colored_print(f"✅ 已应用Docker配置: {latest_config['container_name']}", Fore.GREEN)
                 else:
-                    # 用户取消了Docker配置，继续当前流程
-                    self.colored_print("⚠️ Docker配置被取消，将继续不使用Docker", Fore.YELLOW)
+                    # 单级跳板：只需要配置一个目标服务器
+                    self.colored_print("\n🎯 配置目标服务器", Fore.CYAN)
+                    self.colored_print("💡 连接流程: 本地 → relay-cli → 目标服务器", Fore.YELLOW)
+                    target_server = self._configure_server("目标服务器", ask_for_name=False, enable_sync=True)
+                    if not target_server:
+                        return False
+                    
+                    # 生成单级跳板配置
+                    config = {"servers": {server_name: {
+                        "host": target_server["host"],
+                        "username": target_server["user"],
+                        "port": int(target_server.get("port", 22)),
+                        "private_key_path": "~/.ssh/id_rsa",
+                        "type": "script_based",
+                        "connection_type": "relay",
+                        "description": f"Relay单级跳板: {server_name}",
+                        "session": {
+                            "name": f"{server_name}_session",
+                            "shell": "/bin/bash",
+                            "working_directory": "~"
+                        },
+                        "specs": {
+                            "connection": {
+                                "tool": "relay-cli",
+                                "target": {"host": target_server["host"]}
+                            }
+                        }
+                    }}}
+                    
+                    # 添加密码配置
+                    if target_server.get("password"):
+                        config["servers"][server_name]["password"] = target_server["password"]
+            
+            else:
+                # SSH直连 - 只需配置目标服务器
+                self.colored_print("\n🖥️ 第2步：配置目标服务器", Fore.CYAN, Style.BRIGHT)
+                server_config = self._configure_server("目标服务器")
+                if not server_config:
+                    return False
+                    
+                config = {"servers": {server_config["name"]: {
+                    "host": server_config["host"],
+                    "username": server_config["user"],
+                    "port": int(server_config.get("port", 22)),
+                    "private_key_path": "~/.ssh/id_rsa",
+                    "type": "script_based",
+                    "connection_type": "ssh",
+                    "description": f"SSH直连: {server_config['name']}",
+                    "session": {
+                        "name": f"{server_config['name']}_session",
+                        "shell": "/bin/bash",
+                        "working_directory": "~"
+                    },
+                    "specs": {
+                        "connection": {
+                            "type": "ssh",
+                            "timeout": 30
+                        },
+                        "environment_setup": {
+                            "shell": "bash",
+                            "working_directory": f"/home/{server_config['user']}"
+                        }
+                    }
+                }}}
+                
+                # 添加密码配置到SSH直连中
+                if server_config.get("password"):
+                    config["servers"][server_config["name"]]["password"] = server_config["password"]
+
+            
+            self.show_progress(3, 4, "Docker配置")
+            
+            # 第3步：Docker配置 (智能选择)
+            self.colored_print("\n🐳 第3步：Docker配置 (可选)", Fore.CYAN)
+            use_docker_input = self.smart_input("是否使用Docker容器 (y/n)", 
+                                               validator=lambda x: x.lower() in ['y', 'n', 'yes', 'no'],
+                                               suggestions=['y (推荐)', 'n'],
+                                               default='n')
+            if not use_docker_input:
+                use_docker_input = 'n'
+                
+            # 获取主服务器名称（用于容器命名和tmux会话）
+            main_server_name = list(config["servers"].keys())[0]
+            main_server_user = config["servers"][main_server_name]["username"]
+                
+            if use_docker_input.lower() in ['y', 'yes']:
+                # 检查现有Docker配置
+                existing_docker_configs = self.get_existing_docker_configs()
+                
+                if existing_docker_configs:
+                    self.colored_print("\n🐳 发现现有Docker配置:", Fore.BLUE, Style.BRIGHT)
+                    docker_list = list(existing_docker_configs.items())
+                    for i, (config_name, config_info) in enumerate(docker_list, 1):
+                        image = config_info.get('image', 'unknown')
+                        container_name = config_info.get('container_name', config_name)
+                        self.colored_print(f"  {i}. {container_name} - {image}", Fore.WHITE)
+            
+            # 恢复MCP模式
+            if original_mcp_mode is not None:
+                self.is_mcp_mode = original_mcp_mode
+                self.colored_print("🔧 恢复MCP模式", Fore.GREEN)
+            
+            return True
         
-        self.show_progress(4, 4, "完成配置")
-        
-        # 默认使用tmux - 使用SSH管理器期望的session格式
-        config["servers"][main_server_name]["session"] = {
-            "name": f"{main_server_name}_session",
-            "working_directory": "~",
-            "shell": "/bin/bash"
-        }
-        
-        # 保存配置
-        self.save_config(config)
-        self.colored_print(f"\n{ConfigError.SUCCESS} 向导配置完成！", Fore.GREEN, Style.BRIGHT)
-        self.colored_print(f"配置已保存到: {self.config_path}", Fore.GREEN)
+        except Exception as e:
+            # 如果出现任何错误，作为最后的保障
+            if not self.is_mcp_mode:
+                self.colored_print(f"❌ 配置向导失败: {e}", Fore.RED)
+            
+            # 恢复MCP模式
+            if original_mcp_mode is not None:
+                self.is_mcp_mode = original_mcp_mode
+                self.colored_print("🔧 恢复MCP模式", Fore.GREEN)
+            
+            return False
     
     def mcp_guided_setup(self, **kwargs):
         """MCP环境下的智能配置向导 - 基于参数的非交互式配置"""
