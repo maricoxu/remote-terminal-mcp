@@ -201,7 +201,7 @@ def create_tools_list():
                 "required": ["cmd"]
             }
         },
-        # 配置管理工具 - interactive_config_wizard功能已内置到create/update工具中
+        # 配置管理工具
         {
             "name": "diagnose_connection",
             "description": "Diagnose connection issues and provide troubleshooting suggestions for a specific server",
@@ -658,101 +658,98 @@ async def handle_request(request):
                 
                 elif tool_name == "create_server_config":
                     try:
-                        debug_log("Starting create_server_config tool - launching interactive wizard")
+                        debug_log("Starting create_server_config tool - direct configuration")
                         
-                        # 🎯 启动交互式配置向导 - 使用真正的终端
-                        project_root = Path(__file__).parent.parent
-                        config_script = project_root / "enhanced_config_manager.py"
+                        # 🎯 直接调用配置管理器进行配置
+                        config_manager = EnhancedConfigManager()
                         
-                        debug_log(f"Config script path: {config_script}")
+                        # 检查是否提供了足够的参数来直接创建配置
+                        provided_params = {k: v for k, v in tool_arguments.items() if v is not None and v != ''}
+                        required_params = ['name', 'host', 'username']
+                        has_required = all(param in provided_params for param in required_params)
                         
-                        # 检查脚本是否存在
-                        if not config_script.exists():
-                            content = f"❌ 配置脚本不存在: {config_script}\n\n💡 请确保 enhanced_config_manager.py 文件存在于项目根目录。"
-                        else:
-                            # 检查是否有可用的终端
-                            try:
-                                # 尝试打开终端设备
-                                with open('/dev/tty', 'r') as tty_test:
-                                    pass
-                                tty_available = True
-                            except (OSError, IOError):
-                                tty_available = False
+                        if has_required:
+                            # 直接创建配置模式
+                            debug_log("Creating server config directly with provided parameters")
                             
-                            if not tty_available:
-                                content = f"⚠️ 无法访问终端设备，请手动运行配置向导：\n\n"
-                                content += f"📋 **手动运行步骤**:\n"
-                                content += f"1. 打开新的终端窗口\n"
-                                content += f"2. 切换到项目目录: cd {project_root}\n"
-                                content += f"3. 运行配置向导: python3 enhanced_config_manager.py\n"
-                                content += f"4. 按照向导提示完成服务器配置\n"
-                                content += f"5. 配置完成后使用 list_servers 工具查看新服务器\n\n"
-                                content += f"🔍 **技术原因**: MCP环境中无法直接访问终端进行交互式操作"
-                            else:
-                                debug_log("Terminal device available, launching interactive config wizard")
+                            server_config = {
+                                'host': tool_arguments.get('host'),
+                                'username': tool_arguments.get('username'),
+                                'port': tool_arguments.get('port', 22),
+                                'connection_type': tool_arguments.get('connection_type', 'ssh'),
+                                'description': tool_arguments.get('description', f"Server {tool_arguments.get('name')}")
+                            }
+                            
+                            # 处理Docker配置
+                            if tool_arguments.get('docker_enabled'):
+                                server_config['specs'] = {
+                                    'docker': {
+                                        'auto_create': True,
+                                        'container_name': tool_arguments.get('docker_container', f"{tool_arguments.get('name')}_container"),
+                                        'image': tool_arguments.get('docker_image', 'ubuntu:20.04'),
+                                        'ports': [],
+                                        'volumes': []
+                                    }
+                                }
+                            
+                            # 处理Relay配置
+                            if tool_arguments.get('relay_target_host'):
+                                if 'specs' not in server_config:
+                                    server_config['specs'] = {}
+                                server_config['specs']['connection'] = {
+                                    'target': {'host': tool_arguments.get('relay_target_host')}
+                                }
+                            
+                            # 保存配置
+                            new_config = {'servers': {tool_arguments.get('name'): server_config}}
+                            config_manager.save_config(new_config, merge_mode=True)
+                            
+                            content = f"✅ **服务器配置创建成功！**\n\n"
+                            content += f"📋 **服务器信息**:\n"
+                            content += f"• **名称**: {tool_arguments.get('name')}\n"
+                            content += f"• **主机**: {server_config['host']}\n"
+                            content += f"• **用户**: {server_config['username']}\n"
+                            content += f"• **端口**: {server_config['port']}\n"
+                            content += f"• **连接类型**: {server_config['connection_type']}\n"
+                            if tool_arguments.get('docker_enabled'):
+                                content += f"• **Docker**: 已启用 ({tool_arguments.get('docker_image', 'ubuntu:20.04')})\n"
+                            content += f"\n🎯 **后续步骤**:\n"
+                            content += f"• 使用 `connect_server` 连接到服务器\n"
+                            content += f"• 使用 `get_server_info` 查看详细信息\n"
+                            
+                        else:
+                            # 启动交互式向导模式
+                            debug_log("Launching interactive guided setup")
+                            
+                            # 临时移除MCP_QUIET环境变量以启用交互
+                            mcp_quiet = os.environ.pop('MCP_QUIET', None)
+                            
+                            try:
+                                # 直接调用向导配置
+                                result = config_manager.guided_setup()
                                 
-                                # 设置环境变量，确保不是MCP模式
-                                env = os.environ.copy()
-                                env.pop('MCP_QUIET', None)  # 移除安静模式
-                                
-                                # 使用真正的终端设备启动交互式进程
-                                try:
-                                    with open('/dev/tty', 'r') as tty_in, \
-                                         open('/dev/tty', 'w') as tty_out, \
-                                         open('/dev/tty', 'w') as tty_err:
-                                        
-                                        debug_log("Starting interactive process with real terminal")
-                                        
-                                        # 使用 subprocess.run 等待进程完成
-                                        result = subprocess.run(
-                                            [sys.executable, str(config_script)],
-                                            cwd=str(project_root),
-                                            env=env,
-                                            stdin=tty_in,
-                                            stdout=tty_out,
-                                            stderr=tty_err,
-                                            timeout=300  # 5分钟超时
-                                        )
-                                        
-                                        debug_log(f"Interactive config wizard completed with return code: {result.returncode}")
-                                        
-                                        if result.returncode == 0:
-                                            content = f"✅ **配置向导完成！**\n\n"
-                                            content += f"🎉 服务器配置已成功创建\n\n"
-                                            content += f"📋 **后续步骤**:\n"
-                                            content += f"• 使用 `list_servers` 查看所有服务器\n"
-                                            content += f"• 使用 `connect_server` 连接到新服务器\n"
-                                            content += f"• 使用 `get_server_info` 查看服务器详细信息\n\n"
-                                            content += f"💡 **提示**: 配置文件保存在 ~/.remote-terminal/ 目录中"
-                                        else:
-                                            content = f"⚠️ **配置向导退出**\n\n"
-                                            content += f"🔍 退出代码: {result.returncode}\n\n"
-                                            content += f"📋 **可能原因**:\n"
-                                            content += f"• 用户手动退出向导\n"
-                                            content += f"• 配置过程中出现错误\n"
-                                            content += f"• 向导被中断\n\n"
-                                            content += f"💡 **建议**: 如需重新配置，请再次运行此工具或手动执行:\n"
-                                            content += f"   python3 enhanced_config_manager.py"
-                                        
-                                except subprocess.TimeoutExpired:
-                                    content = f"⏰ **配置向导超时**\n\n"
-                                    content += f"🔍 配置向导运行超过5分钟，已自动终止\n\n"
-                                    content += f"💡 **建议**: 请手动运行配置向导:\n"
-                                    content += f"   python3 enhanced_config_manager.py"
+                                if result:
+                                    content = f"✅ **配置向导完成！**\n\n"
+                                    content += f"🎉 服务器配置已成功创建\n\n"
+                                    content += f"📋 **后续步骤**:\n"
+                                    content += f"• 使用 `list_servers` 查看所有服务器\n"
+                                    content += f"• 使用 `connect_server` 连接到新服务器\n"
+                                    content += f"• 使用 `get_server_info` 查看服务器详细信息\n\n"
+                                    content += f"💡 **提示**: 配置文件保存在 ~/.remote-terminal/ 目录中"
+                                else:
+                                    content = f"⚠️ **配置向导退出**\n\n"
+                                    content += f"💡 用户取消了配置过程，如需重新配置请再次运行工具"
                                     
-                                except Exception as terminal_error:
-                                    debug_log(f"Terminal interaction error: {str(terminal_error)}")
-                                    content = f"❌ **终端交互失败**: {str(terminal_error)}\n\n"
-                                    content += f"💡 **手动运行配置向导**:\n"
-                                    content += f"   python3 enhanced_config_manager.py\n\n"
-                                    content += f"🔍 **详细错误**: {traceback.format_exc()}"
+                            finally:
+                                # 恢复MCP_QUIET环境变量
+                                if mcp_quiet is not None:
+                                    os.environ['MCP_QUIET'] = mcp_quiet
                             
                     except Exception as e:
                         debug_log(f"Error in create_server_config: {str(e)}")
                         debug_log(f"Error traceback: {traceback.format_exc()}")
-                        content = f"❌ **启动配置向导失败**: {str(e)}\n\n"
-                        content += f"💡 **手动运行配置向导**:\n"
-                        content += f"   python3 enhanced_config_manager.py\n\n"
+                        content = f"❌ **创建服务器配置失败**: {str(e)}\n\n"
+                        content += f"💡 **建议**: 请检查参数或稍后重试\n\n"
                         content += f"🔍 **详细错误信息**:\n{traceback.format_exc()}"
                 
                 elif tool_name == "update_server_config":
