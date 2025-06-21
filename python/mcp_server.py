@@ -11,6 +11,7 @@ import sys
 import os
 import subprocess
 import traceback
+import time
 from pathlib import Path
 from datetime import datetime
 
@@ -657,120 +658,102 @@ async def handle_request(request):
                 
                 elif tool_name == "create_server_config":
                     try:
-                        # 获取参数
-                        name = tool_arguments.get("name")
-                        host = tool_arguments.get("host") 
-                        username = tool_arguments.get("username")
+                        debug_log("Starting create_server_config tool - launching interactive wizard")
                         
-                        # 🎯 检查是否需要启动向导模式
-                        if not all([name and name.strip(), host and host.strip(), username and username.strip()]):
-                            # 🚀 启动内置的交互式配置向导
-                            server_type = tool_arguments.get("server_type", "ssh")
-                            quick_mode = tool_arguments.get("quick_mode", True)
-                            
-                            try:
-                                if quick_mode:
-                                    # 快速模式：使用预设模板创建配置
-                                    result = config_manager.quick_setup()
-                                    content = f"✅ 快速配置向导完成！\n\n服务器配置已创建成功"
-                                else:
-                                    # MCP引导模式：基于参数的智能配置
-                                    config_params = {
-                                        'server_name': tool_arguments.get('name'),
-                                        'host': tool_arguments.get('host'),
-                                        'username': tool_arguments.get('username'),
-                                        'port': tool_arguments.get('port', 22),
-                                        'connection_type': tool_arguments.get('connection_type', 'ssh'),
-                                        'relay_target_host': tool_arguments.get('relay_target_host'),
-                                        'use_docker': tool_arguments.get('use_docker', False),
-                                        'docker_image': tool_arguments.get('docker_image', 'ubuntu:20.04'),
-                                        'docker_container': tool_arguments.get('docker_container'),
-                                        'description': tool_arguments.get('description')
-                                    }
-                                    
-                                    result = config_manager.mcp_guided_setup(**config_params)
-                                    if result:
-                                        content = f"✅ MCP智能配置向导完成！\n\n服务器配置已创建成功\n\n💡 使用的参数:\n"
-                                        for key, value in config_params.items():
-                                            if value is not None:
-                                                content += f"  • {key}: {value}\n"
-                                    else:
-                                        content = f"❌ MCP配置向导失败，请检查参数"
-                            except Exception as wizard_error:
-                                content = f"❌ 配置向导失败: {str(wizard_error)}\n\n💡 建议：请直接在终端中运行 'python3 enhanced_config_manager.py' 获得完整交互体验"
+                        # 🎯 启动交互式配置向导 - 使用真正的终端
+                        project_root = Path(__file__).parent.parent
+                        config_script = project_root / "enhanced_config_manager.py"
+                        
+                        debug_log(f"Config script path: {config_script}")
+                        
+                        # 检查脚本是否存在
+                        if not config_script.exists():
+                            content = f"❌ 配置脚本不存在: {config_script}\n\n💡 请确保 enhanced_config_manager.py 文件存在于项目根目录。"
                         else:
-                            # 直接创建配置（所有必需参数都已提供）
-                            port = tool_arguments.get("port", 22)
-                            connection_type = tool_arguments.get("connection_type", "ssh")
-                            description = tool_arguments.get("description", "")
-                            
+                            # 检查是否有可用的终端
                             try:
-                                mcp_config_manager = EnhancedConfigManager()
+                                # 尝试打开终端设备
+                                with open('/dev/tty', 'r') as tty_test:
+                                    pass
+                                tty_available = True
+                            except (OSError, IOError):
+                                tty_available = False
+                            
+                            if not tty_available:
+                                content = f"⚠️ 无法访问终端设备，请手动运行配置向导：\n\n"
+                                content += f"📋 **手动运行步骤**:\n"
+                                content += f"1. 打开新的终端窗口\n"
+                                content += f"2. 切换到项目目录: cd {project_root}\n"
+                                content += f"3. 运行配置向导: python3 enhanced_config_manager.py\n"
+                                content += f"4. 按照向导提示完成服务器配置\n"
+                                content += f"5. 配置完成后使用 list_servers 工具查看新服务器\n\n"
+                                content += f"🔍 **技术原因**: MCP环境中无法直接访问终端进行交互式操作"
+                            else:
+                                debug_log("Terminal device available, launching interactive config wizard")
                                 
-                                # 构建服务器配置
-                                server_config = {
-                                    "servers": {
-                                        name: {
-                                            "host": host,
-                                            "username": username,
-                                            "port": int(port),
-                                            "type": "script_based",
-                                            "connection_type": connection_type,
-                                            "description": description or f"{connection_type.upper()}连接: {name}",
-                                            "session": {
-                                                "name": f"{name}_session"
-                                            },
-                                            "specs": {
-                                                "connection": {
-                                                    "type": "ssh",
-                                                    "timeout": 30
-                                                },
-                                                "environment_setup": {
-                                                    "shell": "bash",
-                                                    "working_directory": f"/home/{username}"
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                                # 设置环境变量，确保不是MCP模式
+                                env = os.environ.copy()
+                                env.pop('MCP_QUIET', None)  # 移除安静模式
                                 
-                                # 添加连接特定配置
-                                if connection_type == "relay":
-                                    relay_target_host = tool_arguments.get("relay_target_host", host)
-                                    server_config["servers"][name]["specs"]["connection"]["tool"] = "relay-cli"
-                                    server_config["servers"][name]["specs"]["connection"]["target"] = {"host": relay_target_host}
-                                
-                                # Docker配置 (如果提供)
-                                docker_enabled = tool_arguments.get("docker_enabled", False) or tool_arguments.get("use_docker", False)
-                                if docker_enabled:
-                                    docker_container = tool_arguments.get("docker_container", f"{name}_container")
-                                    docker_image = tool_arguments.get("docker_image", "ubuntu:20.04")
+                                # 使用真正的终端设备启动交互式进程
+                                try:
+                                    with open('/dev/tty', 'r') as tty_in, \
+                                         open('/dev/tty', 'w') as tty_out, \
+                                         open('/dev/tty', 'w') as tty_err:
+                                        
+                                        debug_log("Starting interactive process with real terminal")
+                                        
+                                        # 使用 subprocess.run 等待进程完成
+                                        result = subprocess.run(
+                                            [sys.executable, str(config_script)],
+                                            cwd=str(project_root),
+                                            env=env,
+                                            stdin=tty_in,
+                                            stdout=tty_out,
+                                            stderr=tty_err,
+                                            timeout=300  # 5分钟超时
+                                        )
+                                        
+                                        debug_log(f"Interactive config wizard completed with return code: {result.returncode}")
+                                        
+                                        if result.returncode == 0:
+                                            content = f"✅ **配置向导完成！**\n\n"
+                                            content += f"🎉 服务器配置已成功创建\n\n"
+                                            content += f"📋 **后续步骤**:\n"
+                                            content += f"• 使用 `list_servers` 查看所有服务器\n"
+                                            content += f"• 使用 `connect_server` 连接到新服务器\n"
+                                            content += f"• 使用 `get_server_info` 查看服务器详细信息\n\n"
+                                            content += f"💡 **提示**: 配置文件保存在 ~/.remote-terminal/ 目录中"
+                                        else:
+                                            content = f"⚠️ **配置向导退出**\n\n"
+                                            content += f"🔍 退出代码: {result.returncode}\n\n"
+                                            content += f"📋 **可能原因**:\n"
+                                            content += f"• 用户手动退出向导\n"
+                                            content += f"• 配置过程中出现错误\n"
+                                            content += f"• 向导被中断\n\n"
+                                            content += f"💡 **建议**: 如需重新配置，请再次运行此工具或手动执行:\n"
+                                            content += f"   python3 enhanced_config_manager.py"
+                                        
+                                except subprocess.TimeoutExpired:
+                                    content = f"⏰ **配置向导超时**\n\n"
+                                    content += f"🔍 配置向导运行超过5分钟，已自动终止\n\n"
+                                    content += f"💡 **建议**: 请手动运行配置向导:\n"
+                                    content += f"   python3 enhanced_config_manager.py"
                                     
-                                    server_config["servers"][name]["specs"]["docker"] = {
-                                        "container_name": docker_container,
-                                        "image": docker_image,
-                                        "auto_create": True,
-                                        "ports": [],
-                                        "volumes": []
-                                    }
-                                
-                                # 保存配置
-                                mcp_config_manager.save_config(server_config, merge_mode=True)
-                                
-                                content = json.dumps({
-                                    "success": True,
-                                    "message": f"Server '{name}' created successfully",
-                                    "server_config": server_config["servers"][name]
-                                }, ensure_ascii=False, indent=2)
-                            except Exception as save_error:
-                                content = json.dumps({
-                                    "error": f"Failed to save configuration: {str(save_error)}"
-                                }, ensure_ascii=False, indent=2)
+                                except Exception as terminal_error:
+                                    debug_log(f"Terminal interaction error: {str(terminal_error)}")
+                                    content = f"❌ **终端交互失败**: {str(terminal_error)}\n\n"
+                                    content += f"💡 **手动运行配置向导**:\n"
+                                    content += f"   python3 enhanced_config_manager.py\n\n"
+                                    content += f"🔍 **详细错误**: {traceback.format_exc()}"
                             
                     except Exception as e:
-                        content = json.dumps({
-                            "error": f"Failed to create server config: {str(e)}"
-                        }, ensure_ascii=False, indent=2)
+                        debug_log(f"Error in create_server_config: {str(e)}")
+                        debug_log(f"Error traceback: {traceback.format_exc()}")
+                        content = f"❌ **启动配置向导失败**: {str(e)}\n\n"
+                        content += f"💡 **手动运行配置向导**:\n"
+                        content += f"   python3 enhanced_config_manager.py\n\n"
+                        content += f"🔍 **详细错误信息**:\n{traceback.format_exc()}"
                 
                 elif tool_name == "update_server_config":
                     try:
