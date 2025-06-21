@@ -242,43 +242,115 @@ class EnhancedConfigManager:
     def smart_input(self, prompt: str, validator=None, suggestions=None, default="", show_suggestions=True):
         """智能输入函数，支持验证和建议"""
         
-        # 在MCP模式下，避免交互式输入（除非是强制交互模式）
+        # 在MCP模式下，尝试多种交互方式
         if self.is_mcp_mode:
-            # 检查是否在强制交互模式中（通过检查是否有交互环境）
+            # 尝试方案1：直接终端访问
             try:
+                import os
                 import sys
-                # 如果标准输入可用且是终端，尝试真实交互
-                if hasattr(sys.stdin, 'isatty') and sys.stdin.isatty():
-                    # 尝试进行真实的用户交互
-                    pass  # 继续到下面的正常交互逻辑
-                else:
-                    # 没有交互环境，使用默认值
-                    if default:
-                        return default
-                    else:
-                        # 为MCP模式提供合理的默认值
-                        mcp_defaults = {
-                            "服务器名称": "mcp-server",
-                            "服务器地址": "localhost", 
-                            "用户名": "user",
-                            "SSH端口": "22",
-                            "选择操作": "0",  # 退出
-                            "选择连接方式": "1",  # SSH
-                            "是否使用Docker容器": "n",
-                            "是否启用文件同步功能": "n",
-                            "容器名称": "dev-container",
-                            "Docker镜像": "ubuntu:20.04",
-                            "Shell环境": "bash",
-                            "配置方式": "1",  # 快速配置
-                            "选择配置方式": "1",
-                            "选择Docker配置方式": "1"
-                        }
-                        # 从提示中匹配合适的默认值
-                        for key, value in mcp_defaults.items():
-                            if key in prompt:
+                
+                # 检查是否在强制交互模式且有终端设备可用
+                if hasattr(self, '_force_interactive_mode') or not hasattr(sys.stdin, 'isatty') or not sys.stdin.isatty():
+                    # 尝试直接打开终端设备
+                    try:
+                        with open('/dev/tty', 'r') as tty_in, open('/dev/tty', 'w') as tty_out:
+                            if suggestions and show_suggestions:
+                                tty_out.write(f"💡 建议: {', '.join(suggestions)}\n")
+                                tty_out.flush()
+                            
+                            if default:
+                                prompt_text = f"{prompt} [{default}]: "
+                            else:
+                                prompt_text = f"{prompt}: "
+                            
+                            tty_out.write(prompt_text)
+                            tty_out.flush()
+                            
+                            value = tty_in.readline().strip()
+                            if not value and default:
+                                value = default
+                            
+                            if validator:
+                                if validator(value):
+                                    return value
+                                else:
+                                    tty_out.write("❌ 输入格式不正确，请重试\n")
+                                    tty_out.flush()
+                                    return self.smart_input(prompt, validator, suggestions, default, show_suggestions)
+                            else:
                                 return value
-                        return ""  # 最后的默认值
-            except:
+                                
+                    except (OSError, IOError):
+                        # 方案2：在macOS上使用AppleScript对话框
+                        if os.uname().sysname == 'Darwin':
+                            try:
+                                import subprocess
+                                
+                                if suggestions and show_suggestions:
+                                    dialog_prompt = f"{prompt}\n\n💡 建议: {', '.join(suggestions)}"
+                                else:
+                                    dialog_prompt = prompt
+                                
+                                if default:
+                                    dialog_prompt += f"\n\n默认值: {default}"
+                                
+                                # 使用AppleScript显示输入对话框
+                                applescript = f'''
+                                display dialog "{dialog_prompt}" default answer "{default}" with title "服务器配置"
+                                text returned of result
+                                '''
+                                
+                                result = subprocess.run(['osascript', '-e', applescript], 
+                                                      capture_output=True, text=True, timeout=60)
+                                
+                                if result.returncode == 0:
+                                    value = result.stdout.strip()
+                                    if not value and default:
+                                        value = default
+                                    
+                                    if validator:
+                                        if validator(value):
+                                            return value
+                                        else:
+                                            # 递归重试
+                                            return self.smart_input(f"{prompt}\n❌ 输入格式不正确，请重试", validator, suggestions, default, show_suggestions)
+                                    else:
+                                        return value
+                                else:
+                                    # 用户取消了对话框
+                                    return None
+                                    
+                            except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+                                pass  # 继续到默认值处理
+                
+                # 方案3：使用默认值
+                if default:
+                    return default
+                else:
+                    # 为MCP模式提供合理的默认值
+                    mcp_defaults = {
+                        "服务器名称": "mcp-server",
+                        "服务器地址": "localhost", 
+                        "用户名": "user",
+                        "SSH端口": "22",
+                        "选择操作": "0",  # 退出
+                        "选择连接方式": "1",  # SSH
+                        "是否使用Docker容器": "n",
+                        "是否启用文件同步功能": "n",
+                        "容器名称": "dev-container",
+                        "Docker镜像": "ubuntu:20.04",
+                        "Shell环境": "bash",
+                        "配置方式": "1",  # 快速配置
+                        "选择配置方式": "1",
+                        "选择Docker配置方式": "1"
+                    }
+                    # 从提示中匹配合适的默认值
+                    for key, value in mcp_defaults.items():
+                        if key in prompt:
+                            return value
+                    return ""  # 最后的默认值
+                    
+            except Exception as e:
                 # 异常情况下使用默认值
                 if default:
                     return default
@@ -963,6 +1035,7 @@ class EnhancedConfigManager:
         if force_interactive and self.is_mcp_mode:
             original_mcp_mode = self.is_mcp_mode
             self.is_mcp_mode = False
+            self._force_interactive_mode = True  # 设置强制交互标志
             self.colored_print("🔧 强制启用交互模式", Fore.CYAN)
         
         try:
@@ -1161,6 +1234,8 @@ class EnhancedConfigManager:
             # 恢复MCP模式
             if original_mcp_mode is not None:
                 self.is_mcp_mode = original_mcp_mode
+                if hasattr(self, '_force_interactive_mode'):
+                    delattr(self, '_force_interactive_mode')  # 清除强制交互标志
                 self.colored_print("🔧 恢复MCP模式", Fore.GREEN)
             
             return True
@@ -1173,6 +1248,8 @@ class EnhancedConfigManager:
             # 恢复MCP模式
             if original_mcp_mode is not None:
                 self.is_mcp_mode = original_mcp_mode
+                if hasattr(self, '_force_interactive_mode'):
+                    delattr(self, '_force_interactive_mode')  # 清除强制交互标志
                 self.colored_print("🔧 恢复MCP模式", Fore.GREEN)
             
             return False
