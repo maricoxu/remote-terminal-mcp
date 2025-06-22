@@ -326,12 +326,12 @@ npm install -g @xuyehua/remote-terminal-mcp
 #### 3. 配置文件问题
 ```bash
 # 查看配置文件位置
-ls -la ~/.remote-terminal-mcp/
+ls -la ~/.remote-terminal/
 
 # 重置配置（在Cursor中说）
 "请帮我重置远程服务器配置"
 # 或者手动重置
-rm -rf ~/.remote-terminal-mcp/
+rm -rf ~/.remote-terminal/
 ```
 
 ### 调试模式

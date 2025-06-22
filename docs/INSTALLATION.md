@@ -58,7 +58,7 @@ python3 python/mcp_server.py
 
 编辑配置文件：
 ```bash
-nano ~/.remote-terminal-mcp/config.yaml
+nano ~/.remote-terminal/config.yaml
 ```
 
 修改 `remote-server` 部分的 📍 标记项：
@@ -120,8 +120,8 @@ npx @xuyehua/remote-terminal-mcp --test
 3. **权限问题**
    ```bash
    # 确保配置目录可写
-   mkdir -p ~/.remote-terminal-mcp
-   chmod 755 ~/.remote-terminal-mcp
+   mkdir -p ~/.remote-terminal
+chmod 755 ~/.remote-terminal
    ```
 
 ### 🐛 调试模式

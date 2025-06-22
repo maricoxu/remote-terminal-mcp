@@ -6,7 +6,7 @@
 
 ### ✅ 已完成
 - **交互式配置管理器重构**
-  - 统一配置文件路径为 `~/.remote-terminal-mcp/config.yaml`
+  - 统一配置文件路径为 `~/.remote-terminal/config.yaml`
   - 使用 `getpass.getuser()` 获取系统用户名作为默认值
   - 去除敏感信息（公司名称等）
   - 添加二级跳板机配置支持

@@ -14,7 +14,7 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 # 配置路径
-USER_CONFIG_DIR="$HOME/.remote-terminal-mcp"
+USER_CONFIG_DIR="$HOME/.remote-terminal"
 CONFIG_FILE="$USER_CONFIG_DIR/config.yaml"
 TEMPLATE_FILE="config/servers.template.yaml"
 

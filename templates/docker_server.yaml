@@ -1,18 +1,10 @@
 servers:
   example-docker:
-    description: "Docker development environment - TEMPLATE ONLY, REPLACE VALUES BEFORE USE"
-    host: "REPLACE_WITH_DOCKER_HOST"
-    user: "REPLACE_WITH_YOUR_USERNAME"
-    type: docker
-    container_name: "REPLACE_WITH_CONTAINER_NAME"
-    docker_image: "ubuntu:20.04"
     auto_create_container: true
-    tmux_session: "REPLACE_WITH_SESSION_NAME"
-    # 同步功能配置（可选）
-    sync:
-      enabled: false
-      remote_workspace: "REPLACE_WITH_REMOTE_PATH"
-      local_workspace: ""  # 将自动检测当前工作目录
-      ftp_port: 8021
-      ftp_user: "REPLACE_WITH_FTP_USERNAME"
-      ftp_password: "REPLACE_WITH_FTP_PASSWORD"
+    container_name: dev_container
+    description: Docker development environment
+    docker_image: ubuntu:20.04
+    host: docker-host.com
+    tmux_session: dev_session
+    type: docker
+    user: your-username

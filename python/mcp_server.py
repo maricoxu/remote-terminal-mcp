@@ -11,9 +11,9 @@ import sys
 import os
 import subprocess
 import traceback
-import time
 from pathlib import Path
 from datetime import datetime
+import yaml
 
 # 添加项目根目录到路径，以便导入enhanced_config_manager
 project_root = Path(__file__).parent.parent
@@ -23,6 +23,21 @@ from enhanced_config_manager import EnhancedConfigManager
 # 修复导入路径 - enhanced_ssh_manager在python目录下
 sys.path.insert(0, str(Path(__file__).parent))
 from enhanced_ssh_manager import EnhancedSSHManager, log_output, create_enhanced_manager
+
+# 导入colorama用于彩色输出支持
+try:
+    from colorama import Fore, Style, init
+    init()  # 初始化colorama
+except ImportError:
+    # 如果colorama不可用，创建空的替代
+    class Fore:
+        CYAN = ""
+        GREEN = ""
+        RED = ""
+        YELLOW = ""
+        WHITE = ""
+    class Style:
+        RESET_ALL = ""
 
 # 服务器信息
 SERVER_NAME = "remote-terminal-mcp"
@@ -35,8 +50,15 @@ os.environ['MCP_QUIET'] = '1'
 DEBUG = os.getenv('MCP_DEBUG', '0') == '1'
 
 def debug_log(msg):
+    """改进的调试日志函数，避免stderr输出被误标记为错误"""
     if DEBUG:
+        # 只在明确启用调试模式时才输出
         print(f"[DEBUG] {msg}", file=sys.stderr, flush=True)
+
+def info_log(msg):
+    """信息级别日志，输出到stderr但不会被误标记"""
+    # 使用更温和的信息输出，避免在正常运行时产生错误级别日志
+    pass  # 在MCP环境中，我们尽量保持静默
 
 def create_success_response(request_id, text_content):
     """创建一个包含文本内容的成功JSON-RPC响应"""
@@ -201,7 +223,7 @@ def create_tools_list():
                 "required": ["cmd"]
             }
         },
-        # 配置管理工具
+        # 配置管理工具 - interactive_config_wizard功能已内置到create/update工具中
         {
             "name": "diagnose_connection",
             "description": "Diagnose connection issues and provide troubleshooting suggestions for a specific server",
@@ -228,75 +250,99 @@ def create_tools_list():
         },
         {
             "name": "create_server_config",
-            "description": "Create a new server configuration with detailed parameters. Includes built-in interactive wizard when parameters are incomplete.",
+            "description": "🚀 智能服务器配置创建工具 - 支持关键词识别和参数化配置。🌟 新策略：即使提供了参数，也默认进入交互界面（参数作为预填充默认值），确保用户对配置有完全的控制权和可见性。🔍 智能切换：自动检测服务器是否已存在，如存在则自动切换到更新模式。可以通过自然语言描述或直接提供配置参数来创建服务器。",
             "inputSchema": {
                 "type": "object",
                 "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "description": "用户的配置需求描述，支持自然语言。例如：'创建一个新的服务器配置'、'我想添加一台服务器'等"
+                    },
                     "name": {
                         "type": "string",
-                        "description": "Server name (unique identifier)"
+                        "description": "服务器名称（唯一标识符）"
                     },
                     "host": {
                         "type": "string",
-                        "description": "Server hostname or IP address"
+                        "description": "服务器主机名或IP地址"
                     },
                     "username": {
                         "type": "string",
-                        "description": "Username for SSH connection"
+                        "description": "SSH连接用户名"
                     },
                     "port": {
                         "type": "integer",
-                        "description": "SSH port (default: 22)",
+                        "description": "SSH端口号",
                         "default": 22
                     },
                     "connection_type": {
                         "type": "string",
                         "enum": ["ssh", "relay"],
-                        "description": "Connection type: ssh (direct) or relay (via relay-cli)",
+                        "description": "连接类型：ssh（直连）或relay（通过relay-cli）",
                         "default": "ssh"
                     },
                     "description": {
                         "type": "string",
-                        "description": "Server description"
+                        "description": "服务器描述信息"
                     },
                     "relay_target_host": {
                         "type": "string",
-                        "description": "Target host when using relay connection"
+                        "description": "当使用relay连接时的目标主机"
                     },
                     "docker_enabled": {
                         "type": "boolean",
-                        "description": "Enable Docker container support",
+                        "description": "是否启用Docker容器支持",
                         "default": False
                     },
                     "docker_image": {
                         "type": "string",
-                        "description": "Docker image for auto-creation"
+                        "description": "Docker镜像名称（当docker_enabled=true时使用）",
+                        "default": "ubuntu:20.04"
                     },
                     "docker_container": {
                         "type": "string",
-                        "description": "Docker container name"
+                        "description": "Docker容器名称（当docker_enabled=true时使用）"
                     },
-                    "tmux_session_prefix": {
+                    "docker_ports": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Docker端口映射列表，格式：[\"host:container\"]，例如：[\"8080:8080\", \"5000:5000\"]",
+                        "default": ["8080:8080", "8888:8888", "6006:6006"]
+                    },
+                    "docker_volumes": {
+                        "type": "array", 
+                        "items": {"type": "string"},
+                        "description": "Docker卷挂载列表，格式：[\"host:container\"]，例如：[\"/home:/home\", \"/data:/data\"]",
+                        "default": ["/home:/home", "/data:/data"]
+                    },
+                    "docker_shell": {
                         "type": "string",
-                        "description": "Tmux session name prefix"
+                        "description": "Docker容器内使用的shell，例如：bash, zsh, sh",
+                        "default": "bash"
                     },
-                    "bos_bucket": {
-                        "type": "string",
-                        "description": "BOS bucket path for file sync"
-                    },
-                    "server_type": {
-                        "type": "string",
-                        "enum": ["ssh", "relay", "docker", "custom"],
-                        "description": "Type of server to configure (for wizard mode)"
-                    },
-                    "quick_mode": {
+                    "docker_auto_create": {
                         "type": "boolean",
-                        "description": "Use quick configuration mode with smart defaults (for wizard mode)",
+                        "description": "是否自动创建Docker容器（如果不存在）",
+                        "default": true
+                    },
+                    "auto_detect": {
+                        "type": "boolean",
+                        "description": "自动检测用户意图",
                         "default": True
                     },
-                    "use_docker": {
+                    "confirm_create": {
                         "type": "boolean",
-                        "description": "Enable Docker container support (for wizard mode)",
+                        "description": "确认创建配置（当配置完整时使用）",
+                        "default": False
+                    },
+                    "interactive": {
+                        "type": "boolean",
+                        "description": "是否启用交互式模式。默认true：即使提供了参数也进入交互界面（参数作为默认值）。设置false：跳过交互界面直接创建配置",
+                        "default": True
+                    },
+                    "cursor_interactive": {
+                        "type": "boolean",
+                        "description": "启用Cursor聊天界面内交互模式（推荐）- 直接在聊天界面显示彩色配置表单，无需切换窗口",
                         "default": False
                     }
                 },
@@ -387,10 +433,17 @@ def send_response(response_obj):
         # 直接输出JSON，不使用Content-Length头部
         sys.stdout.write(message_str + '\n')
         sys.stdout.flush()
-        debug_log(f"Sent JSON response for ID {response_obj.get('id')}")
+        # 移除debug_log调用，避免stderr输出
+        if DEBUG:
+            print(f"[DEBUG] Sent JSON response for ID {response_obj.get('id')}", file=sys.stderr, flush=True)
     except BrokenPipeError:
-        debug_log("Failed to send response: Broken pipe. Parent process likely exited.")
+        # 静默处理BrokenPipeError，避免不必要的错误日志
+        if DEBUG:
+            print("[DEBUG] Failed to send response: Broken pipe. Parent process likely exited.", file=sys.stderr, flush=True)
         pass
+
+
+
 
 async def handle_request(request):
     """处理MCP请求"""
@@ -398,12 +451,15 @@ async def handle_request(request):
     params = request.get("params")
     request_id = request.get("id")
     
-    debug_log(f"Received request: method='{method}', id='{request_id}'")
+    # 只在调试模式下记录请求信息
+    if DEBUG:
+        print(f"[DEBUG] Received request: method='{method}', id='{request_id}'", file=sys.stderr, flush=True)
     
     # 处理通知（没有id的请求）
     if request_id is None:
         if method.lower() == "initialized":
-            debug_log("Received 'initialized' notification - handshake complete")
+            if DEBUG:
+                print("[DEBUG] Received 'initialized' notification - handshake complete", file=sys.stderr, flush=True)
             return None
         # 其他通知也直接返回None（不需要响应）
         return None
@@ -413,7 +469,8 @@ async def handle_request(request):
         method_lower = method.lower()
 
         if method_lower == "initialize":
-            debug_log("Handling 'initialize' request.")
+            if DEBUG:
+                print("[DEBUG] Handling 'initialize' request.", file=sys.stderr, flush=True)
             
             # 完全符合LSP和MCP规范的capabilities
             server_capabilities = {
@@ -445,12 +502,14 @@ async def handle_request(request):
             return response
         
         elif method_lower == "shutdown":
-            debug_log("Handling 'shutdown' request.")
+            if DEBUG:
+                print("[DEBUG] Handling 'shutdown' request.", file=sys.stderr, flush=True)
             response = { "jsonrpc": "2.0", "id": request_id, "result": {} }
             return response
         
         elif method_lower == "tools/list":
-            debug_log("Handling 'tools/list' request.")
+            if DEBUG:
+                print("[DEBUG] Handling 'tools/list' request.", file=sys.stderr, flush=True)
             tools = create_tools_list()
             response = {
                 "jsonrpc": "2.0",
@@ -460,7 +519,8 @@ async def handle_request(request):
             return response
 
         elif method_lower == "listofferings":
-            debug_log("Handling 'ListOfferings' request.")
+            if DEBUG:
+                print("[DEBUG] Handling 'ListOfferings' request.", file=sys.stderr, flush=True)
             response = {
                 "jsonrpc": "2.0",
                 "id": request_id,
@@ -473,7 +533,9 @@ async def handle_request(request):
         elif method_lower == "tools/call":
             tool_name = params.get("name")
             tool_arguments = params.get("arguments", {})
-            debug_log(f"Executing tool '{tool_name}' with arguments: {tool_arguments}")
+            # 只在调试模式下记录工具执行信息
+            if DEBUG:
+                print(f"[DEBUG] Executing tool '{tool_name}' with arguments: {tool_arguments}", file=sys.stderr, flush=True)
             
             try:
                 # 统一使用create_enhanced_manager工厂函数
@@ -482,16 +544,152 @@ async def handle_request(request):
                 content = ""
                 
                 if tool_name == "list_servers":
-                    servers = manager.list_servers()
-                    simple_servers = []
-                    for server in servers:
-                        simple_servers.append({
-                            'name': server.get('name', ''),
-                            'description': server.get('description', ''),
-                            'connected': server.get('connected', False),
-                            'type': server.get('type', '')
-                        })
-                    content = json.dumps(simple_servers, ensure_ascii=False, indent=2)
+                    # 获取详细的服务器配置信息
+                    detailed_servers = []
+                    
+                    try:
+                        # 从配置管理器获取完整配置
+                        all_servers = config_manager.get_existing_servers()
+                        
+                        for server_name, server_config in all_servers.items():
+                            # 获取连接状态
+                            connection_status = manager.get_connection_status(server_name)
+                            
+                            # 解析连接类型和跳板信息
+                            connection_type = server_config.get('connection_type', 'ssh')
+                            is_relay = connection_type == 'relay'
+                            
+                            # 获取跳板信息
+                            jump_info = ""
+                            if is_relay:
+                                specs = server_config.get('specs', {})
+                                connection_specs = specs.get('connection', {})
+                                jump_host = connection_specs.get('jump_host', {})
+                                if jump_host:
+                                    jump_info = f"{jump_host.get('username', 'unknown')}@{jump_host.get('host', 'unknown')}"
+                                else:
+                                    # 直接relay连接（无跳板）
+                                    target = connection_specs.get('target', {})
+                                    if target:
+                                        jump_info = "直连relay"
+                            
+                            # 获取Docker配置信息
+                            docker_info = ""
+                            specs = server_config.get('specs', {})
+                            docker_config = specs.get('docker', {})
+                            if docker_config:
+                                image = docker_config.get('image', '')
+                                container = docker_config.get('container_name', '')
+                                ports = docker_config.get('ports', [])
+                                
+                                # 简化镜像名显示
+                                if image:
+                                    if 'iregistry.baidu-int.com' in image:
+                                        image_short = image.split('/')[-1] if '/' in image else image
+                                    else:
+                                        image_short = image
+                                else:
+                                    image_short = "未配置"
+                                
+                                docker_info = f"{image_short}"
+                                if container:
+                                    docker_info += f" ({container})"
+                                if ports:
+                                    port_str = ", ".join([str(p) for p in ports[:2]])  # 只显示前2个端口
+                                    if len(ports) > 2:
+                                        port_str += f"... (+{len(ports)-2})"
+                                    docker_info += f" [{port_str}]"
+                            
+                            # 获取BOS配置信息
+                            bos_info = ""
+                            bos_config = specs.get('bos', {})
+                            if bos_config:
+                                bucket = bos_config.get('bucket', '')
+                                if bucket:
+                                    bos_info = bucket.replace('bos://', '')
+                            
+                            # 构建详细服务器信息
+                            server_detail = {
+                                'name': server_name,
+                                'description': server_config.get('description', ''),
+                                'host': server_config.get('host', ''),
+                                'username': server_config.get('username', ''),
+                                'port': server_config.get('port', 22),
+                                'connection_type': connection_type,
+                                'is_relay': is_relay,
+                                'jump_info': jump_info,
+                                'docker_info': docker_info,
+                                'bos_info': bos_info,
+                                'connected': connection_status.get('connected', False),
+                                'session_name': server_config.get('session', {}).get('name', f"{server_name}_session")
+                            }
+                            
+                            detailed_servers.append(server_detail)
+                    
+                    except Exception as e:
+                        # 如果获取详细信息失败，回退到简单模式
+                        servers = manager.list_servers()
+                        for server in servers:
+                            detailed_servers.append({
+                                'name': server.get('name', ''),
+                                'description': server.get('description', ''),
+                                'connected': server.get('connected', False),
+                                'connection_type': 'unknown',
+                                'error': f"配置解析失败: {str(e)}"
+                            })
+                    
+                    # 创建美观的表格输出
+                    if detailed_servers:
+                        content = "🖥️  **远程服务器配置列表**\n\n"
+                        
+                        for i, server in enumerate(detailed_servers, 1):
+                            # 连接状态图标
+                            status_icon = "🟢" if server.get('connected') else "🔴"
+                            
+                            # 连接类型图标
+                            if server.get('is_relay'):
+                                type_icon = "🔀" if server.get('jump_info') and server.get('jump_info') != "直连relay" else "🔗"
+                                type_text = "二级跳板" if server.get('jump_info') and server.get('jump_info') != "直连relay" else "Relay连接"
+                            else:
+                                type_icon = "🔗"
+                                type_text = "直连SSH"
+                            
+                            content += f"**{i}. {server['name']}** {status_icon}\n"
+                            content += f"   📝 {server.get('description', '无描述')}\n"
+                            content += f"   {type_icon} **连接方式**: {type_text}\n"
+                            content += f"   🎯 **目标**: {server.get('username', '')}@{server.get('host', '')}:{server.get('port', 22)}\n"
+                            
+                            # 跳板信息
+                            if server.get('jump_info') and server.get('jump_info') != "直连relay":
+                                content += f"   🚀 **跳板**: {server['jump_info']}\n"
+                            
+                            # Docker配置
+                            if server.get('docker_info'):
+                                content += f"   🐳 **Docker**: {server['docker_info']}\n"
+                            
+                            # BOS配置
+                            if server.get('bos_info'):
+                                content += f"   ☁️  **BOS**: {server['bos_info']}\n"
+                            
+                            # 会话信息
+                            if server.get('session_name'):
+                                content += f"   📺 **会话**: {server['session_name']}\n"
+                            
+                            content += "\n"
+                        
+                        # 添加统计信息
+                        total_servers = len(detailed_servers)
+                        connected_count = sum(1 for s in detailed_servers if s.get('connected'))
+                        relay_count = sum(1 for s in detailed_servers if s.get('is_relay'))
+                        docker_count = sum(1 for s in detailed_servers if s.get('docker_info'))
+                        
+                        content += "📊 **统计信息**:\n"
+                        content += f"   • 总服务器数: {total_servers}\n"
+                        content += f"   • 已连接: {connected_count}/{total_servers}\n"
+                        content += f"   • Relay连接: {relay_count}\n"
+                        content += f"   • Docker配置: {docker_count}\n"
+                    else:
+                        content = "📋 暂无配置的服务器"
                     
                 elif tool_name == "connect_server":
                     server_name = tool_arguments.get("server_name")
@@ -657,195 +855,164 @@ async def handle_request(request):
                         }, ensure_ascii=False, indent=2)
                 
                 elif tool_name == "create_server_config":
+                    # 🔥 版本标识：2024-06-22 19:25 - 强制交互模式修复版本
+                    debug_log("🔥 版本标识：2024-06-22 19:25 - 强制交互模式修复版本")
+                    
                     try:
-                        debug_log("Starting create_server_config tool - direct configuration")
+                        # 🎯 获取参数
+                        server_name = tool_arguments.get("name", "").strip()
+                        server_host = tool_arguments.get("host", "").strip()
+                        server_username = tool_arguments.get("username", "").strip()
+                        server_port = tool_arguments.get("port", 22)
+                        connection_type = tool_arguments.get("connection_type", "relay")  # 默认relay
+                        server_description = tool_arguments.get("description", "").strip()
+                        relay_target_host = tool_arguments.get("relay_target_host", "").strip()
+                        docker_enabled = tool_arguments.get("docker_enabled", True)  # 默认启用Docker
+                        docker_image = tool_arguments.get("docker_image", "xmlir_ubuntu_2004_x86_64:v0.32")
+                        docker_container = tool_arguments.get("docker_container", "xyh_pytorch")
+                        docker_ports = tool_arguments.get("docker_ports", ["8080:8080", "8888:8888", "6006:6006"])
+                        docker_volumes = tool_arguments.get("docker_volumes", ["/home:/home", "/data:/data"])
+                        docker_shell = tool_arguments.get("docker_shell", "bash")
+                        docker_auto_create = tool_arguments.get("docker_auto_create", True)
                         
-                        # 🎯 直接调用配置管理器进行配置
-                        config_manager = EnhancedConfigManager()
+                        # 调试所有参数
+                        debug_log(f"所有tool_arguments: {tool_arguments}")
+                        debug_log(f"Docker参数调试:")
+                        debug_log(f"  docker_ports: {docker_ports} (type: {type(docker_ports)})")
+                        debug_log(f"  docker_volumes: {docker_volumes} (type: {type(docker_volumes)})")
+                        debug_log(f"  docker_shell: {docker_shell} (type: {type(docker_shell)})")
+                        debug_log(f"  docker_auto_create: {docker_auto_create} (type: {type(docker_auto_create)})")
                         
-                        # 检查是否提供了足够的参数来直接创建配置
-                        provided_params = {k: v for k, v in tool_arguments.items() if v is not None and v != ''}
-                        required_params = ['name', 'host', 'username']
-                        has_required = all(param in provided_params for param in required_params)
+                        # 🌟 强制交互策略：无论用户输入什么参数，都要跳出交互配置界面
+                        # 用户明确要求：不论输入什么都应该跳出交互配置界面
                         
-                        if has_required:
-                            # 直接创建配置模式
-                            debug_log("Creating server config directly with provided parameters")
+                        # 🎯 强制启动交互配置界面
+                        debug_log("🎯 强制启动交互配置界面 - 按用户要求")
+                        
+                        try:
+                            # 创建配置管理器实例
+                            config_manager = EnhancedConfigManager()
                             
-                            server_config = {
-                                'host': tool_arguments.get('host'),
-                                'username': tool_arguments.get('username'),
-                                'port': tool_arguments.get('port', 22),
-                                'connection_type': tool_arguments.get('connection_type', 'ssh'),
-                                'description': tool_arguments.get('description', f"Server {tool_arguments.get('name')}")
-                            }
+                            # 准备预填充参数
+                            prefill_params = {}
+                            if server_name:
+                                prefill_params['name'] = server_name
+                            if server_host:
+                                prefill_params['host'] = server_host
+                            if server_username:
+                                prefill_params['username'] = server_username
+                            if server_port != 22:
+                                prefill_params['port'] = server_port
+                            if server_description:
+                                prefill_params['description'] = server_description
+                            if connection_type != 'ssh':
+                                prefill_params['connection_type'] = connection_type
+                            if docker_enabled:
+                                prefill_params['docker_enabled'] = docker_enabled
+                            if docker_image != 'ubuntu:20.04':
+                                prefill_params['docker_image'] = docker_image
+                            if docker_container:
+                                prefill_params['docker_container'] = docker_container
+                            # 总是包含非默认的Docker参数
+                            if docker_ports:
+                                prefill_params['docker_ports'] = docker_ports
+                            if docker_volumes:
+                                prefill_params['docker_volumes'] = docker_volumes
+                            if docker_shell:
+                                prefill_params['docker_shell'] = docker_shell
+                            if docker_auto_create is not None:
+                                prefill_params['docker_auto_create'] = docker_auto_create
+                            if relay_target_host:
+                                prefill_params['relay_target_host'] = relay_target_host
                             
-                            # 处理Docker配置
-                            if tool_arguments.get('docker_enabled'):
-                                server_config['specs'] = {
-                                    'docker': {
-                                        'auto_create': True,
-                                        'container_name': tool_arguments.get('docker_container', f"{tool_arguments.get('name')}_container"),
-                                        'image': tool_arguments.get('docker_image', 'ubuntu:20.04'),
-                                        'ports': [],
-                                        'volumes': []
-                                    }
-                                }
+                            # 🎯 新策略：直接启动交互配置界面
+                            debug_log("🎯 直接启动交互配置界面 - 用户强烈要求")
                             
-                            # 处理Relay配置
-                            if tool_arguments.get('relay_target_host'):
-                                if 'specs' not in server_config:
-                                    server_config['specs'] = {}
-                                server_config['specs']['connection'] = {
-                                    'target': {'host': tool_arguments.get('relay_target_host')}
-                                }
-                            
-                            # 保存配置
-                            new_config = {'servers': {tool_arguments.get('name'): server_config}}
-                            config_manager.save_config(new_config, merge_mode=True)
-                            
-                            content = f"✅ **服务器配置创建成功！**\n\n"
-                            content += f"📋 **服务器信息**:\n"
-                            content += f"• **名称**: {tool_arguments.get('name')}\n"
-                            content += f"• **主机**: {server_config['host']}\n"
-                            content += f"• **用户**: {server_config['username']}\n"
-                            content += f"• **端口**: {server_config['port']}\n"
-                            content += f"• **连接类型**: {server_config['connection_type']}\n"
-                            if tool_arguments.get('docker_enabled'):
-                                content += f"• **Docker**: 已启用 ({tool_arguments.get('docker_image', 'ubuntu:20.04')})\n"
-                            content += f"\n🎯 **后续步骤**:\n"
-                            content += f"• 使用 `connect_server` 连接到服务器\n"
-                            content += f"• 使用 `get_server_info` 查看详细信息\n"
-                            
-                        else:
-                            # 启动交互式向导模式 - 在新终端窗口中运行
-                            debug_log("Launching interactive guided setup in new terminal window")
-                            
+                            # 🚀 直接启动向导配置，传递预填充参数
                             try:
+                                debug_log("🚀 开始启动向导配置...")
+                                result = config_manager.launch_cursor_terminal_config(prefill_params=prefill_params)
+                                
+                                if result.get("success"):
+                                    content = f"✅ **交互配置界面已成功启动**\n\n"
+                                    content += f"🎯 **预填充参数已应用**：\n"
+                                    for key, value in prefill_params.items():
+                                        content += f"  ✅ **{key}**: `{value}`\n"
+                                    content += f"\n🌟 **配置界面已在新终端窗口中打开**\n"
+                                    content += f"💡 **请查看新打开的终端窗口完成配置**\n"
+                                    content += f"🔧 **进程ID**: {result.get('process_id', 'N/A')}\n"
+                                    if result.get('prefill_file'):
+                                        content += f"📄 **预填充文件**: `{result.get('prefill_file')}`\n"
+                                    content += f"\n✨ **配置完成后，您可以通过其他MCP工具连接和管理这个服务器**"
+                                    
+                                    debug_log("✅ 向导配置启动成功")
+                                else:
+                                    # 启动失败，提供备用方案
+                                    raise Exception(result.get("error", "启动配置界面失败"))
+                                
+                            except Exception as guided_error:
+                                debug_log(f"向导配置异常: {str(guided_error)}")
+                                debug_log(f"向导配置异常详情: {traceback.format_exc()}")
+                                
+                                # 如果直接启动失败，提供备用命令
+                                # 生成预填充参数的JSON字符串
+                                prefill_json = json.dumps(prefill_params, ensure_ascii=False)
+                                
+                                content = f"⚠️ **直接启动配置向导遇到问题，请手动启动**\n\n"
+                                content += f"**错误**: {str(guided_error)}\n\n"
+                                content += f"📋 **您提供的参数将作为默认值预填充**：\n"
+                                for key, value in prefill_params.items():
+                                    content += f"  ✅ **{key}**: `{value}`\n"
+                                content += f"\n🚀 **请复制并运行以下命令**：\n\n"
+                                content += f"```bash\n"
+                                content += f"cd /Users/xuyehua/Code/remote-terminal-mcp\n"
+                                content += f"python3 enhanced_config_manager.py --cursor-terminal\n"
+                                content += f"```\n\n"
+                                content += f"💡 **操作步骤**：\n"
+                                content += f"  1️⃣ **复制上述命令** - 点击代码块右上角的复制按钮\n"
+                                content += f"  2️⃣ **打开Cursor内置终端** - 在Cursor界面中打开终端\n"
+                                content += f"  3️⃣ **粘贴并运行** - 粘贴命令并按回车键\n"
+                                content += f"  4️⃣ **跟随向导** - 按照彩色提示完成配置\n\n"
+                                
+                                # 创建临时预填充文件
                                 import tempfile
                                 import os
-                                
-                                # 创建交互式配置脚本
-                                script_content = f'''#!/usr/bin/env python3
-"""
-Remote Terminal MCP - 交互式服务器配置向导
-像interval工具一样的交互式体验
-"""
-
-import sys
-import os
-
-# 添加项目路径
-project_root = "{os.path.dirname(os.path.abspath(__file__))}"
-sys.path.insert(0, project_root)
-
-from enhanced_config_manager import EnhancedConfigManager
-
-def main():
-    print("🚀 Remote Terminal MCP - 交互式服务器配置向导")
-    print("=" * 60)
-    print("💡 像interval工具一样的交互式配置体验")
-    print("📝 请按照提示逐步输入服务器配置信息")
-    print("=" * 60)
-    print()
-    
-    try:
-        # 创建配置管理器实例
-        config_manager = EnhancedConfigManager()
-        
-        # 启动向导配置（不使用MCP模式限制）
-        result = config_manager.guided_setup(force_interactive=False)
-        
-        if result:
-            print()
-            print("✅ 服务器配置创建成功！")
-            print("🎉 你可以返回Cursor使用 list_servers 查看配置")
-            print("🚀 使用 connect_server 连接到新服务器")
-        else:
-            print()
-            print("⚠️ 配置过程已取消")
-            print("💡 如需重新配置，请再次运行此工具")
-            
-    except KeyboardInterrupt:
-        print()
-        print("⚠️ 用户中断了配置过程")
-        print("💡 如需重新配置，请再次运行此工具")
-    except Exception as e:
-        print()
-        print(f"❌ 配置过程出现错误: {{e}}")
-        print("💡 请检查配置并重试")
-    
-    print()
-    input("按Enter键关闭此窗口...")
-
-if __name__ == "__main__":
-    main()
-'''
-                                
-                                # 写入临时脚本文件
-                                with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-                                    f.write(script_content)
-                                    temp_script = f.name
-                                
-                                # 获取当前工作目录
-                                current_dir = os.getcwd()
-                                
-                                # 在新的终端窗口中运行交互式配置
-                                # 使用AppleScript在macOS上打开新的Terminal窗口
-                                applescript = f'''
-                                tell application "Terminal"
-                                    do script "cd '{current_dir}' && python3 '{temp_script}' && rm '{temp_script}'"
-                                    activate
-                                end tell
-                                '''
-                                
-                                # 执行AppleScript
-                                result = subprocess.run(['osascript', '-e', applescript], 
-                                                      capture_output=True, text=True, timeout=10)
-                                
-                                if result.returncode == 0:
-                                    content = f"🚀 **交互式配置向导已启动！**\n\n"
-                                    content += f"📱 **操作说明**:\n"
-                                    content += f"• 新的Terminal窗口已打开\n"
-                                    content += f"• 请在新窗口中按照提示进行配置\n"
-                                    content += f"• 这就像interval工具一样的交互式体验\n"
-                                    content += f"• 配置完成后，返回这里查看结果\n\n"
-                                    content += f"🎯 **后续步骤**:\n"
-                                    content += f"• 配置完成后使用 `list_servers` 查看新服务器\n"
-                                    content += f"• 使用 `connect_server` 连接到服务器\n\n"
-                                    content += f"💡 **提示**: 如果没有看到新窗口，请检查Terminal.app权限"
-                                else:
-                                    raise Exception(f"AppleScript执行失败: {result.stderr}")
+                                try:
+                                    temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8')
+                                    temp_file.write(prefill_json)
+                                    temp_file.close()
                                     
-                            except Exception as e:
-                                debug_log(f"Failed to launch interactive terminal: {str(e)}")
+                                    content += f"🎯 **带预填充参数的命令**（推荐）：\n"
+                                    content += f"```bash\n"
+                                    content += f"cd /Users/xuyehua/Code/remote-terminal-mcp\n"
+                                    content += f"python3 enhanced_config_manager.py --prefill {temp_file.name} --cursor-terminal --auto-close\n"
+                                    content += f"```\n\n"
+                                    content += f"💡 **预填充文件已创建**: `{temp_file.name}`"
+                                    
+                                except Exception as temp_error:
+                                    debug_log(f"创建临时预填充文件失败: {temp_error}")
+                                    content += f"```"
+                            
+                            debug_log("Successfully generated direct command for user")
                                 
-                                # 降级到参数提示模式
-                                content = f"❌ **无法启动交互式终端窗口**\n\n"
-                                content += f"错误: {str(e)}\n\n"
-                                content += f"💡 **请提供以下参数来直接创建配置**:\n\n"
-                                content += f"**必需参数**:\n"
-                                content += f"• `name`: 服务器名称 (例如: 'dev-server')\n"
-                                content += f"• `host`: 服务器地址 (例如: '192.168.1.100')\n"
-                                content += f"• `username`: 用户名 (例如: 'ubuntu')\n\n"
-                                content += f"**可选参数**:\n"
-                                content += f"• `port`: SSH端口 (默认: 22)\n"
-                                content += f"• `connection_type`: 连接类型 ('ssh' 或 'relay')\n"
-                                content += f"• `description`: 服务器描述\n\n"
-                                content += f"**示例**:\n"
-                                content += f"```\n"
-                                content += f"name: my-server\n"
-                                content += f"host: 192.168.1.100\n"
-                                content += f"username: ubuntu\n"
-                                content += f"description: 我的开发服务器\n"
-                                content += f"```"
+                        except Exception as config_error:
+                            debug_log(f"交互配置命令生成异常: {str(config_error)}")
+                            debug_log(f"交互配置命令生成异常详情: {traceback.format_exc()}")
+                            content = f"❌ **交互配置命令生成异常**\n\n"
+                            content += f"**错误信息**: {str(config_error)}\n\n"
+                            content += f"💡 **手动启动方案**：\n"
+                            content += f"```bash\n"
+                            content += f"cd /Users/xuyehua/Code/remote-terminal-mcp\n"
+                            content += f"python3 enhanced_config_manager.py\n"
+                            content += f"```\n\n"
+                            content += f"🔍 **详细错误信息**:\n```\n{traceback.format_exc()}\n```"
                             
                     except Exception as e:
-                        debug_log(f"Error in create_server_config: {str(e)}")
-                        debug_log(f"Error traceback: {traceback.format_exc()}")
-                        content = f"❌ **创建服务器配置失败**: {str(e)}\n\n"
-                        content += f"💡 **建议**: 请检查参数或稍后重试\n\n"
-                        content += f"🔍 **详细错误信息**:\n{traceback.format_exc()}"
+                        debug_log(f"Create server config error: {str(e)}")
+                        debug_log(f"Create server config traceback: {traceback.format_exc()}")
+                        content = json.dumps({
+                            "error": f"服务器配置创建失败: {str(e)}"
+                        }, ensure_ascii=False, indent=2)
                 
                 elif tool_name == "update_server_config":
                     try:
@@ -1014,7 +1181,12 @@ if __name__ == "__main__":
                             else:
                                 try:
                                     # 读取当前配置
-                                    current_config = mcp_config_manager.load_config()
+                                    import yaml
+                                    with open(mcp_config_manager.config_path, 'r', encoding='utf-8') as f:
+                                        current_config = yaml.safe_load(f)
+                                    
+                                    if not current_config:
+                                        current_config = {"servers": {}}
                                     
                                     # 删除指定服务器
                                     if "servers" in current_config and server_name in current_config["servers"]:
@@ -1092,7 +1264,8 @@ if __name__ == "__main__":
 
 async def main():
     """主事件循环"""
-    debug_log(f"Starting MCP Python Server v{SERVER_VERSION}")
+    if DEBUG:
+        print(f"[DEBUG] Starting MCP Python Server v{SERVER_VERSION}", file=sys.stderr, flush=True)
     
     loop = asyncio.get_event_loop()
 
@@ -1101,7 +1274,8 @@ async def main():
     protocol = asyncio.StreamReaderProtocol(reader)
     await loop.connect_read_pipe(lambda: protocol, sys.stdin)
 
-    debug_log("Entering main while-loop to process messages.")
+    if DEBUG:
+        print("[DEBUG] Entering main while-loop to process messages.", file=sys.stderr, flush=True)
     while True:
         try:
             line_bytes = await reader.readline()

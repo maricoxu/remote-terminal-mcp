@@ -49,13 +49,13 @@ npm install
 
 1. 启动Cursor
 2. 在对话中说："列出所有远程服务器"
-3. 系统会自动创建配置文件 `~/.remote-terminal-mcp/config.yaml`
+3. 系统会自动创建配置文件 `~/.remote-terminal/config.yaml`
 
 ## 📋 配置步骤详解
 
 ### 1. 基础配置文件结构
 
-配置文件位置：`~/.remote-terminal-mcp/config.yaml`
+配置文件位置：`~/.remote-terminal/config.yaml`
 
 ```yaml
 # 服务器配置
@@ -509,10 +509,10 @@ ping bos.api.com
 
 ### 日志文件位置
 
-- **MCP服务器日志**：`~/.remote-terminal-mcp/logs/mcp.log`
-- **连接日志**：`~/.remote-terminal-mcp/logs/connections.log`
-- **Docker日志**：`~/.remote-terminal-mcp/logs/docker.log`
-- **BOS同步日志**：`~/.remote-terminal-mcp/logs/bos.log`
+- **MCP服务器日志**：`~/.remote-terminal/logs/mcp.log`
+- **连接日志**：`~/.remote-terminal/logs/connections.log`
+- **Docker日志**：`~/.remote-terminal/logs/docker.log`
+- **BOS同步日志**：`~/.remote-terminal/logs/bos.log`
 
 ## 📞 获取帮助
 

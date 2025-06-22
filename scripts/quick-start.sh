@@ -43,7 +43,7 @@ echo ""
 echo "💡 使用提示:"
 echo "   • 本地开发环境已就绪"
 echo "   • tmux会话: dev-session"
-echo "   • 配置远程连接: ~/.remote-terminal-mcp/config.yaml"
+echo "   • 配置远程连接: ~/.remote-terminal/config.yaml"
 echo ""
 echo "⏹️  按 Ctrl+C 停止服务器"
 

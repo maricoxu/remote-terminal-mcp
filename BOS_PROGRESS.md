@@ -85,7 +85,7 @@ servers:
 - `docker_config_manager.py`: BOS配置管理
 - `python/ssh_manager.py`: BOS设置集成
 - `test_bos_config.py`: BOS功能测试
-- `~/.remote-terminal-mcp/config.yaml`: 配置存储
+- `~/.remote-terminal/config.yaml`: 配置存储
 
 ---
 *创建时间: 2024年12月*
