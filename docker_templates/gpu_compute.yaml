@@ -1,0 +1,29 @@
+auto_create: true
+container_name: gpu_compute
+description: GPU计算环境
+environment:
+  CUDA_VISIBLE_DEVICES: all
+  NVIDIA_VISIBLE_DEVICES: all
+gpus: all
+image: nvidia/cuda:11.3-devel-ubuntu20.04
+install_packages:
+- python3
+- python3-pip
+- git
+- vim
+memory_limit: 32g
+network_mode: host
+privileged: true
+restart_policy: always
+setup_commands:
+- apt update && apt install -y python3 python3-pip git vim
+- pip3 install numpy torch torchvision
+- nvidia-smi
+- echo 'GPU compute environment ready!'
+shm_size: 16g
+template_type: ml
+volumes:
+- /data:/data
+- /home:/home
+- /workspace:/workspace
+working_directory: /workspace

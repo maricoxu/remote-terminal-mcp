@@ -123,7 +123,7 @@ python3 config-helper.py --quick
 服务器名称 (如: cpu-221): dev-server
 目标服务器地址 (如: internal-server.company.com): internal-server.company.com
 用户名 [username]: 
-✅ 配置已保存到: /Users/username/.remote-terminal-mcp/config.yaml
+✅ 配置已保存到: /Users/username/.remote-terminal/config.yaml
 ✅ Relay服务器 'dev-server' 配置完成
 ```
 
@@ -209,7 +209,7 @@ Docker容器名 [dev_container]:
 
 ## 配置文件位置
 
-- **用户配置**：`~/.remote-terminal-mcp/config.yaml`
+- **用户配置**：`~/.remote-terminal/config.yaml`
 - **项目配置**：`./config/servers.yaml`
 - **模板配置**：`./templates/`
 

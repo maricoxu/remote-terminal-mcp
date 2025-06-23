@@ -1,0 +1,10 @@
+{
+  "name": "tj09",
+  "host": "tjdm-isa-ai-p800node09.tjdm",
+  "username": "xuyehua",
+  "description": "天津P800节点09服务器",
+  "connection_type": "relay",
+  "docker_enabled": true,
+  "docker_image": "xmlir_ubuntu_2004_x86_64:v0.32",
+  "docker_container": "xyh_pytorch"
+} 

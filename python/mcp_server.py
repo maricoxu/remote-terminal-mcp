@@ -323,7 +323,7 @@ def create_tools_list():
                     "docker_auto_create": {
                         "type": "boolean",
                         "description": "是否自动创建Docker容器（如果不存在）",
-                        "default": true
+                        "default": True
                     },
                     "auto_detect": {
                         "type": "boolean",
@@ -395,6 +395,28 @@ def create_tools_list():
                     "docker_container": {
                         "type": "string",
                         "description": "Docker container name"
+                    },
+                    "docker_ports": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Docker端口映射列表，格式：[\"host:container\"]，例如：[\"8080:8080\", \"5000:5000\"]",
+                        "default": ["8080:8080", "8888:8888", "6006:6006"]
+                    },
+                    "docker_volumes": {
+                        "type": "array", 
+                        "items": {"type": "string"},
+                        "description": "Docker卷挂载列表，格式：[\"host:container\"]，例如：[\"/home:/home\", \"/data:/data\"]",
+                        "default": ["/home:/home", "/data:/data"]
+                    },
+                    "docker_shell": {
+                        "type": "string",
+                        "description": "Docker容器内使用的shell，例如：bash, zsh, sh",
+                        "default": "bash"
+                    },
+                    "docker_auto_create": {
+                        "type": "boolean",
+                        "description": "是否自动创建Docker容器（如果不存在）",
+                        "default": True
                     },
                     "show_current_config": {
                         "type": "boolean",
@@ -1016,13 +1038,20 @@ async def handle_request(request):
                 
                 elif tool_name == "update_server_config":
                     try:
+                        # 🎯 NEW UPDATE LOGIC 2024-12-22 - 获取参数
+                        debug_log("🎯 NEW UPDATE LOGIC: 使用新的update_server_config逻辑！")
+                        # 🔥 强制标记：如果看到这个，说明新代码已生效
+                        content = "🔥 **新的update_server_config逻辑已生效！** 🔥\n\n"
+                        content += f"🎯 **正在更新服务器**: `{tool_arguments.get('server_name', 'unknown')}`\n\n"
+                        content += "✅ **代码重新加载成功！新的交互式update逻辑已启用！**\n\n"
+                        content += "🚀 **下一步**: 这将启动交互配置界面（功能开发中）"
                         server_name = tool_arguments.get("server_name")
                         if not server_name:
                             content = json.dumps({
                                 "error": "server_name parameter is required"
                             }, ensure_ascii=False, indent=2)
                         else:
-                            # 获取现有服务器配置
+                            # 🔍 验证服务器是否存在
                             mcp_config_manager = EnhancedConfigManager()
                             servers = mcp_config_manager.get_existing_servers()
                             
@@ -1032,126 +1061,162 @@ async def handle_request(request):
                                     "available_servers": list(servers.keys())
                                 }, ensure_ascii=False, indent=2)
                             else:
-                                # 获取现有配置
-                                server_config = servers[server_name].copy()
-                                updated_fields = []
+                                # 🌟 强制交互策略：与create_server_config保持一致
+                                # 无论用户输入什么参数，都要跳出交互配置界面
                                 
-                                # 更新提供的字段
-                                if tool_arguments.get("host"):
-                                    server_config["host"] = tool_arguments.get("host")
-                                    updated_fields.append("host")
-                                if tool_arguments.get("username"):
-                                    server_config["username"] = tool_arguments.get("username")
-                                    updated_fields.append("username")
-                                if tool_arguments.get("port"):
-                                    server_config["port"] = int(tool_arguments.get("port"))
-                                    updated_fields.append("port")
-                                if tool_arguments.get("connection_type"):
-                                    server_config["connection_type"] = tool_arguments.get("connection_type")
-                                    updated_fields.append("connection_type")
-                                if tool_arguments.get("description"):
-                                    server_config["description"] = tool_arguments.get("description")
-                                    updated_fields.append("description")
+                                # 🎯 获取当前配置作为基础
+                                current_config = servers[server_name].copy()
                                 
-                                # 处理relay配置
-                                if tool_arguments.get("relay_target_host"):
-                                    if "specs" not in server_config:
-                                        server_config["specs"] = {}
-                                    if "connection" not in server_config["specs"]:
-                                        server_config["specs"]["connection"] = {}
-                                    server_config["specs"]["connection"]["target"] = {"host": tool_arguments.get("relay_target_host")}
-                                    updated_fields.append("relay_target_host")
+                                # 🎯 获取更新参数
+                                server_host = tool_arguments.get("host", current_config.get("host", ""))
+                                server_username = tool_arguments.get("username", current_config.get("username", ""))
+                                server_port = tool_arguments.get("port", current_config.get("port", 22))
+                                connection_type = tool_arguments.get("connection_type", current_config.get("connection_type", "ssh"))
+                                server_description = tool_arguments.get("description", current_config.get("description", ""))
+                                relay_target_host = tool_arguments.get("relay_target_host", "")
+                                docker_enabled = tool_arguments.get("docker_enabled", 
+                                    bool(current_config.get("specs", {}).get("docker")))
                                 
-                                # 处理docker配置
-                                docker_enabled = tool_arguments.get("docker_enabled")
-                                if docker_enabled is not None:
-                                    if "specs" not in server_config:
-                                        server_config["specs"] = {}
+                                # 获取当前Docker配置
+                                current_docker = current_config.get("specs", {}).get("docker", {})
+                                docker_image = tool_arguments.get("docker_image", current_docker.get("image", "ubuntu:20.04"))
+                                docker_container = tool_arguments.get("docker_container", 
+                                    current_docker.get("container") or current_docker.get("container_name", f"{server_name}_container"))
+                                docker_ports = tool_arguments.get("docker_ports", current_docker.get("ports", ["8080:8080", "8888:8888", "6006:6006"]))
+                                docker_volumes = tool_arguments.get("docker_volumes", current_docker.get("volumes", ["/home:/home", "/data:/data"]))
+                                docker_shell = tool_arguments.get("docker_shell", current_docker.get("shell", "bash"))
+                                docker_auto_create = tool_arguments.get("docker_auto_create", current_docker.get("auto_create", True))
+                                
+                                # 获取当前relay配置
+                                current_relay = current_config.get("specs", {}).get("connection", {}).get("target", {})
+                                if not relay_target_host and current_relay:
+                                    relay_target_host = current_relay.get("host", "")
+                                
+                                debug_log("🎯 强制启动更新配置界面 - 与create保持一致")
+                                
+                                try:
+                                    # 创建配置管理器实例
+                                    config_manager = EnhancedConfigManager()
                                     
+                                    # 准备预填充参数（包含当前配置和用户提供的更新）
+                                    prefill_params = {
+                                        'name': server_name,
+                                        'host': server_host,
+                                        'username': server_username,
+                                        'port': server_port,
+                                        'connection_type': connection_type,
+                                        'description': server_description or f"更新的{connection_type.upper()}服务器配置",
+                                        'docker_enabled': docker_enabled,
+                                        'update_mode': True  # 标记为更新模式
+                                    }
+                                    
+                                    # 添加Docker参数
                                     if docker_enabled:
-                                        docker_config = {
-                                            "auto_create": True,
-                                            "container_name": tool_arguments.get("docker_container", f"{server_name}_container"),
-                                            "image": tool_arguments.get("docker_image", "ubuntu:20.04"),
-                                            "ports": [],
-                                            "volumes": []
-                                        }
-                                        server_config["specs"]["docker"] = docker_config
-                                        updated_fields.append("docker_enabled")
-                                    else:
-                                        # 移除docker配置
-                                        if "docker" in server_config.get("specs", {}):
-                                            del server_config["specs"]["docker"]
-                                            updated_fields.append("docker_disabled")
-                                
-                                if updated_fields:
-                                    # 保存更新后的配置
-                                    update_config = {"servers": {server_name: server_config}}
-                                    mcp_config_manager.save_config(update_config, merge_mode=True)
+                                        prefill_params.update({
+                                            'docker_image': docker_image,
+                                            'docker_container': docker_container,
+                                            'docker_ports': docker_ports,
+                                            'docker_volumes': docker_volumes,
+                                            'docker_shell': docker_shell,
+                                            'docker_auto_create': docker_auto_create
+                                        })
                                     
-                                    content = json.dumps({
-                                        "success": True,
-                                        "message": f"Server '{server_name}' updated successfully",
-                                        "updated_fields": updated_fields,
-                                        "server_config": server_config
-                                    }, ensure_ascii=False, indent=2)
-                                else:
-                                    # 🎯 内置向导：没有更新字段时提供引导
-                                    current_config = servers[server_name]
-                                    content = f"🎯 **服务器配置更新向导**\n\n"
-                                    content += f"📋 **当前服务器配置** ('{server_name}'):\n"
-                                    content += f"  • **host**: {current_config.get('host', 'N/A')}\n"
-                                    content += f"  • **username**: {current_config.get('username', 'N/A')}\n"
-                                    content += f"  • **port**: {current_config.get('port', 22)}\n"
-                                    content += f"  • **connection_type**: {current_config.get('connection_type', 'ssh')}\n"
-                                    content += f"  • **description**: {current_config.get('description', '无描述')}\n"
+                                    # 添加relay参数
+                                    if connection_type == 'relay' and relay_target_host:
+                                        prefill_params['relay_target_host'] = relay_target_host
                                     
-                                    # 显示Docker配置状态
-                                    docker_config = current_config.get('specs', {}).get('docker')
-                                    if docker_config:
-                                        content += f"  • **docker_enabled**: true\n"
-                                        content += f"    - container: {docker_config.get('container_name', 'N/A')}\n"
-                                        content += f"    - image: {docker_config.get('image', 'N/A')}\n"
-                                    else:
-                                        content += f"  • **docker_enabled**: false\n"
+                                    # 🎯 新策略：直接启动交互配置界面（更新模式）
+                                    debug_log("🎯 直接启动更新配置界面 - 用户强烈要求")
                                     
-                                    # 显示Relay配置状态
-                                    relay_target = current_config.get('specs', {}).get('connection', {}).get('target', {}).get('host')
-                                    if relay_target:
-                                        content += f"  • **relay_target_host**: {relay_target}\n"
+                                    # 🚀 直接启动向导配置，传递预填充参数
+                                    try:
+                                        debug_log("🚀 开始启动更新向导配置...")
+                                        result = config_manager.launch_cursor_terminal_config(prefill_params=prefill_params)
+                                        
+                                        if result.get("success"):
+                                            content = f"✅ **服务器更新配置界面已成功启动**\n\n"
+                                            content += f"🔄 **正在更新服务器**: `{server_name}`\n\n"
+                                            content += f"🎯 **当前配置已预填充**：\n"
+                                            for key, value in prefill_params.items():
+                                                if key != 'update_mode':  # 不显示内部标记
+                                                    content += f"  ✅ **{key}**: `{value}`\n"
+                                            content += f"\n🌟 **配置界面已在新终端窗口中打开**\n"
+                                            content += f"💡 **请查看新打开的终端窗口完成配置更新**\n"
+                                            content += f"🔧 **进程ID**: {result.get('process_id', 'N/A')}\n"
+                                            if result.get('prefill_file'):
+                                                content += f"📄 **预填充文件**: `{result.get('prefill_file')}`\n"
+                                            content += f"\n✨ **配置更新完成后，服务器配置将自动保存**"
+                                            
+                                            debug_log("✅ 更新向导配置启动成功")
+                                        else:
+                                            # 启动失败，提供备用方案
+                                            raise Exception(result.get("error", "启动更新配置界面失败"))
+                                        
+                                    except Exception as guided_error:
+                                        debug_log(f"更新向导配置异常: {str(guided_error)}")
+                                        debug_log(f"更新向导配置异常详情: {traceback.format_exc()}")
+                                        
+                                        # 如果直接启动失败，提供备用命令
+                                        # 生成预填充参数的JSON字符串
+                                        prefill_json = json.dumps(prefill_params, ensure_ascii=False)
+                                        
+                                        content = f"⚠️ **直接启动更新配置向导遇到问题，请手动启动**\n\n"
+                                        content += f"**错误**: {str(guided_error)}\n\n"
+                                        content += f"🔄 **正在更新服务器**: `{server_name}`\n\n"
+                                        content += f"📋 **当前配置将作为默认值预填充**：\n"
+                                        for key, value in prefill_params.items():
+                                            if key != 'update_mode':
+                                                content += f"  ✅ **{key}**: `{value}`\n"
+                                        content += f"\n🚀 **请复制并运行以下命令**：\n\n"
+                                        content += f"```bash\n"
+                                        content += f"cd /Users/xuyehua/Code/remote-terminal-mcp\n"
+                                        content += f"python3 enhanced_config_manager.py --cursor-terminal\n"
+                                        content += f"```\n\n"
+                                        content += f"💡 **操作步骤**：\n"
+                                        content += f"  1️⃣ **复制上述命令** - 点击代码块右上角的复制按钮\n"
+                                        content += f"  2️⃣ **打开Cursor内置终端** - 在Cursor界面中打开终端\n"
+                                        content += f"  3️⃣ **粘贴并运行** - 粘贴命令并按回车键\n"
+                                        content += f"  4️⃣ **选择更新服务器** - 在向导中选择更新现有服务器\n"
+                                        content += f"  5️⃣ **选择{server_name}** - 选择要更新的服务器\n\n"
+                                        
+                                        # 创建临时预填充文件
+                                        import tempfile
+                                        import os
+                                        try:
+                                            temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8')
+                                            temp_file.write(prefill_json)
+                                            temp_file.close()
+                                            
+                                            content += f"🎯 **带预填充参数的命令**（推荐）：\n"
+                                            content += f"```bash\n"
+                                            content += f"cd /Users/xuyehua/Code/remote-terminal-mcp\n"
+                                            content += f"python3 enhanced_config_manager.py --prefill {temp_file.name} --cursor-terminal --auto-close\n"
+                                            content += f"```\n\n"
+                                            content += f"💡 **预填充文件已创建**: `{temp_file.name}`"
+                                            
+                                        except Exception as temp_error:
+                                            debug_log(f"创建临时预填充文件失败: {temp_error}")
+                                            content += f"```"
                                     
-                                    content += f"\n🔧 **可更新的字段**:\n"
-                                    content += f"  • **host**: 更改服务器IP地址或域名\n"
-                                    content += f"  • **username**: 更改SSH登录用户名\n"
-                                    content += f"  • **port**: 更改SSH端口\n"
-                                    content += f"  • **connection_type**: 更改连接类型 ('ssh' 或 'relay')\n"
-                                    content += f"  • **description**: 更新服务器描述信息\n"
-                                    content += f"  • **docker_enabled**: 启用/禁用Docker支持 (true/false)\n"
-                                    content += f"  • **docker_container**: Docker容器名称 (需要docker_enabled=true)\n"
-                                    content += f"  • **docker_image**: Docker镜像 (需要docker_enabled=true)\n"
-                                    content += f"  • **relay_target_host**: Relay目标主机 (connection_type='relay'时)\n\n"
-                                    content += f"💡 **更新示例**:\n\n"
-                                    content += f"**更新服务器地址**:\n"
-                                    content += f"```\n"
-                                    content += f"server_name: '{server_name}'\n"
-                                    content += f"host: '新的IP地址'\n"
+                                    debug_log("Successfully generated update command for user")
+                                        
+                                except Exception as config_error:
+                                    debug_log(f"更新配置命令生成异常: {str(config_error)}")
+                                    debug_log(f"更新配置命令生成异常详情: {traceback.format_exc()}")
+                                    content = f"❌ **更新配置命令生成异常**\n\n"
+                                    content += f"**错误信息**: {str(config_error)}\n\n"
+                                    content += f"💡 **手动启动方案**：\n"
+                                    content += f"```bash\n"
+                                    content += f"cd /Users/xuyehua/Code/remote-terminal-mcp\n"
+                                    content += f"python3 enhanced_config_manager.py\n"
                                     content += f"```\n\n"
-                                    content += f"**启用Docker支持**:\n"
-                                    content += f"```\n"
-                                    content += f"server_name: '{server_name}'\n"
-                                    content += f"docker_enabled: true\n"
-                                    content += f"docker_image: 'ubuntu:22.04'\n"
-                                    content += f"```\n\n"
-                                    content += f"**更新描述信息**:\n"
-                                    content += f"```\n"
-                                    content += f"server_name: '{server_name}'\n"
-                                    content += f"description: '新的服务器描述'\n"
-                                    content += f"```\n\n"
-                                    content += f"🚀 **提示**: 只需提供要更新的字段，其他字段保持不变！"
+                                    content += f"🔍 **详细错误信息**:\n```\n{traceback.format_exc()}\n```"
                                     
                     except Exception as e:
+                        debug_log(f"Update server config error: {str(e)}")
+                        debug_log(f"Update server config traceback: {traceback.format_exc()}")
                         content = json.dumps({
-                            "error": f"Failed to update server config: {str(e)}"
+                            "error": f"服务器配置更新失败: {str(e)}"
                         }, ensure_ascii=False, indent=2)
                 
                 elif tool_name == "delete_server_config":

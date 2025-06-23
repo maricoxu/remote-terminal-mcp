@@ -1,0 +1,127 @@
+servers:
+  cpu_221:
+    connection_type: relay
+    description: 'Relay连接: cpu_221'
+    host: bjhw-sys-rpm0221.bjhw
+    port: 22
+    private_key_path: ~/.ssh/id_rsa
+    session:
+      name: cpu_221_session
+      shell: /bin/bash
+      working_directory: '~'
+    specs:
+      bos:
+        access_key: your_access_key
+        bucket: bos://klx-pytorch-work-bd-bj
+        config_path: xuyehua/template
+        secret_key: your_secret_key
+      connection:
+        target:
+          host: bjhw-sys-rpm0221.bjhw
+        tool: relay-cli
+      docker:
+        auto_create: true
+        container_name: xyh_pytorch
+        image: iregistry.baidu-int.com/xmlir/xmlir_ubuntu_2004_x86_64:v0.32
+        ports:
+        - 8080:8080
+        - 8888:8888
+        - 6006:6006
+        shell: zsh
+        volumes:
+        - /home:/home
+        - /data:/data
+    type: script_based
+    username: xuyehua
+  hg222:
+    connection_type: relay
+    description: 'Relay连接: hg222'
+    host: szzj-isa-ai-peking-poc06.szzj
+    password: kunlunxin@yh123
+    port: 22
+    private_key_path: ~/.ssh/id_rsa
+    session:
+      name: hg222_session
+      shell: /bin/bash
+      working_directory: '~'
+    specs:
+      connection:
+        jump_host:
+          host: 10.129.130.222
+          username: root
+        target:
+          host: szzj-isa-ai-peking-poc06.szzj
+        tool: relay-cli
+      docker:
+        auto_create: true
+        container_name: xyh_pytorch
+        image: iregistry.baidu-int.com/xmlir/xmlir_ubuntu_2004_x86_64:v0.32
+        ports:
+        - 8080:8080
+        - 8888:8888
+        - 6006:6006
+        volumes:
+        - /home:/home
+        - /data:/data
+    type: script_based
+    username: yh
+  hg223:
+    connection_type: relay
+    description: 'Relay连接: hg223'
+    host: szzj-isa-ai-peking-poc06.szzj
+    password: kunlunxin@yh123
+    port: 22
+    private_key_path: ~/.ssh/id_rsa
+    session:
+      name: hg223_session
+      shell: /bin/bash
+      working_directory: '~'
+    specs:
+      connection:
+        jump_host:
+          host: 10.129.130.223
+          username: root
+        target:
+          host: szzj-isa-ai-peking-poc06.szzj
+        tool: relay-cli
+      docker:
+        auto_create: true
+        container_name: xyh_pytorch
+        image: iregistry.baidu-int.com/xmlir/xmlir_ubuntu_2004_x86_64:v0.32
+        ports:
+        - 8080:8080
+        - 8888:8888
+        - 6006:6006
+        volumes:
+        - /home:/home
+        - /data:/data
+    type: script_based
+    username: yh
+  tj03:
+    connection_type: relay
+    description: 'Relay连接: tj03'
+    host: tjdm-isa-ai-p800node03.tjdm
+    port: 22
+    private_key_path: ~/.ssh/id_rsa
+    session:
+      name: tj03_session
+      shell: /bin/bash
+      working_directory: '~'
+    specs:
+      connection:
+        target:
+          host: tjdm-isa-ai-p800node03.tjdm
+        tool: relay-cli
+      docker:
+        auto_create: true
+        container_name: xyh_pytorch
+        image: iregistry.baidu-int.com/xmlir/xmlir_ubuntu_2004_x86_64:v0.32
+        ports:
+        - 8080:8080
+        - 8888:8888
+        - 6006:6006
+        volumes:
+        - /home:/home
+        - /data:/data
+    type: script_based
+    username: xuyehua

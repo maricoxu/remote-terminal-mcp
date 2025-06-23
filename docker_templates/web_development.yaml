@@ -1,0 +1,26 @@
+auto_create: true
+container_name: web_dev
+description: Web开发环境
+environment:
+  NODE_ENV: development
+  PORT: '3000'
+image: node:16-alpine
+install_packages:
+- yarn
+- git
+- curl
+network_mode: bridge
+ports:
+- 3000:3000
+- 8080:8080
+- 9000:9000
+privileged: false
+restart_policy: unless-stopped
+setup_commands:
+- npm install -g yarn @vue/cli create-react-app
+- echo 'Web development environment ready!'
+template_type: web
+volumes:
+- /workspace:/app
+- /home:/home
+working_directory: /app

@@ -117,6 +117,12 @@ run_test \
     "tests/regression/test_fix_docker_config_automation_20241222.py" \
     "测试Docker配置的完整自动化保存流程，包括端到端测试和边界情况验证"
 
+# 7. 🔧 新增：MCP服务器重启和新代码加载测试
+run_test \
+    "MCP服务器重启和新代码加载" \
+    "tests/regression/test_fix_mcp_restart_and_new_code_loading_20241222.py" \
+    "测试MCP服务器重启后新代码能正确加载，修复语法错误并验证update_server_config新逻辑"
+
 # JavaScript语法回归测试
 echo "🔍 运行JavaScript语法回归测试..."
 echo ""

@@ -1,0 +1,21 @@
+auto_create: true
+bos:
+  access_key: demo_access_key_123
+  bucket: bos://klx-pytorch-work-bd-bj
+  config_path: xuyehua/template
+  secret_key: demo_secret_key_456
+container_name: demo_bos_container
+description: BOS功能演示环境
+environment:
+  PYTHONPATH: /workspace
+gpus: all
+image: ubuntu:20.04
+network_mode: host
+privileged: true
+restart_policy: always
+shell: zsh
+shm_size: 64g
+volumes:
+- /home:/home
+- /workspace:/workspace
+working_directory: /workspace
