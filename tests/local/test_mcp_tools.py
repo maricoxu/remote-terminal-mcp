@@ -119,7 +119,8 @@ class TestMCPTools(BaseTestCase):
                 'list_servers',
                 'connect_server', 
                 'execute_command',
-                'interactive_config_wizard'
+                'create_server_config',
+                'update_server_config'
             ]
             
             tool_names = [tool['name'] for tool in tools]

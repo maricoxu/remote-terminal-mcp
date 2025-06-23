@@ -566,153 +566,208 @@ async def handle_request(request):
                 content = ""
                 
                 if tool_name == "list_servers":
-                    # 获取详细的服务器配置信息
-                    detailed_servers = []
-                    
-                    try:
-                        # 从配置管理器获取完整配置
-                        all_servers = config_manager.get_existing_servers()
+                    # 首先检查是否有配置文件
+                    if not config_manager.ensure_config_exists():
+                        content = """📋 **还没有任何服务器配置**
+
+🚀 **快速开始**:
+   • 在Cursor中说: "我想新增一个远程服务器"
+   • AI助手会引导你完成配置过程
+
+💡 **配置方式**:
+   • 🎯 **智能配置**: 说出你的需求，AI自动配置
+   • 🔧 **手动配置**: 逐步设置服务器参数
+   • 🐳 **Docker支持**: 自动配置容器环境
+   • 🔗 **跳板机支持**: 支持多级跳板连接
+
+📚 **使用示例**:
+   • "创建一个SSH服务器连接到192.168.1.100"
+   • "配置一个带Docker的开发服务器"
+   • "设置通过跳板机连接的生产服务器"
+
+🛠️ **其他操作**:
+   • 更新配置: "更新cpu221服务器配置"
+   • 删除配置: "删除test服务器配置"
+   • 连接服务器: "连接到production服务器"
+
+开始配置你的第一个服务器吧！ 🎉"""
                         
-                        for server_name, server_config in all_servers.items():
-                            # 获取连接状态
-                            connection_status = manager.get_connection_status(server_name)
-                            
-                            # 解析连接类型和跳板信息
-                            connection_type = server_config.get('connection_type', 'ssh')
-                            is_relay = connection_type == 'relay'
-                            
-                            # 获取跳板信息
-                            jump_info = ""
-                            if is_relay:
-                                specs = server_config.get('specs', {})
-                                connection_specs = specs.get('connection', {})
-                                jump_host = connection_specs.get('jump_host', {})
-                                if jump_host:
-                                    jump_info = f"{jump_host.get('username', 'unknown')}@{jump_host.get('host', 'unknown')}"
-                                else:
-                                    # 直接relay连接（无跳板）
-                                    target = connection_specs.get('target', {})
-                                    if target:
-                                        jump_info = "直连relay"
-                            
-                            # 获取Docker配置信息
-                            docker_info = ""
-                            specs = server_config.get('specs', {})
-                            docker_config = specs.get('docker', {})
-                            if docker_config:
-                                image = docker_config.get('image', '')
-                                container = docker_config.get('container_name', '')
-                                ports = docker_config.get('ports', [])
-                                
-                                # 简化镜像名显示
-                                if image:
-                                    if 'iregistry.baidu-int.com' in image:
-                                        image_short = image.split('/')[-1] if '/' in image else image
-                                    else:
-                                        image_short = image
-                                else:
-                                    image_short = "未配置"
-                                
-                                docker_info = f"{image_short}"
-                                if container:
-                                    docker_info += f" ({container})"
-                                if ports:
-                                    port_str = ", ".join([str(p) for p in ports[:2]])  # 只显示前2个端口
-                                    if len(ports) > 2:
-                                        port_str += f"... (+{len(ports)-2})"
-                                    docker_info += f" [{port_str}]"
-                            
-                            # 获取BOS配置信息
-                            bos_info = ""
-                            bos_config = specs.get('bos', {})
-                            if bos_config:
-                                bucket = bos_config.get('bucket', '')
-                                if bucket:
-                                    bos_info = bucket.replace('bos://', '')
-                            
-                            # 构建详细服务器信息
-                            server_detail = {
-                                'name': server_name,
-                                'description': server_config.get('description', ''),
-                                'host': server_config.get('host', ''),
-                                'username': server_config.get('username', ''),
-                                'port': server_config.get('port', 22),
-                                'connection_type': connection_type,
-                                'is_relay': is_relay,
-                                'jump_info': jump_info,
-                                'docker_info': docker_info,
-                                'bos_info': bos_info,
-                                'connected': connection_status.get('connected', False),
-                                'session_name': server_config.get('session', {}).get('name', f"{server_name}_session")
-                            }
-                            
-                            detailed_servers.append(server_detail)
-                    
-                    except Exception as e:
-                        # 如果获取详细信息失败，回退到简单模式
-                        servers = manager.list_servers()
-                        for server in servers:
-                            detailed_servers.append({
-                                'name': server.get('name', ''),
-                                'description': server.get('description', ''),
-                                'connected': server.get('connected', False),
-                                'connection_type': 'unknown',
-                                'error': f"配置解析失败: {str(e)}"
-                            })
-                    
-                    # 创建美观的表格输出
-                    if detailed_servers:
-                        content = "🖥️  **远程服务器配置列表**\n\n"
-                        
-                        for i, server in enumerate(detailed_servers, 1):
-                            # 连接状态图标
-                            status_icon = "🟢" if server.get('connected') else "🔴"
-                            
-                            # 连接类型图标
-                            if server.get('is_relay'):
-                                type_icon = "🔀" if server.get('jump_info') and server.get('jump_info') != "直连relay" else "🔗"
-                                type_text = "二级跳板" if server.get('jump_info') and server.get('jump_info') != "直连relay" else "Relay连接"
-                            else:
-                                type_icon = "🔗"
-                                type_text = "直连SSH"
-                            
-                            content += f"**{i}. {server['name']}** {status_icon}\n"
-                            content += f"   📝 {server.get('description', '无描述')}\n"
-                            content += f"   {type_icon} **连接方式**: {type_text}\n"
-                            content += f"   🎯 **目标**: {server.get('username', '')}@{server.get('host', '')}:{server.get('port', 22)}\n"
-                            
-                            # 跳板信息
-                            if server.get('jump_info') and server.get('jump_info') != "直连relay":
-                                content += f"   🚀 **跳板**: {server['jump_info']}\n"
-                            
-                            # Docker配置
-                            if server.get('docker_info'):
-                                content += f"   🐳 **Docker**: {server['docker_info']}\n"
-                            
-                            # BOS配置
-                            if server.get('bos_info'):
-                                content += f"   ☁️  **BOS**: {server['bos_info']}\n"
-                            
-                            # 会话信息
-                            if server.get('session_name'):
-                                content += f"   📺 **会话**: {server['session_name']}\n"
-                            
-                            content += "\n"
-                        
-                        # 添加统计信息
-                        total_servers = len(detailed_servers)
-                        connected_count = sum(1 for s in detailed_servers if s.get('connected'))
-                        relay_count = sum(1 for s in detailed_servers if s.get('is_relay'))
-                        docker_count = sum(1 for s in detailed_servers if s.get('docker_info'))
-                        
-                        content += "📊 **统计信息**:\n"
-                        content += f"   • 总服务器数: {total_servers}\n"
-                        content += f"   • 已连接: {connected_count}/{total_servers}\n"
-                        content += f"   • Relay连接: {relay_count}\n"
-                        content += f"   • Docker配置: {docker_count}\n"
                     else:
-                        content = "📋 暂无配置的服务器"
-                    
+                        # 获取详细的服务器配置信息
+                        detailed_servers = []
+                        
+                        try:
+                            # 从配置管理器获取完整配置
+                            all_servers = config_manager.get_existing_servers()
+                            
+                            if not all_servers:
+                                content = """📋 **配置文件存在但没有服务器配置**
+
+🚀 **添加你的第一个服务器**:
+   • 在Cursor中说: "我想新增一个远程服务器"
+   • AI助手会引导你完成配置过程
+
+💡 **快速配置示例**:
+   • "创建一个SSH服务器连接到192.168.1.100"
+   • "配置一个带Docker的开发服务器"
+   • "设置通过跳板机连接的生产服务器"
+
+开始配置你的服务器吧！ 🎉"""
+                                
+                            else:
+                                for server_name, server_config in all_servers.items():
+                                    # 获取连接状态
+                                    connection_status = manager.get_connection_status(server_name)
+                                    
+                                    # 解析连接类型和跳板信息
+                                    connection_type = server_config.get('connection_type', 'ssh')
+                                    is_relay = connection_type == 'relay'
+                                    
+                                    # 获取跳板信息
+                                    jump_info = ""
+                                    if is_relay:
+                                        specs = server_config.get('specs', {})
+                                        connection_specs = specs.get('connection', {})
+                                        jump_host = connection_specs.get('jump_host', {})
+                                        if jump_host:
+                                            jump_info = f"{jump_host.get('username', 'unknown')}@{jump_host.get('host', 'unknown')}"
+                                        else:
+                                            # 直接relay连接（无跳板）
+                                            target = connection_specs.get('target', {})
+                                            if target:
+                                                jump_info = "直连relay"
+                                    
+                                    # 获取Docker配置信息
+                                    docker_info = ""
+                                    specs = server_config.get('specs', {})
+                                    docker_config = specs.get('docker', {})
+                                    if docker_config:
+                                        image = docker_config.get('image', '')
+                                        container = docker_config.get('container_name', '')
+                                        ports = docker_config.get('ports', [])
+                                        
+                                        # 简化镜像名显示
+                                        if image:
+                                            if 'iregistry.baidu-int.com' in image:
+                                                image_short = image.split('/')[-1] if '/' in image else image
+                                            else:
+                                                image_short = image
+                                        else:
+                                            image_short = "未配置"
+                                        
+                                        docker_info = f"{image_short}"
+                                        if container:
+                                            docker_info += f" ({container})"
+                                        if ports:
+                                            port_str = ", ".join([str(p) for p in ports[:2]])  # 只显示前2个端口
+                                            if len(ports) > 2:
+                                                port_str += f"... (+{len(ports)-2})"
+                                            docker_info += f" [{port_str}]"
+                                    
+                                    # 获取BOS配置信息
+                                    bos_info = ""
+                                    bos_config = specs.get('bos', {})
+                                    if bos_config:
+                                        bucket = bos_config.get('bucket', '')
+                                        if bucket:
+                                            bos_info = bucket.replace('bos://', '')
+                                    
+                                    # 构建详细服务器信息
+                                    server_detail = {
+                                        'name': server_name,
+                                        'description': server_config.get('description', ''),
+                                        'host': server_config.get('host', ''),
+                                        'username': server_config.get('username', ''),
+                                        'port': server_config.get('port', 22),
+                                        'connection_type': connection_type,
+                                        'is_relay': is_relay,
+                                        'jump_info': jump_info,
+                                        'docker_info': docker_info,
+                                        'bos_info': bos_info,
+                                        'connected': connection_status.get('connected', False),
+                                        'session_name': server_config.get('session', {}).get('name', f"{server_name}_session")
+                                    }
+                                    
+                                    detailed_servers.append(server_detail)
+                                
+                                # 创建美观的表格输出
+                                if detailed_servers:
+                                    content = "🖥️  **远程服务器配置列表**\n\n"
+                                    
+                                    for i, server in enumerate(detailed_servers, 1):
+                                        # 连接状态图标
+                                        status_icon = "🟢" if server.get('connected') else "🔴"
+                                        
+                                        # 连接类型图标
+                                        if server.get('is_relay'):
+                                            type_icon = "🔀" if server.get('jump_info') and server.get('jump_info') != "直连relay" else "🔗"
+                                            type_text = "二级跳板" if server.get('jump_info') and server.get('jump_info') != "直连relay" else "Relay连接"
+                                        else:
+                                            type_icon = "🔗"
+                                            type_text = "直连SSH"
+                                        
+                                        content += f"**{i}. {server['name']}** {status_icon}\n"
+                                        content += f"   📝 {server.get('description', '无描述')}\n"
+                                        content += f"   {type_icon} **连接方式**: {type_text}\n"
+                                        content += f"   🎯 **目标**: {server.get('username', '')}@{server.get('host', '')}:{server.get('port', 22)}\n"
+                                        
+                                        # 跳板信息
+                                        if server.get('jump_info') and server.get('jump_info') != "直连relay":
+                                            content += f"   🚀 **跳板**: {server['jump_info']}\n"
+                                        
+                                        # Docker配置
+                                        if server.get('docker_info'):
+                                            content += f"   🐳 **Docker**: {server['docker_info']}\n"
+                                        
+                                        # BOS配置
+                                        if server.get('bos_info'):
+                                            content += f"   ☁️  **BOS**: {server['bos_info']}\n"
+                                        
+                                        # 会话信息
+                                        if server.get('session_name'):
+                                            content += f"   📺 **会话**: {server['session_name']}\n"
+                                        
+                                        content += "\n"
+                                    
+                                    # 添加统计信息
+                                    total_servers = len(detailed_servers)
+                                    connected_count = sum(1 for s in detailed_servers if s.get('connected'))
+                                    relay_count = sum(1 for s in detailed_servers if s.get('is_relay'))
+                                    docker_count = sum(1 for s in detailed_servers if s.get('docker_info'))
+                                    
+                                    content += "📊 **统计信息**:\n"
+                                    content += f"   • 总服务器数: {total_servers}\n"
+                                    content += f"   • 已连接: {connected_count}/{total_servers}\n"
+                                    content += f"   • Relay连接: {relay_count}\n"
+                                    content += f"   • Docker配置: {docker_count}\n"
+                                else:
+                                    content = "📋 暂无配置的服务器"
+                        
+                        except Exception as e:
+                            # 如果获取详细信息失败，回退到简单模式
+                            servers = manager.list_servers()
+                            detailed_servers = []
+                            for server in servers:
+                                detailed_servers.append({
+                                    'name': server.get('name', ''),
+                                    'description': server.get('description', ''),
+                                    'connected': server.get('connected', False),
+                                    'connection_type': 'unknown',
+                                    'error': f"配置解析失败: {str(e)}"
+                                })
+                            
+                            if detailed_servers:
+                                content = "🖥️  **远程服务器配置列表** (简化模式)\n\n"
+                                for i, server in enumerate(detailed_servers, 1):
+                                    status_icon = "🟢" if server.get('connected') else "🔴"
+                                    content += f"**{i}. {server['name']}** {status_icon}\n"
+                                    content += f"   📝 {server.get('description', '无描述')}\n"
+                                    if server.get('error'):
+                                        content += f"   ⚠️ {server['error']}\n"
+                                    content += "\n"
+                            else:
+                                content = "📋 暂无配置的服务器"
+                        
                 elif tool_name == "connect_server":
                     server_name = tool_arguments.get("server_name")
                     if server_name:

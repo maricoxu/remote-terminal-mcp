@@ -88,11 +88,11 @@ class TestMCPToolsRegression(unittest.TestCase):
         
         # 确保关键工具存在
         required_tools = [
-            'interactive_config_wizard',
-            'create_server_config', 
-            'manage_server_config',
+            'create_server_config',
+            'update_server_config',
             'list_servers',
-            'connect_server'
+            'connect_server',
+            'execute_command'
         ]
         
         for tool_name in required_tools:

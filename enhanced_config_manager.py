@@ -78,8 +78,9 @@ class EnhancedConfigManager:
         # 项目模板目录用于复制初始模板
         self.project_templates_dir = Path(__file__).parent / "templates"
         
-        # 在创建目录之前，先检查是否需要迁移旧配置
-        self.migrate_legacy_config()
+        # 🚫 移除自动配置迁移，避免npm更新时的配置冲突
+        # 用户可以通过MCP工具主动迁移配置
+        # self.migrate_legacy_config()
         
         # 🛡️ 重要修复：只在需要时才创建目录和模板
         # 不在初始化时无条件创建，避免意外覆盖用户配置
@@ -2283,30 +2284,26 @@ servers:
         return True  # 继续创建流程
     
     def get_existing_servers(self) -> dict:
-        """获取现有服务器配置 - 智能配置管理"""
+        """获取现有服务器配置 - 不自动创建策略"""
         try:
-            # 确保配置文件存在，如果不存在则创建默认配置
-            self.ensure_config_exists()
+            # 只检查配置文件是否存在，不自动创建
+            if not self.config_path.exists():
+                return {}
             
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 config = yaml.safe_load(f)
             
             return config.get('servers', {}) if config else {}
         except Exception:
-            # 如果仍然出错，尝试重新创建配置文件
-            try:
-                self.create_default_config_template()
-                with open(self.config_path, 'r', encoding='utf-8') as f:
-                    config = yaml.safe_load(f)
-                return config.get('servers', {}) if config else {}
-            except Exception:
-                return {}
+            # 如果出错，返回空字典，不尝试创建配置文件
+            return {}
     
     def get_existing_docker_configs(self) -> dict:
-        """获取现有Docker配置 - 智能配置管理"""
+        """获取现有Docker配置 - 不自动创建策略"""
         try:
-            # 确保配置文件存在，如果不存在则创建默认配置
-            self.ensure_config_exists()
+            # 只检查配置文件是否存在，不自动创建
+            if not self.config_path.exists():
+                return {}
             
             with open(self.config_path, 'r', encoding='utf-8') as f:
                     config = yaml.safe_load(f)
@@ -3763,213 +3760,53 @@ servers:
             self.colored_print(f"❌ 更新服务器Docker配置失败: {e}", Fore.RED)
 
     def ensure_config_exists(self):
-        """确保配置文件存在 - 超级保护版本
+        """检查配置文件是否存在 - 不自动创建策略
         
-        保护策略：
-        1. 优先检查：如果配置文件存在且有效，直接返回，绝不覆盖
-        2. 智能检测：使用has_user_config检测是否有用户配置
-        3. 多重保护：文件锁、备份检查、npm标记检查
-        4. 只在真正的首次安装时创建配置
-        5. 详细日志记录所有操作
+        新策略：
+        1. 只检查配置文件是否存在
+        2. 如果不存在，返回False，不自动创建
+        3. 避免npm更新时的配置文件冲突
+        4. 让用户通过MCP工具主动创建配置
         """
-        import fcntl
-        import tempfile
-        import time
-        
         try:
-            # 🛡️ 第一道防线：如果配置文件存在，检查是否有效
+            # 简单检查：如果配置文件存在且有效，返回True
             if self.config_path.exists():
                 try:
                     with open(self.config_path, 'r', encoding='utf-8') as f:
                         content = f.read().strip()
                     
-                    # 如果文件不为空且包含基本结构，认为是有效用户配置
+                    # 如果文件不为空且包含基本结构，认为是有效配置
                     if content and ('servers:' in content or 'global_settings:' in content):
-                        # 进一步检查是否为有效YAML
                         try:
                             import yaml
                             yaml.safe_load(content)
                             if not self.is_mcp_mode:
-                                self.colored_print("✅ 配置文件已存在且有效，保护用户数据不被覆盖", Fore.GREEN)
-                            return False
+                                self.colored_print("✅ 发现有效的配置文件", Fore.GREEN)
+                            return True
                         except yaml.YAMLError:
-                            # YAML格式错误，需要重新创建
                             if not self.is_mcp_mode:
-                                self.colored_print("⚠️ 配置文件格式错误，将重新创建", Fore.YELLOW)
-                            # 备份损坏的文件
-                            backup_path = self.config_path.parent / f'config.yaml.corrupted.{int(time.time())}'
-                            try:
-                                import shutil
-                                shutil.copy2(self.config_path, backup_path)
-                                if not self.is_mcp_mode:
-                                    self.colored_print(f"📁 已备份损坏文件到: {backup_path}", Fore.CYAN)
-                            except:
-                                pass
-                            # 删除损坏文件，继续创建新的
-                            self.config_path.unlink()
+                                self.colored_print("⚠️ 配置文件格式错误", Fore.YELLOW)
+                            return False
                     else:
-                        # 文件为空或不包含基本结构
                         if not self.is_mcp_mode:
-                            self.colored_print("⚠️ 配置文件为空或格式不正确，将重新创建", Fore.YELLOW)
-                        # 备份空文件
-                        backup_path = self.config_path.parent / f'config.yaml.empty.{int(time.time())}'
-                        try:
-                            import shutil
-                            shutil.copy2(self.config_path, backup_path)
-                        except:
-                            pass
-                        # 删除空文件，继续创建新的
-                        self.config_path.unlink()
+                            self.colored_print("⚠️ 配置文件为空或格式不正确", Fore.YELLOW)
+                        return False
                         
                 except Exception as e:
                     if not self.is_mcp_mode:
-                        self.colored_print(f"⚠️ 配置文件读取失败，将重新创建: {e}", Fore.YELLOW)
-                    # 备份无法读取的文件
-                    backup_path = self.config_path.parent / f'config.yaml.unreadable.{int(time.time())}'
-                    try:
-                        import shutil
-                        shutil.copy2(self.config_path, backup_path)
-                    except:
-                        pass
-                    # 删除无法读取的文件，继续创建新的
-                    try:
-                        self.config_path.unlink()
-                    except:
-                        pass
-            
-            # 🛡️ 第二道防线：检查是否有用户配置（通过备份等方式）
-            if self.has_user_config():
-                if not self.is_mcp_mode:
-                    self.colored_print("✅ 检测到用户配置，保护不被覆盖", Fore.GREEN)
-                return False
-            
-            # 🛡️ 第三道防线：检查npm更新场景
-            npm_marker = self.config_path.parent / '.npm-installed'
-            persistent_marker = Path.home() / '.remote-terminal-npm-installed'
-            
-            if npm_marker.exists() or persistent_marker.exists():
-                # 检查是否真的有配置文件，如果没有就创建
-                if not self.config_path.exists():
-                    if not self.is_mcp_mode:
-                        self.colored_print("⚠️ npm场景但配置文件不存在，创建默认配置", Fore.YELLOW)
-                else:
-                    if not self.is_mcp_mode:
-                        self.colored_print("✅ 检测到npm包更新场景 - 保留现有配置", Fore.GREEN)
+                        self.colored_print(f"⚠️ 配置文件读取失败: {e}", Fore.YELLOW)
                     return False
             
-            # 🛡️ 确保目录存在
-            self.config_path.parent.mkdir(parents=True, exist_ok=True)
+            # 配置文件不存在
+            if not self.is_mcp_mode:
+                self.colored_print("ℹ️ 没有找到配置文件", Fore.CYAN)
+                self.colored_print("💡 请使用 '我想新增一个远程服务器' 来创建配置", Fore.CYAN)
             
-            # 使用临时文件作为锁机制
-            lock_file = self.config_path.parent / '.config_lock'
-            
-            try:
-                # 尝试获取文件锁
-                with open(lock_file, 'w') as lock_fd:
-                    fcntl.flock(lock_fd.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    
-                    # 在锁保护下再次检查配置文件
-                    if self.config_path.exists():
-                        # 文件存在，检查是否为有效配置
-                        try:
-                            with open(self.config_path, 'r', encoding='utf-8') as f:
-                                content = f.read().strip()
-                            
-                            # 如果文件不为空且包含基本结构，认为是有效用户配置
-                            if content and ('servers:' in content or 'global_settings:' in content):
-                                if not self.is_mcp_mode:
-                                    self.colored_print("✅ 发现有效用户配置文件，保持不变", Fore.GREEN)
-                                return False
-                        except Exception as e:
-                            if not self.is_mcp_mode:
-                                self.colored_print(f"⚠️ 配置文件读取失败，重新创建: {e}", Fore.YELLOW)
-                    
-                    # 检查是否存在备份配置
-                    backup_config = self.config_path.parent / 'config.yaml.backup'
-                    persistent_backup = Path.home() / '.remote-terminal-config-backup.yaml'
-                    
-                    if backup_config.exists() or persistent_backup.exists():
-                        if not self.is_mcp_mode:
-                            self.colored_print("⚠️ 检测到备份配置，说明用户曾经有配置 - 不覆盖", Fore.YELLOW)
-                        return False
-                    
-                    # 🛡️ 第四道防线：创建前再次确认文件不存在
-                    if self.config_path.exists():
-                        if not self.is_mcp_mode:
-                            self.colored_print("⚠️ 配置文件在创建过程中突然出现，保护不覆盖", Fore.YELLOW)
-                        return False
-                    
-                    # 只有在真正的首次安装时才创建
-                    if not self.is_mcp_mode:
-                        self.colored_print("📝 首次安装 - 创建新的配置文件...", Fore.CYAN)
-                    
-                    # 🛡️ 只在真正需要创建配置时才创建目录结构
-                    self.ensure_directories()
-                    self.create_default_config_template()
-                    
-                    # 🛡️ 创建后验证
-                    if self.config_path.exists():
-                        if not self.is_mcp_mode:
-                            self.colored_print("✅ 默认配置文件创建成功", Fore.GREEN)
-                        return True
-                    else:
-                        if not self.is_mcp_mode:
-                            self.colored_print("❌ 配置文件创建失败", Fore.RED)
-                        return False
-                    
-            except (IOError, OSError):
-                # 无法获取锁，可能有其他进程在操作
-                if not self.is_mcp_mode:
-                    self.colored_print("⏳ 其他进程正在操作配置文件，等待...", Fore.YELLOW)
-                
-                # 等待一小段时间后重试
-                import time
-                time.sleep(0.1)
-                
-                # 简单检查文件是否存在 - 如果存在就不创建
-                if self.config_path.exists():
-                    if not self.is_mcp_mode:
-                        self.colored_print("✅ 配置文件已存在，保持不变", Fore.GREEN)
-                    return False
-                else:
-                    # 🛡️ 如果仍然不存在，先确保目录结构再尝试创建
-                    self.ensure_directories()
-                    self.create_default_config_template()
-                    return True
-            
-            finally:
-                # 清理锁文件
-                try:
-                    if lock_file.exists():
-                        lock_file.unlink()
-                except:
-                    pass
+            return False
                 
         except Exception as e:
-            # 如果出现任何错误，作为最后的保障
             if not self.is_mcp_mode:
-                self.colored_print(f"❌ 配置文件处理失败: {e}", Fore.RED)
-            
-            # 只有在配置文件确实不存在且没有任何备份时才尝试创建
-            if not self.config_path.exists():
-                backup_config = self.config_path.parent / 'config.yaml.backup'
-                persistent_backup = Path.home() / '.remote-terminal-config-backup.yaml'
-                
-                if backup_config.exists() or persistent_backup.exists():
-                    if not self.is_mcp_mode:
-                        self.colored_print("⚠️ 发现备份配置，不创建新配置", Fore.YELLOW)
-                    return False
-                
-                try:
-                    # 🛡️ 最后的保障：确保目录结构存在
-                    self.ensure_directories()
-                    self.create_default_config_template()
-                    return True
-                except Exception as create_error:
-                    if not self.is_mcp_mode:
-                        self.colored_print(f"❌ 创建默认配置失败: {create_error}", Fore.RED)
-                    raise
-            
+                self.colored_print(f"❌ 配置检查失败: {e}", Fore.RED)
             return False
 
     def create_default_config_template(self):
