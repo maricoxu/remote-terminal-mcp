@@ -120,6 +120,22 @@ class EnhancedConfigManager:
         # Docker配置
         docker_config = {}
         
+        # 询问是否使用现有容器
+        use_existing = prefill.get('docker_use_existing', False)
+        default_existing_choice = "1" if use_existing else "2"
+        self.colored_print("\n1. 使用已存在的Docker容器\n2. 自动创建新容器", Fore.WHITE)
+        existing_choice = self.smart_input("选择", default=default_existing_choice)
+        
+        docker_config['use_existing'] = (existing_choice == "1")
+
+        if existing_choice == "1":
+            # 只需容器名和Shell
+            default_container = prefill.get('docker_container', '')
+            docker_config['container_name'] = self.smart_input("请输入已存在的容器名", default=default_container)
+            default_shell = prefill.get('docker_shell', 'bash')
+            docker_config['shell'] = self.smart_input("容器内Shell", default=default_shell)
+            return docker_config
+        
         # Docker镜像
         default_image = prefill.get('docker_image', 'ubuntu:20.04')
         docker_config['image'] = self.smart_input("Docker镜像", default=default_image)
@@ -169,11 +185,7 @@ class EnhancedConfigManager:
         docker_config['shell'] = self.smart_input("容器内Shell", default=default_shell)
         
         # 自动创建容器
-        default_auto_create = prefill.get('docker_auto_create', True)
-        auto_choice = "1" if default_auto_create else "2"
-        self.colored_print("1. 自动创建容器（如果不存在）\n2. 手动管理容器", Fore.WHITE)
-        auto_create_choice = self.smart_input("选择", default=auto_choice)
-        docker_config['auto_create'] = (auto_create_choice == "1")
+        docker_config['auto_create'] = True  # 在这个分支下，总是自动创建
         
         return docker_config
 
@@ -281,37 +293,48 @@ class EnhancedConfigManager:
         new_cfg = {}
         if conn_choice == '1': # Relay
             new_cfg['connection_type'] = 'relay'
+            # 配置中继/跳板机
             relay_params = self._configure_server("中继/跳板机", prefill=cfg_params)
             if not relay_params: return
+            # 配置中继/跳板机密码
+            relay_password = self._configure_password(prefill=cfg_params.get('specs', {}).get('connection', {}).get('jump_host', {}))
+            relay_params['password'] = relay_password if relay_password else None
             new_cfg.update(relay_params)
             
+            # 配置最终目标服务器
             target_defaults = cfg_params.get('specs', {}).get('connection', {}).get('jump_host', {})
             target_params = self._configure_server("最终目标服务器", prefill=target_defaults)
             if not target_params: return
+            # 配置最终目标服务器密码
+            target_password = self._configure_password(prefill=target_defaults)
+            target_params['password'] = target_password if target_password else None
             new_cfg.setdefault('specs', {}).setdefault('connection', {})['jump_host'] = target_params
         else: # SSH
             new_cfg['connection_type'] = 'ssh'
             ssh_params = self._configure_server("SSH服务器", prefill=cfg_params)
             if not ssh_params: return
+            # 配置SSH服务器密码
+            ssh_password = self._configure_password(prefill=cfg_params)
+            if ssh_password:
+                ssh_params['password'] = ssh_password
             new_cfg.update(ssh_params)
-
-        # 第4步：配置密码
-        self.show_progress(4, 6, "密码配置")
-        password = self._configure_password(prefill=cfg_params)
-        if password:
-            new_cfg['password'] = password
 
         # 第5步：配置Docker
         self.show_progress(5, 6, "Docker配置")
         docker_config = self._configure_docker(prefill=cfg_params)
         if docker_config:
             new_cfg['docker_enabled'] = True
-            new_cfg['docker_image'] = docker_config['image']
-            new_cfg['docker_container'] = docker_config['container_name']
-            new_cfg['docker_ports'] = docker_config['ports']
-            new_cfg['docker_volumes'] = docker_config['volumes']
-            new_cfg['docker_shell'] = docker_config['shell']
-            new_cfg['docker_auto_create'] = docker_config['auto_create']
+            new_cfg['docker_use_existing'] = docker_config.get('use_existing', False)
+            if docker_config.get('use_existing'):
+                new_cfg['docker_container'] = docker_config['container_name']
+                new_cfg['docker_shell'] = docker_config['shell']
+            else:
+                new_cfg['docker_image'] = docker_config.get('image')
+                new_cfg['docker_container'] = docker_config.get('container_name')
+                new_cfg['docker_ports'] = docker_config.get('ports', [])
+                new_cfg['docker_volumes'] = docker_config.get('volumes', [])
+                new_cfg['docker_shell'] = docker_config.get('shell')
+                new_cfg['docker_auto_create'] = docker_config.get('auto_create', True)
         else:
             new_cfg['docker_enabled'] = False
 
