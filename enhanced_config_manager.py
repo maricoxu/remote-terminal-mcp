@@ -7,10 +7,12 @@ import os
 import sys
 import yaml
 import re
-from typing import Dict, Optional, Tuple, Any
+from typing import Dict, Optional, Tuple, Any, List
 from pathlib import Path
 import argparse
 import json
+import paramiko
+import getpass
 
 try:
     from colorama import init, Fore, Style
@@ -83,31 +85,87 @@ class EnhancedConfigManager:
             yaml.dump(final_cfg, f, allow_unicode=True)
         self.colored_print(f"\n✅ 配置已保存至 {self.config_path}", Fore.GREEN)
 
-    def _configure_password(self, prefill: dict = None) -> Optional[str]:
-        """配置服务器密码（可选）"""
+    def _configure_password(self, prefill: dict = None, is_jump_host: bool = False) -> Optional[str]:
+        """配置服务器密码（可选），使用getpass以提高安全性。"""
+        label = "跳板机" if is_jump_host else "最终目标服务器"
         prefill = prefill or {}
-        self.colored_print(f"\n🔐 配置服务器密码（可选）...", Fore.CYAN)
+        self.colored_print(f"\n🔐 配置{label}密码（可选）...", Fore.CYAN)
         self.colored_print("💡 如果使用密钥认证，请直接回车跳过", Fore.YELLOW)
         
         default_password = prefill.get('password', '')
-        if default_password:
-            # 不显示密码，只显示提示
-            password = self.smart_input("密码 (已设置，回车保持不变，输入new重新设置)", default="keep")
-            if password == "new":
-                password = self.smart_input("请输入新密码", default="")
-            elif password == "keep":
-                password = default_password
-        else:
-            password = self.smart_input("密码 (回车跳过，使用密钥认证)", default="")
-        
-        return password if password else None
+        #在非交互模式下，直接使用预设值
+        if self.is_mcp_mode:
+            return default_password
 
-    def _configure_docker(self, prefill: dict = None) -> Optional[dict]:
-        """配置Docker设置"""
+        if default_password:
+            password_prompt = f"密码已设置，回车保持不变，输入 'new' 重设: "
+            choice = self.smart_input(password_prompt, default="keep")
+            if choice.lower() == 'new':
+                return getpass.getpass(f"请输入新的{label}密码: ")
+            return default_password
+        else:
+            return getpass.getpass(f"请输入{label}密码 (回车跳过): ")
+
+    def _fetch_remote_docker_containers(self, server_info: dict) -> Optional[List[str]]:
+        """通过临时SSH连接获取远程服务器上的Docker容器列表。"""
+        self.colored_print("\n⏳ 正在连接服务器以获取容器列表...", Fore.YELLOW)
+        client = None
+        try:
+            is_relay = server_info.get('connection_type') == 'relay'
+            docker_host_info = server_info.get('specs',{}).get('connection',{}).get('jump_host',{}) if is_relay else server_info
+            
+            if not docker_host_info.get('host'):
+                self.colored_print(f"❌ 无法确定运行Docker的主机地址。", Fore.RED)
+                return None
+
+            self.colored_print(f"ℹ️ 尝试连接到Docker主机: {docker_host_info.get('username')}@{docker_host_info.get('host')}", Fore.CYAN)
+            
+            client = paramiko.SSHClient()
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            client.connect(
+                hostname=docker_host_info.get('host'),
+                port=int(docker_host_info.get('port', 22)),
+                username=docker_host_info.get('username'),
+                password=docker_host_info.get('password'),
+                timeout=10
+            )
+
+            stdin, stdout, stderr = client.exec_command('docker ps --format "{{.Names}}"')
+            exit_status = stdout.channel.recv_exit_status()
+
+            if exit_status != 0:
+                error_output = stderr.read().decode().strip()
+                if "command not found" in error_output.lower() or "not recognized" in error_output.lower() or "cannot connect" in error_output.lower():
+                     self.colored_print(f"⚠️ 目标服务器上似乎未安装或未运行Docker。", Fore.YELLOW)
+                else:
+                    self.colored_print(f"⚠️ 获取容器列表失败: {error_output}", Fore.YELLOW)
+                return None
+
+            containers = stdout.read().decode().splitlines()
+            if not containers:
+                self.colored_print("🤔 未在服务器上发现正在运行的Docker容器。", Fore.YELLOW)
+                return []
+            
+            self.colored_print("✅ 成功获取容器列表！", Fore.GREEN)
+            return containers
+
+        except paramiko.AuthenticationException:
+            self.colored_print(f"❌ 认证失败，请检查主机 {docker_host_info.get('host')} 的密码或密钥。", Fore.RED)
+            return None
+        except Exception as e:
+            self.colored_print(f"❌ 无法连接到服务器 {docker_host_info.get('host')}: {e}", Fore.RED)
+            return None
+        finally:
+            if client:
+                client.close()
+
+    def _configure_docker(self, prefill: dict = None, server_info: dict = None) -> Optional[dict]:
+        """配置Docker设置，支持动态获取容器列表。"""
         prefill = prefill or {}
+        server_info = server_info or {}
         self.colored_print(f"\n🐳 配置Docker设置...", Fore.CYAN)
         
-        # 检查是否启用Docker
         docker_enabled = prefill.get('docker_enabled', False)
         default_choice = "1" if docker_enabled else "2"
         
@@ -117,21 +175,35 @@ class EnhancedConfigManager:
         if choice != "1":
             return None
         
-        # Docker配置
         docker_config = {}
         
-        # 询问是否使用现有容器
         use_existing = prefill.get('docker_use_existing', False)
         default_existing_choice = "1" if use_existing else "2"
-        self.colored_print("\n1. 使用已存在的Docker容器\n2. 自动创建新容器", Fore.WHITE)
+        self.colored_print("\n1. 使用已存在的Docker容器\n2. 创建并使用新容器", Fore.WHITE)
         existing_choice = self.smart_input("选择", default=default_existing_choice)
         
         docker_config['use_existing'] = (existing_choice == "1")
 
         if existing_choice == "1":
-            # 只需容器名和Shell
-            default_container = prefill.get('docker_container', '')
-            docker_config['container_name'] = self.smart_input("请输入已存在的容器名", default=default_container)
+            containers = self._fetch_remote_docker_containers(server_info)
+            
+            if containers:
+                self.colored_print("\n请从以下列表中选择一个容器:", Fore.CYAN)
+                for i, name in enumerate(containers):
+                    self.colored_print(f"{i+1}. {name}", Fore.WHITE)
+                
+                while True:
+                    container_choice = self.smart_input("选择容器编号", default="1")
+                    if container_choice.isdigit() and 1 <= int(container_choice) <= len(containers):
+                        docker_config['container_name'] = containers[int(container_choice)-1]
+                        break
+                    else:
+                        self.colored_print("❌ 无效的选择，请输入正确的编号。", Fore.RED)
+            else:
+                self.colored_print("\n无法自动获取列表，将回退到手动输入模式。", Fore.YELLOW)
+                default_container = prefill.get('docker_container', '')
+                docker_config['container_name'] = self.smart_input("请输入已存在的容器名", default=default_container)
+            
             default_shell = prefill.get('docker_shell', 'bash')
             docker_config['shell'] = self.smart_input("容器内Shell", default=default_shell)
             return docker_config
@@ -293,35 +365,26 @@ class EnhancedConfigManager:
         new_cfg = {}
         if conn_choice == '1': # Relay
             new_cfg['connection_type'] = 'relay'
-            # 配置中继/跳板机
             relay_params = self._configure_server("中继/跳板机", prefill=cfg_params)
             if not relay_params: return
-            # 配置中继/跳板机密码
-            relay_password = self._configure_password(prefill=cfg_params.get('specs', {}).get('connection', {}).get('jump_host', {}))
-            relay_params['password'] = relay_password if relay_password else None
+            relay_params['password'] = self._configure_password(prefill=cfg_params, is_jump_host=True)
             new_cfg.update(relay_params)
             
-            # 配置最终目标服务器
             target_defaults = cfg_params.get('specs', {}).get('connection', {}).get('jump_host', {})
             target_params = self._configure_server("最终目标服务器", prefill=target_defaults)
             if not target_params: return
-            # 配置最终目标服务器密码
-            target_password = self._configure_password(prefill=target_defaults)
-            target_params['password'] = target_password if target_password else None
+            target_params['password'] = self._configure_password(prefill=target_defaults, is_jump_host=False)
             new_cfg.setdefault('specs', {}).setdefault('connection', {})['jump_host'] = target_params
         else: # SSH
             new_cfg['connection_type'] = 'ssh'
             ssh_params = self._configure_server("SSH服务器", prefill=cfg_params)
             if not ssh_params: return
-            # 配置SSH服务器密码
-            ssh_password = self._configure_password(prefill=cfg_params)
-            if ssh_password:
-                ssh_params['password'] = ssh_password
+            ssh_params['password'] = self._configure_password(prefill=cfg_params)
             new_cfg.update(ssh_params)
 
         # 第5步：配置Docker
         self.show_progress(5, 6, "Docker配置")
-        docker_config = self._configure_docker(prefill=cfg_params)
+        docker_config = self._configure_docker(prefill=cfg_params, server_info=new_cfg)
         if docker_config:
             new_cfg['docker_enabled'] = True
             new_cfg['docker_use_existing'] = docker_config.get('use_existing', False)
