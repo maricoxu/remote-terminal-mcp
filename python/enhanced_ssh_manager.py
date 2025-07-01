@@ -555,73 +555,294 @@ class EnhancedSSHManager:
             return False, f"建立连接异常: {str(e)}"
     
     def _connect_via_relay_enhanced(self, server, session_name: str) -> Tuple[bool, str]:
-        """增强版relay连接 - 支持交互引导"""
+        """增强版relay连接 - 实现完整的多级跳板连接流程"""
         try:
             connection_config = server.specs.get('connection', {})
             target_host = connection_config.get('target', {}).get('host', server.host)
+            username = getattr(server, 'username', 'unknown')
             
-            # 启动relay-cli
-            subprocess.run(['tmux', 'send-keys', '-t', session_name, 'relay-cli', 'Enter'],
+            # 检查是否为多级跳板配置
+            jump_host_config = connection_config.get('jump_host')
+            if jump_host_config:
+                log_output(f"🔗 开始多级跳板连接流程: relay-cli -> {jump_host_config['host']} -> {target_host}", "INFO")
+                return self._connect_via_multi_level_relay(server, session_name, jump_host_config, target_host, username)
+            else:
+                log_output(f"🔗 开始两步连接流程: relay-cli -> {target_host}", "INFO")
+                return self._connect_via_simple_relay(server, session_name, target_host, username)
+            
+        except Exception as e:
+            return False, f"Relay连接异常: {str(e)}"
+    
+    def _connect_via_simple_relay(self, server, session_name: str, target_host: str, username: str) -> Tuple[bool, str]:
+        """通过分步send-keys实现简单relay连接"""
+        try:
+            log_output("📡 正在启动 relay-cli...", "INFO")
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, 'relay-cli', 'Enter'], check=True)
+
+            if not self._wait_for_output(session_name, ['-bash-baidu-ssl$'], timeout=60):
+                return False, "连接relay-cli超时或失败"
+            log_output("✅ 已连接到跳板机环境。", "SUCCESS")
+
+            ssh_cmd = f"ssh -t {username}@{target_host}"
+            log_output(f"🎯 正在通过跳板机连接到 {target_host}...", "INFO")
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, ssh_cmd, 'Enter'], check=True)
+
+            target_prompt = f"@{target_host.split('.')[0]}"
+            if not self._wait_for_output(session_name, [target_prompt, f'~]$', f'# '], timeout=30):
+                return False, f"登录到目标服务器 {target_host} 超时或失败"
+            log_output(f"✅ 成功登录到目标: {target_host}", "SUCCESS")
+            
+            # --- 关键修复：调用Docker进入函数 ---
+            return self._auto_enter_docker_container(server, session_name)
+            
+        except Exception as e:
+            return False, f"简单Relay连接异常: {str(e)}"
+
+    def _connect_via_multi_level_relay(self, server, session_name: str, jump_host_config: dict, target_host: str, username: str) -> Tuple[bool, str]:
+        """通过分步send-keys实现多层relay连接"""
+        try:
+            # 步骤1: 连接到第一层跳板机
+            jump_host_user = jump_host_config['username']
+            jump_host = jump_host_config['host']
+            jump_port = jump_host_config.get('port', 22)
+            
+            jump_cmd = f"ssh {jump_host_user}@{jump_host} -p {jump_port}"
+            log_output(f"📡 正在连接到第一层跳板机: {jump_host}...", "INFO")
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, jump_cmd, 'Enter'], check=True)
+            
+            jump_prompt = f"@{jump_host.split('.')[0]}"
+            if not self._wait_for_output(session_name, [jump_prompt, f'~]$', f'# '], timeout=30):
+                return False, f"登录到跳板机 {jump_host} 超时或失败"
+            log_output(f"✅ 成功登录到跳板机: {jump_host}", "SUCCESS")
+
+            # 步骤2: 从跳板机连接到最终目标
+            target_cmd = f"ssh -t {username}@{target_host}"
+            log_output(f"🎯 正在通过跳板机连接到最终目标: {target_host}...", "INFO")
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, target_cmd, 'Enter'], check=True)
+
+            target_prompt = f"@{target_host.split('.')[0]}"
+            if not self._wait_for_output(session_name, [target_prompt, f'~]$', f'# '], timeout=30):
+                return False, f"从跳板机登录到 {target_host} 超时或失败"
+            log_output(f"✅ 成功登录到最终目标: {target_host}", "SUCCESS")
+
+            # --- 关键修复：调用Docker进入函数 ---
+            return self._auto_enter_docker_container(server, session_name)
+            
+        except Exception as e:
+            return False, f"多层Relay连接异常: {str(e)}"
+
+    def _auto_enter_docker_container(self, server, session_name: str) -> Tuple[bool, str]:
+        """自动进入Docker容器 - 修复配置路径并优化检测"""
+        try:
+            # 修复：从正确的路径获取Docker配置
+            docker_config = server.specs.get('docker', {}) if hasattr(server, 'specs') and server.specs else {}
+            container_name = docker_config.get('container_name')
+            shell_type = docker_config.get('shell', 'zsh')
+            
+            log_output(f"🔍 检查Docker配置: container_name={container_name}, shell={shell_type}", "INFO")
+            
+            if not container_name:
+                log_output("ℹ️ 无Docker容器配置，保持主机连接", "INFO")
+                return True, "无Docker容器配置，保持主机连接"
+            
+            log_output(f"🐳 开始进入Docker容器: {container_name}...", "INFO")
+            
+            # 进入Docker容器
+            docker_cmd = f'docker exec -it {container_name} {shell_type}'
+            log_output(f"📝 执行命令: {docker_cmd}", "INFO")
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, docker_cmd, 'Enter'],
                          capture_output=True)
             
-            # 智能等待relay就绪 - 支持交互引导
-            log_output("⏳ 等待relay-cli启动...", "INFO")
-            for i in range(60):  # 增加等待时间到60秒
+            # 优化检测：使用容器特定的快速检测命令
+            log_output("⏳ 等待进入容器环境...", "INFO")
+            
+            # 发送快速检测命令
+            time.sleep(2)  # 给docker exec一些时间
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, 'echo "DOCKER_CONTAINER_CHECK_$(hostname)"', 'Enter'],
+                         capture_output=True)
+            
+            # 等待进入容器成功 - 使用更快的检测方式
+            for i in range(15):  # 减少到15次检查，每次间隔更短
                 time.sleep(1)
                 result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
                                       capture_output=True, text=True)
                 
                 output = result.stdout
+                log_output(f"🔍 检测第{i+1}次: {output[-100:].strip()}", "INFO")
                 
-                # 检查是否需要用户交互
-                if i > 5:  # 5秒后开始检查交互需求
-                    input_handled = self._handle_interactive_input(session_name, output)
-                    if not input_handled:
-                        return False, "用户输入处理失败"
+                # 优化检测：首先检查是否有配置向导需要处理
+                if 'Choice [ynrq]:' in output or 'Choice [ynq]:' in output or 'Powerlevel10k configuration wizard' in output:
+                    log_output("⚙️ 检测到Powerlevel10k配置向导，自动跳过...", "INFO")
+                    subprocess.run(['tmux', 'send-keys', '-t', session_name, 'q', 'Enter'],
+                                 capture_output=True)
+                    time.sleep(2)
+                    
+                    # 跳过向导后，认为已经成功进入容器
+                    log_output(f"✅ 成功进入Docker容器: {container_name} (跳过配置向导)", "SUCCESS")
+                    
+                    # 拷贝配置文件到容器
+                    self._copy_zsh_configs_to_container(session_name, shell_type)
+                    
+                    return True, f"完整连接成功 - 容器: {container_name}"
                 
-                # 检查连接状态
-                if 'succeeded' in output.lower():
-                    log_output("✅ Relay认证成功", "SUCCESS")
-                    break
-                elif 'failed' in output.lower() and i > 30:  # 30秒后才判断失败
-                    return False, "Relay认证失败"
-            else:
-                log_output("⚠️ Relay启动检查超时，继续尝试连接目标服务器", "WARNING")
+                # 使用hostname检查
+                if 'DOCKER_CONTAINER_CHECK_' in output:
+                    log_output(f"✅ 成功进入Docker容器: {container_name}", "SUCCESS")
+                    
+                    # 拷贝配置文件到容器
+                    self._copy_zsh_configs_to_container(session_name, shell_type)
+                    
+                    return True, f"完整连接成功 - 容器: {container_name}"
+                
+                # 检查容器错误
+                if 'no such container' in output.lower() or 'not found' in output.lower():
+                    log_output(f"❌ Docker容器错误: {output[-200:]}", "ERROR")
+                    return False, f"Docker容器 {container_name} 不存在或未运行"
+                
+                # 检查其他可能的容器标志
+                if any(indicator in output.lower() for indicator in ['root@', f'{shell_type}#', 'container']):
+                    log_output(f"✅ 检测到容器环境标志，进入Docker容器: {container_name}", "SUCCESS")
+                    
+                    # 拷贝配置文件到容器
+                    self._copy_zsh_configs_to_container(session_name, shell_type)
+                    
+                    return True, f"完整连接成功 - 容器: {container_name}"
             
-            # 连接目标服务器
-            time.sleep(2)
-            subprocess.run(['tmux', 'send-keys', '-t', session_name, f'ssh {target_host}', 'Enter'],
-                         capture_output=True)
-            
-            # 等待目标服务器连接 - 支持交互引导
-            for i in range(30):  # 30次检查，每次2秒
-                time.sleep(2)
-                result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
-                                      capture_output=True, text=True)
-                
-                output = result.stdout
-                
-                # 检查是否需要用户交互
-                input_handled = self._handle_interactive_input(session_name, output)
-                if not input_handled:
-                    return False, "目标服务器连接时用户输入处理失败"
-                
-                # 检查连接成功
-                target_short = target_host.split('.')[0]
-                if target_short in output and ('@' in output or '#' in output):
-                    log_output(f"✅ 已连接到目标服务器: {target_host}", "SUCCESS")
-                    return True, "目标服务器连接成功"
-                
-                # 检查明显的错误
-                if any(error in output.lower() for error in 
-                       ['connection refused', 'no route to host', 'timeout']):
-                    return False, f"目标服务器连接失败: {output[-200:]}"
-            
-            return False, "目标服务器连接超时"
+            log_output("⏰ 进入Docker容器超时，但连接可能仍然有效", "WARNING")
+            return False, "进入Docker容器超时"
             
         except Exception as e:
-            return False, f"Relay连接异常: {str(e)}"
+            log_output(f"💥 Docker容器连接异常: {str(e)}", "ERROR")
+            return False, f"Docker容器连接异常: {str(e)}"
     
+    def _copy_zsh_configs_to_container(self, session_name: str, shell_type: str) -> bool:
+        """拷贝zsh配置文件到Docker容器 - 使用base64编码确保可靠传输"""
+        try:
+            log_output("📂 开始拷贝zsh配置文件到容器...", "INFO")
+            
+            # 获取templates目录路径
+            script_dir = Path(__file__).parent
+            project_dir = script_dir.parent
+            zsh_config_dir = project_dir / "templates" / "configs" / "zsh"
+            
+            if not zsh_config_dir.exists():
+                log_output(f"⚠️ 配置目录不存在: {zsh_config_dir}", "WARNING")
+                return False
+            
+            # 首先确保在home目录
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, 'cd ~', 'Enter'],
+                         capture_output=True)
+            time.sleep(1)
+            
+            # 配置文件列表
+            config_files = ['.zshrc', '.p10k.zsh']  # 暂时跳过.zsh_history，因为它可能有编码问题
+            
+            import base64
+            
+            for config_file in config_files:
+                source_file = zsh_config_dir / config_file
+                if source_file.exists():
+                    log_output(f"📋 拷贝 {config_file} 到 ~/{config_file}...", "INFO")
+                    
+                    # 读取文件内容并base64编码
+                    with open(source_file, 'rb') as f:
+                        file_content = f.read()
+                    
+                    encoded_content = base64.b64encode(file_content).decode('utf-8')
+                    
+                    # 分块传输（避免命令行长度限制）
+                    chunk_size = 1000
+                    chunks = [encoded_content[i:i+chunk_size] for i in range(0, len(encoded_content), chunk_size)]
+                    
+                    # 清空临时文件
+                    temp_file = f"{config_file}.b64"
+                    subprocess.run(['tmux', 'send-keys', '-t', session_name, f'rm -f {temp_file}', 'Enter'],
+                                 capture_output=True)
+                    time.sleep(0.5)
+                    
+                    # 逐块写入base64内容
+                    for i, chunk in enumerate(chunks):
+                        if i == 0:
+                            cmd = f"echo '{chunk}' > {temp_file}"
+                        else:
+                            cmd = f"echo '{chunk}' >> {temp_file}"
+                        
+                        subprocess.run(['tmux', 'send-keys', '-t', session_name, cmd, 'Enter'],
+                                     capture_output=True)
+                        time.sleep(0.1)
+                    
+                    # 解码并创建最终文件
+                    decode_cmd = f"base64 -d {temp_file} > {config_file} && rm {temp_file}"
+                    subprocess.run(['tmux', 'send-keys', '-t', session_name, decode_cmd, 'Enter'],
+                                 capture_output=True)
+                    time.sleep(1)
+                    
+                    # 验证文件是否创建成功
+                    file_marker = config_file.replace(".", "_")
+                    verify_cmd = f"ls -la {config_file} && echo 'FILE_CREATED_{file_marker}'"
+                    subprocess.run(['tmux', 'send-keys', '-t', session_name, verify_cmd, 'Enter'],
+                                 capture_output=True)
+                    time.sleep(1)
+                    
+                    # 检查验证结果 - 增加重试机制
+                    verification_marker = f"FILE_CREATED_{file_marker}"
+                    verification_success = False
+                    
+                    for retry in range(3):  # 最多重试3次
+                        time.sleep(0.5)  # 等待命令完成
+                        result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
+                                              capture_output=True, text=True)
+                        
+                        if verification_marker in result.stdout:
+                            verification_success = True
+                            break
+                    
+                    if verification_success:
+                        log_output(f"✅ {config_file} 拷贝并验证成功", "SUCCESS")
+                    else:
+                        log_output(f"⚠️ {config_file} 验证超时，但文件可能已创建", "WARNING")
+                        # 不要返回False，继续处理其他文件
+                else:
+                    log_output(f"⚠️ 配置文件不存在: {source_file}", "WARNING")
+            
+            # 设置文件权限
+            log_output("🔐 设置文件权限...", "INFO")
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, 'chmod 644 ~/.zshrc ~/.p10k.zsh', 'Enter'],
+                         capture_output=True)
+            time.sleep(0.5)
+            
+            # 禁用Powerlevel10k配置向导
+            log_output("⚙️ 禁用Powerlevel10k配置向导...", "INFO")
+            disable_cmd = "echo 'POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true' >> ~/.zshrc"
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, disable_cmd, 'Enter'],
+                         capture_output=True)
+            time.sleep(0.5)
+            
+            # 重新加载zsh配置
+            log_output("🔄 重新加载zsh配置...", "INFO")
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, 'source ~/.zshrc', 'Enter'],
+                         capture_output=True)
+            time.sleep(2)
+            
+            # 最终验证
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, 'echo "CONFIG_RELOAD_COMPLETE"', 'Enter'],
+                         capture_output=True)
+            time.sleep(1)
+            
+            result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
+                                  capture_output=True, text=True)
+            
+            if "CONFIG_RELOAD_COMPLETE" in result.stdout:
+                log_output("🎉 zsh配置文件拷贝和加载完成！", "SUCCESS")
+                return True
+            else:
+                log_output("⚠️ 配置重新加载可能有问题", "WARNING")
+                return True  # 文件拷贝成功，即使重新加载有问题
+            
+        except Exception as e:
+            log_output(f"❌ 配置文件拷贝失败: {str(e)}", "ERROR")
+            return False
+
     def _connect_via_ssh_enhanced(self, server, session_name: str) -> Tuple[bool, str]:
         """增强版SSH连接 - 支持交互引导"""
         try:
@@ -2718,6 +2939,29 @@ class EnhancedSSHManager:
         except Exception as e:
             log_output(f"❌ 生成错误报告失败: {str(e)}", "ERROR")
             return ""
+
+    def _wait_for_output(self, session_name: str, expected_outputs: List[str], timeout: int) -> bool:
+        """等待直到在tmux窗格中看到预期的输出之一。"""
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                pane_output = subprocess.run(
+                    ['tmux', 'capture-pane', '-p', '-t', session_name],
+                    capture_output=True, text=True, check=True
+                ).stdout
+                
+                if self._handle_interactive_input(session_name, pane_output):
+                    # 如果需要交互，重置计时器
+                    start_time = time.time()
+
+                for expected in expected_outputs:
+                    if expected in pane_output:
+                        return True
+            except subprocess.CalledProcessError:
+                # 会话可能已关闭
+                return False
+            time.sleep(1)
+        return False
 
 
 # 便捷函数
