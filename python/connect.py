@@ -80,6 +80,15 @@ class ServerConfig:
     preferred_shell: str = "zsh"  # 用户偏好的shell
     auto_configure_shell: bool = True  # 是否自动配置shell环境
     copy_shell_configs: bool = True  # 是否拷贝shell配置文件
+    # 自动同步配置字段
+    auto_sync_enabled: bool = False  # 是否启用自动同步
+    sync_remote_workspace: str = "/home/Code"  # 远程工作目录
+    sync_ftp_port: int = 8021  # FTP端口
+    sync_ftp_user: str = "ftpuser"  # FTP用户
+    sync_ftp_password: str = "sync_password"  # FTP密码
+    sync_local_workspace: str = ""  # 本地工作目录（空表示当前目录）
+    sync_patterns: Optional[list] = None  # 同步文件模式
+    sync_exclude_patterns: Optional[list] = None  # 排除文件模式
 
 
 class InteractionGuide:
@@ -1701,7 +1710,8 @@ class SimpleConnectionManager:
         用户建议的逻辑：
         1. 先用bash进入docker环境
         2. 如果配置了zsh，用EnvironmentManager检查和配置
-        3. 最后切换到用户偏好的shell
+        3. 在EnvironmentManager之后加AutoSyncManager
+        4. 最后切换到用户偏好的shell
         """
         session_name = server_config.session_name
         container_name = server_config.docker_container
@@ -1730,8 +1740,48 @@ class SimpleConnectionManager:
                 else:
                     log_output(f"⚠️ {server_config.preferred_shell} 环境配置失败，将继续使用bash", "WARNING")
             
-            elif server_config.preferred_shell != "bash":
-                # 步骤3: 如果不自动配置，但用户偏好不是bash，直接切换
+            # 步骤3: 在EnvironmentManager之后加AutoSyncManager
+            if server_config.auto_sync_enabled:
+                log_output("🔄 开始设置自动同步环境...", "INFO")
+                
+                try:
+                    # 导入AutoSyncManager
+                    from auto_sync_manager import AutoSyncManager, SyncConfig
+                    
+                    # 创建AutoSyncManager实例
+                    sync_manager = AutoSyncManager(session_name)
+                    
+                    # 准备同步配置
+                    sync_config = SyncConfig(
+                        remote_workspace=server_config.sync_remote_workspace,
+                        ftp_port=server_config.sync_ftp_port,
+                        ftp_user=server_config.sync_ftp_user,
+                        ftp_password=server_config.sync_ftp_password,
+                        local_workspace=server_config.sync_local_workspace,
+                        auto_sync=True,
+                        sync_patterns=server_config.sync_patterns,
+                        exclude_patterns=server_config.sync_exclude_patterns
+                    )
+                    
+                    # 设置自动同步环境
+                    success, msg = sync_manager.setup_auto_sync(sync_config)
+                    if success:
+                        log_output("✅ 自动同步环境设置成功", "SUCCESS")
+                        log_output(f"   FTP端口: {server_config.sync_ftp_port}", "INFO")
+                        log_output(f"   远程目录: {server_config.sync_remote_workspace}", "INFO")
+                    else:
+                        log_output(f"⚠️ 自动同步环境设置失败: {msg}", "WARNING")
+                        log_output("💡 继续使用普通连接", "INFO")
+                        
+                except ImportError:
+                    log_output("⚠️ AutoSyncManager模块未找到，跳过同步设置", "WARNING")
+                except Exception as e:
+                    log_output(f"⚠️ 自动同步设置异常: {str(e)}", "WARNING")
+            else:
+                log_output("💡 自动同步未启用", "INFO")
+            
+            # 步骤4: 如果不自动配置，但用户偏好不是bash，直接切换
+            if not server_config.auto_configure_shell and server_config.preferred_shell != "bash":
                 log_output(f"🔄 切换到 {server_config.preferred_shell}", "INFO")
                 subprocess.run(
                     ['tmux', 'send-keys', '-t', session_name, server_config.preferred_shell, 'Enter'],
@@ -1739,7 +1789,7 @@ class SimpleConnectionManager:
                 )
                 time.sleep(2)
             
-            else:
+            elif server_config.preferred_shell == "bash":
                 log_output("✅ 使用默认bash环境", "SUCCESS")
             
             # 简单验证是否成功进入容器

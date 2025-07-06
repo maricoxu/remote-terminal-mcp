@@ -277,8 +277,8 @@ def create_tools_list():
                     },
                     "connection_type": {
                         "type": "string",
-                        "enum": ["ssh", "relay"],
                         "description": "连接类型：ssh（直连）或relay（通过relay-cli）",
+                        "enum": ["ssh", "relay"],
                         "default": "ssh"
                     },
                     "description": {
@@ -310,7 +310,7 @@ def create_tools_list():
                         "default": ["8080:8080", "8888:8888", "6006:6006"]
                     },
                     "docker_volumes": {
-                        "type": "array", 
+                        "type": "array",
                         "items": {"type": "string"},
                         "description": "Docker卷挂载列表，格式：[\"host:container\"]，例如：[\"/home:/home\", \"/data:/data\"]",
                         "default": ["/home:/home", "/data:/data"]
@@ -324,6 +324,37 @@ def create_tools_list():
                         "type": "boolean",
                         "description": "是否自动创建Docker容器（如果不存在）",
                         "default": True
+                    },
+                    # 自动同步配置参数
+                    "auto_sync_enabled": {
+                        "type": "boolean",
+                        "description": "是否启用自动同步功能（使用proftpd）",
+                        "default": False
+                    },
+                    "sync_remote_workspace": {
+                        "type": "string",
+                        "description": "远程工作目录路径",
+                        "default": "/home/Code"
+                    },
+                    "sync_ftp_port": {
+                        "type": "integer",
+                        "description": "FTP服务端口",
+                        "default": 8021
+                    },
+                    "sync_ftp_user": {
+                        "type": "string",
+                        "description": "FTP用户名",
+                        "default": "ftpuser"
+                    },
+                    "sync_ftp_password": {
+                        "type": "string",
+                        "description": "FTP密码",
+                        "default": "sync_password"
+                    },
+                    "sync_local_workspace": {
+                        "type": "string",
+                        "description": "本地工作目录路径（空表示当前目录）",
+                        "default": ""
                     },
                     "auto_detect": {
                         "type": "boolean",
@@ -373,8 +404,8 @@ def create_tools_list():
                     },
                     "connection_type": {
                         "type": "string",
-                        "enum": ["ssh", "relay"],
-                        "description": "Connection type: ssh (direct) or relay (via relay-cli)"
+                        "description": "Connection type: ssh (direct) or relay (via relay-cli)",
+                        "enum": ["ssh", "relay"]
                     },
                     "description": {
                         "type": "string",
@@ -403,7 +434,7 @@ def create_tools_list():
                         "default": ["8080:8080", "8888:8888", "6006:6006"]
                     },
                     "docker_volumes": {
-                        "type": "array", 
+                        "type": "array",
                         "items": {"type": "string"},
                         "description": "Docker卷挂载列表，格式：[\"host:container\"]，例如：[\"/home:/home\", \"/data:/data\"]",
                         "default": ["/home:/home", "/data:/data"]
@@ -417,6 +448,31 @@ def create_tools_list():
                         "type": "boolean",
                         "description": "是否自动创建Docker容器（如果不存在）",
                         "default": True
+                    },
+                    # 自动同步配置参数
+                    "auto_sync_enabled": {
+                        "type": "boolean",
+                        "description": "是否启用自动同步功能（使用proftpd）"
+                    },
+                    "sync_remote_workspace": {
+                        "type": "string",
+                        "description": "远程工作目录路径"
+                    },
+                    "sync_ftp_port": {
+                        "type": "integer",
+                        "description": "FTP服务端口"
+                    },
+                    "sync_ftp_user": {
+                        "type": "string",
+                        "description": "FTP用户名"
+                    },
+                    "sync_ftp_password": {
+                        "type": "string",
+                        "description": "FTP密码"
+                    },
+                    "sync_local_workspace": {
+                        "type": "string",
+                        "description": "本地工作目录路径（空表示当前目录）"
                     },
                     "show_current_config": {
                         "type": "boolean",
@@ -1002,6 +1058,13 @@ async def handle_request(request):
                         docker_volumes = tool_arguments.get("docker_volumes", ["/home:/home", "/data:/data"])
                         docker_shell = tool_arguments.get("docker_shell", "bash")
                         docker_auto_create = tool_arguments.get("docker_auto_create", True)
+                        # 自动同步配置参数
+                        auto_sync_enabled = tool_arguments.get("auto_sync_enabled", False)
+                        sync_remote_workspace = tool_arguments.get("sync_remote_workspace", "/home/Code")
+                        sync_ftp_port = tool_arguments.get("sync_ftp_port", 8021)
+                        sync_ftp_user = tool_arguments.get("sync_ftp_user", "ftpuser")
+                        sync_ftp_password = tool_arguments.get("sync_ftp_password", "sync_password")
+                        sync_local_workspace = tool_arguments.get("sync_local_workspace", "")
                         
                         # 调试所有参数
                         debug_log(f"所有tool_arguments: {tool_arguments}")
@@ -1010,6 +1073,12 @@ async def handle_request(request):
                         debug_log(f"  docker_volumes: {docker_volumes} (type: {type(docker_volumes)})")
                         debug_log(f"  docker_shell: {docker_shell} (type: {type(docker_shell)})")
                         debug_log(f"  docker_auto_create: {docker_auto_create} (type: {type(docker_auto_create)})")
+                        debug_log(f"  auto_sync_enabled: {auto_sync_enabled} (type: {type(auto_sync_enabled)})")
+                        debug_log(f"  sync_remote_workspace: {sync_remote_workspace} (type: {type(sync_remote_workspace)})")
+                        debug_log(f"  sync_ftp_port: {sync_ftp_port} (type: {type(sync_ftp_port)})")
+                        debug_log(f"  sync_ftp_user: {sync_ftp_user} (type: {type(sync_ftp_user)})")
+                        debug_log(f"  sync_ftp_password: {sync_ftp_password} (type: {type(sync_ftp_password)})")
+                        debug_log(f"  sync_local_workspace: {sync_local_workspace} (type: {type(sync_local_workspace)})")
                         
                         # 🌟 强制交互策略：无论用户输入什么参数，都要跳出交互配置界面
                         # 用户明确要求：不论输入什么都应该跳出交互配置界面
@@ -1052,6 +1121,18 @@ async def handle_request(request):
                                 prefill_params['docker_auto_create'] = docker_auto_create
                             if relay_target_host:
                                 prefill_params['relay_target_host'] = relay_target_host
+                            if auto_sync_enabled:
+                                prefill_params['auto_sync_enabled'] = auto_sync_enabled
+                            if sync_remote_workspace:
+                                prefill_params['sync_remote_workspace'] = sync_remote_workspace
+                            if sync_ftp_port:
+                                prefill_params['sync_ftp_port'] = sync_ftp_port
+                            if sync_ftp_user:
+                                prefill_params['sync_ftp_user'] = sync_ftp_user
+                            if sync_ftp_password:
+                                prefill_params['sync_ftp_password'] = sync_ftp_password
+                            if sync_local_workspace:
+                                prefill_params['sync_local_workspace'] = sync_local_workspace
                             
                             # 🎯 新策略：直接启动交互配置界面
                             debug_log("🎯 直接启动交互配置界面 - 用户强烈要求")
@@ -1193,6 +1274,15 @@ async def handle_request(request):
                                 docker_shell = tool_arguments.get("docker_shell", current_docker.get("shell", "bash"))
                                 docker_auto_create = tool_arguments.get("docker_auto_create", current_docker.get("auto_create", True))
                                 
+                                # 获取当前同步配置
+                                current_sync = current_config.get("specs", {}).get("sync", {})
+                                auto_sync_enabled = tool_arguments.get("auto_sync_enabled", current_sync.get("enabled", False))
+                                sync_remote_workspace = tool_arguments.get("sync_remote_workspace", current_sync.get("remote_workspace", "/home/Code"))
+                                sync_ftp_port = tool_arguments.get("sync_ftp_port", current_sync.get("ftp_port", 8021))
+                                sync_ftp_user = tool_arguments.get("sync_ftp_user", current_sync.get("ftp_user", "ftpuser"))
+                                sync_ftp_password = tool_arguments.get("sync_ftp_password", current_sync.get("ftp_password", "sync_password"))
+                                sync_local_workspace = tool_arguments.get("sync_local_workspace", current_sync.get("local_workspace", ""))
+                                
                                 # 获取当前relay配置
                                 current_relay = current_config.get("specs", {}).get("connection", {}).get("target", {})
                                 if not relay_target_host and current_relay:
@@ -1230,6 +1320,17 @@ async def handle_request(request):
                                     # 添加relay参数
                                     if connection_type == 'relay' and relay_target_host:
                                         prefill_params['relay_target_host'] = relay_target_host
+                                    
+                                    # 添加同步参数
+                                    if auto_sync_enabled:
+                                        prefill_params.update({
+                                            'auto_sync_enabled': auto_sync_enabled,
+                                            'sync_remote_workspace': sync_remote_workspace,
+                                            'sync_ftp_port': sync_ftp_port,
+                                            'sync_ftp_user': sync_ftp_user,
+                                            'sync_ftp_password': sync_ftp_password,
+                                            'sync_local_workspace': sync_local_workspace
+                                        })
                                     
                                     # 🎯 新策略：直接启动交互配置界面（更新模式）
                                     debug_log("🎯 直接启动更新配置界面 - 用户强烈要求")
