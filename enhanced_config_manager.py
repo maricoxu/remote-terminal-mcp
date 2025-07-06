@@ -274,6 +274,147 @@ class EnhancedConfigManager:
         
         return docker_config
 
+    def _configure_sync(self, defaults: dict = None, server_config: dict = None) -> Optional[dict]:
+        """
+        配置自动同步设置
+        
+        Args:
+            defaults: 默认配置
+            server_config: 服务器配置信息
+            
+        Returns:
+            dict: 同步配置信息，如果不启用同步则返回None
+        """
+        prefill = defaults or {}
+        server_config = server_config or {}
+        
+        self.colored_print(f"\n🔄 配置自动同步设置...", Fore.CYAN)
+        self.colored_print("💡 AutoSyncManager可以自动部署proftpd服务器，实现本地与远程的文件同步", Fore.YELLOW)
+        
+        # 步骤1: 是否开启自动同步
+        sync_enabled = prefill.get('enabled', False)
+        default_choice = "1" if sync_enabled else "2"
+        
+        self.colored_print("\n1. 启用自动同步 (推荐，用于开发环境)", Fore.WHITE)
+        self.colored_print("2. 不使用自动同步", Fore.WHITE)
+        choice = self.smart_input("选择", default=default_choice)
+        
+        if choice != "1":
+            self.colored_print("🔕 已禁用自动同步功能", Fore.YELLOW)
+            return None
+        
+        # 步骤2: 配置同步参数
+        sync_config = {'enabled': True}
+        
+        # 远程同步目录
+        default_remote_workspace = prefill.get('remote_workspace', '/home/Code')
+        self.colored_print(f"\n📁 远程同步目录配置:", Fore.CYAN)
+        self.colored_print("💡 这是远程服务器上存放代码的目录", Fore.YELLOW)
+        sync_config['remote_workspace'] = self.smart_input(
+            "远程工作目录", 
+            default=default_remote_workspace
+        )
+        
+        # FTP服务配置
+        self.colored_print(f"\n🌐 FTP服务配置:", Fore.CYAN)
+        self.colored_print("💡 AutoSyncManager会自动部署proftpd服务器", Fore.YELLOW)
+        
+        # FTP端口
+        default_ftp_port = prefill.get('ftp_port', 8021)
+        sync_config['ftp_port'] = self.smart_input(
+            "FTP端口", 
+            default=str(default_ftp_port),
+            validator=self.validate_port
+        )
+        
+        # FTP用户名
+        default_ftp_user = prefill.get('ftp_user', 'ftpuser')
+        sync_config['ftp_user'] = self.smart_input(
+            "FTP用户名", 
+            default=default_ftp_user
+        )
+        
+        # FTP密码
+        default_ftp_password = prefill.get('ftp_password', 'sync_password')
+        sync_config['ftp_password'] = self.smart_input(
+            "FTP密码", 
+            default=default_ftp_password
+        )
+        
+        # 本地工作目录
+        default_local_workspace = prefill.get('local_workspace', '')
+        self.colored_print(f"\n💻 本地同步配置:", Fore.CYAN)
+        self.colored_print("💡 本地工作目录，空表示使用当前目录", Fore.YELLOW)
+        sync_config['local_workspace'] = self.smart_input(
+            "本地工作目录 (空表示当前目录)", 
+            default=default_local_workspace
+        )
+        
+        # 同步模式配置
+        self.colored_print(f"\n🔄 同步模式配置:", Fore.CYAN)
+        self.colored_print("💡 可以配置包含和排除的文件模式", Fore.YELLOW)
+        
+        # 包含模式
+        default_include_patterns = prefill.get('include_patterns', ['*.py', '*.js', '*.md', '*.txt'])
+        self.colored_print(f"包含模式默认值: {', '.join(default_include_patterns)}", Fore.YELLOW)
+        include_patterns = self._collect_sync_patterns("包含模式", default_include_patterns)
+        sync_config['include_patterns'] = include_patterns
+        
+        # 排除模式
+        default_exclude_patterns = prefill.get('exclude_patterns', ['*.pyc', '__pycache__', '.git', 'node_modules'])
+        self.colored_print(f"排除模式默认值: {', '.join(default_exclude_patterns)}", Fore.YELLOW)
+        exclude_patterns = self._collect_sync_patterns("排除模式", default_exclude_patterns)
+        sync_config['exclude_patterns'] = exclude_patterns
+        
+        # 配置摘要
+        self.colored_print(f"\n📋 自动同步配置摘要:", Fore.GREEN)
+        self.colored_print(f"  🗂️  远程目录: {sync_config['remote_workspace']}", Fore.WHITE)
+        self.colored_print(f"  🌐 FTP端口: {sync_config['ftp_port']}", Fore.WHITE)
+        self.colored_print(f"  👤 FTP用户: {sync_config['ftp_user']}", Fore.WHITE)
+        self.colored_print(f"  🔐 FTP密码: {'*' * len(sync_config['ftp_password'])}", Fore.WHITE)
+        local_dir = sync_config['local_workspace'] or "当前目录"
+        self.colored_print(f"  💻 本地目录: {local_dir}", Fore.WHITE)
+        self.colored_print(f"  ✅ 包含模式: {', '.join(include_patterns)}", Fore.WHITE)
+        self.colored_print(f"  ❌ 排除模式: {', '.join(exclude_patterns)}", Fore.WHITE)
+        
+        return sync_config
+
+    def _collect_sync_patterns(self, pattern_type: str, defaults: list = None) -> list:
+        """
+        收集同步模式配置
+        
+        Args:
+            pattern_type: 模式类型（包含模式/排除模式）
+            defaults: 默认值列表
+            
+        Returns:
+            list: 配置的模式列表
+        """
+        patterns = []
+        defaults = defaults or []
+        
+        self.colored_print(f"\n配置{pattern_type} (例如: *.py, *.js, __pycache__):", Fore.CYAN)
+        self.colored_print("💡 留空完成配置", Fore.YELLOW)
+        
+        # 先处理默认值
+        for i, default_pattern in enumerate(defaults):
+            prompt = f"编辑 {pattern_type} #{i+1} (或回车保留)"
+            pattern = self.smart_input(prompt, default=default_pattern)
+            if pattern:
+                patterns.append(pattern)
+        
+        # 添加新的模式
+        i = len(defaults)
+        while True:
+            i += 1
+            pattern = self.smart_input(f"新的{pattern_type} #{i}")
+            if pattern:
+                patterns.append(pattern)
+            else:
+                break
+        
+        return patterns if patterns else defaults
+
     def _collect_list_items(self, item_name: str, defaults: list = None) -> list:
         items = []
         defaults = defaults or []
@@ -348,7 +489,7 @@ class EnhancedConfigManager:
         
         if not final_config.get('host'): return None
 
-        self.show_progress(4, 6, "Docker配置")
+        self.show_progress(4, 7, "Docker配置")
         template_defaults = self._select_docker_template()
         docker_defaults = {**template_defaults, **defaults.get('docker_config', {})}
         docker_host_info = final_config.get('jump_host', final_config)
@@ -358,6 +499,14 @@ class EnhancedConfigManager:
         final_config['docker_enabled'] = bool(docker_config)
         final_config['docker_config'] = docker_config if docker_config else {}
 
+        # 按照用户建议添加自动同步配置步骤
+        self.show_progress(5, 7, "自动同步配置")
+        sync_config = self._configure_sync(defaults.get('sync_config', {}), final_config)
+        
+        final_config['auto_sync_enabled'] = bool(sync_config)
+        final_config['sync_config'] = sync_config if sync_config else {}
+
+        self.show_progress(6, 7, "保存配置")
         self.colored_print("\n🎉 配置完成!", Fore.GREEN, style=Style.BRIGHT)
         self.save_config({'servers': {server_name: final_config}}, merge=True)
         return server_name, final_config
