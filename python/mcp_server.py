@@ -771,15 +771,38 @@ async def handle_request(request):
                 elif tool_name == "connect_server":
                     server_name = tool_arguments.get("server_name")
                     if server_name:
-                        # 使用增强版智能连接
-                        success, message = manager.smart_connect(server_name)
-                        if success:
-                            # 统一使用EnhancedSSHManager的get_server方法
-                            server = manager.get_server(server_name)
-                            session_name = server.session.get('name', f"{server_name}_session") if server and server.session else f"{server_name}_session"
-                            content = f"✅ 智能连接成功！\n📝 详情: {message}\n\n🎯 连接命令:\ntmux attach -t {session_name}\n\n💡 快速操作:\n• 连接: tmux attach -t {session_name}\n• 分离: Ctrl+B, 然后按 D\n• 查看: tmux list-sessions\n\n🚀 增强功能:\n• 智能连接检测和自动修复\n• 一键式Docker环境连接\n• 交互引导支持"
-                        else:
-                            content = f"❌ 智能连接失败: {message}"
+                        # 🚀 使用新的connect.py连接管理器
+                        try:
+                            from python.connect import connect_server as new_connect_server
+                            result = new_connect_server(server_name)
+                            
+                            if result.success:
+                                content = f"✅ 连接成功！\n📝 详情: {result.message}\n\n🎯 连接信息:\n"
+                                if result.session_name:
+                                    content += f"• 会话名称: {result.session_name}\n"
+                                    content += f"• 连接终端: tmux attach -t {result.session_name}\n"
+                                    content += f"• 分离会话: Ctrl+B, 然后按 D\n"
+                                if result.details:
+                                    content += f"• 连接类型: {result.details.get('connection_type', '未知')}\n"
+                                    content += f"• 目标主机: {result.details.get('host', '未知')}\n"
+                                    if result.details.get('docker_container'):
+                                        content += f"• Docker容器: {result.details.get('docker_container')}\n"
+                                content += f"\n🚀 新架构特性:\n• 分离关注点设计\n• 增强的relay认证处理\n• 智能交互引导\n• 健康状态检测"
+                            else:
+                                content = f"❌ 连接失败: {result.message}"
+                                if result.details and result.details.get('tmux_command'):
+                                    content += f"\n\n💡 手动连接: {result.details['tmux_command']}"
+                        except ImportError as e:
+                            # 降级到原有实现
+                            success, message = manager.smart_connect(server_name)
+                            if success:
+                                server = manager.get_server(server_name)
+                                session_name = server.session.get('name', f"{server_name}_session") if server and server.session else f"{server_name}_session"
+                                content = f"✅ 连接成功（兼容模式）: {message}\n🎯 连接: tmux attach -t {session_name}"
+                            else:
+                                content = f"❌ 连接失败: {message}"
+                        except Exception as e:
+                            content = f"❌ 连接异常: {str(e)}"
                     else:
                         content = "Error: server_name parameter is required"
                         
@@ -789,76 +812,104 @@ async def handle_request(request):
                     
                     if server_name:
                         try:
-                            # 获取服务器信息
-                            server = manager.get_server(server_name)
-                            if not server:
-                                content = json.dumps({
-                                    "success": False,
-                                    "error": f"Server '{server_name}' not found",
-                                    "available_servers": [s.get('name', '') for s in manager.list_servers()]
-                                }, ensure_ascii=False, indent=2)
+                            from python.connect import disconnect_server as new_disconnect_server
+                            result = new_disconnect_server(server_name)
+                            
+                            if result.success:
+                                content = f"✅ 断开连接成功\n📝 详情: {result.message}\n🎯 服务器: {server_name}"
                             else:
-                                # 检查连接状态
-                                status = manager.get_connection_status(server_name)
-                                
-                                if not status.get('connected', False):
-                                    content = json.dumps({
-                                        "success": True,
-                                        "message": f"Server '{server_name}' is already disconnected",
-                                        "status": "not_connected"
-                                    }, ensure_ascii=False, indent=2)
+                                content = f"❌ 断开连接失败: {result.message}"
+                        except ImportError:
+                            # 降级到原有实现
+                            try:
+                                server = manager.get_server(server_name)
+                                if not server:
+                                    content = f"❌ 服务器 '{server_name}' 不存在"
                                 else:
-                                    # 执行断开连接
                                     disconnect_result = manager.disconnect_server(server_name, force=force)
-                                    
                                     if disconnect_result.get('success', False):
-                                        content = json.dumps({
-                                            "success": True,
-                                            "message": f"Successfully disconnected from '{server_name}'",
-                                            "details": disconnect_result.get('details', ''),
-                                            "cleanup_actions": disconnect_result.get('cleanup_actions', [])
-                                        }, ensure_ascii=False, indent=2)
+                                        content = f"✅ 成功断开连接: {server_name}"
                                     else:
-                                        content = json.dumps({
-                                            "success": False,
-                                            "error": f"Failed to disconnect from '{server_name}': {disconnect_result.get('error', 'Unknown error')}",
-                                            "suggestions": disconnect_result.get('suggestions', [])
-                                        }, ensure_ascii=False, indent=2)
+                                        content = f"❌ 断开连接失败: {disconnect_result.get('error', '未知错误')}"
+                            except Exception as e:
+                                content = f"❌ 断开连接异常: {str(e)}"
                         except Exception as e:
-                            content = json.dumps({
-                                "success": False,
-                                "error": f"Exception during disconnect: {str(e)}",
-                                "server_name": server_name
-                            }, ensure_ascii=False, indent=2)
+                            content = f"❌ 断开连接异常: {str(e)}"
                     else:
-                        content = json.dumps({
-                            "success": False,
-                            "error": "server_name parameter is required"
-                        }, ensure_ascii=False, indent=2)
+                        content = "Error: server_name parameter is required"
                         
                 elif tool_name == "execute_command":
                     command = tool_arguments.get("command")
                     server = tool_arguments.get("server")
                     if command:
-                        result = manager.execute_command(server or "default", command)
-                        content = str(result)
+                        try:
+                            from python.connect import execute_server_command
+                            result = execute_server_command(server or "default", command)
+                            
+                            if result.success:
+                                content = f"✅ 命令执行成功\n\n📋 命令: {command}\n\n📄 输出:\n{result.details.get('output', '无输出') if result.details else '无输出'}"
+                            else:
+                                content = f"❌ 命令执行失败: {result.message}"
+                        except ImportError:
+                            # 降级到原有实现
+                            result = manager.execute_command(server or "default", command)
+                            content = str(result)
+                        except Exception as e:
+                            content = f"❌ 命令执行异常: {str(e)}"
                     else:
                         content = "Error: command parameter is required"
                         
                 elif tool_name == "get_server_status":
                     server_name = tool_arguments.get("server_name")
                     if server_name:
-                        status = manager.get_connection_status(server_name)
-                        content = json.dumps(status, ensure_ascii=False, indent=2)
+                        try:
+                            from python.connect import get_server_status as new_get_server_status
+                            result = new_get_server_status(server_name)
+                            
+                            if result.success:
+                                content = f"📊 服务器状态: {server_name}\n"
+                                content += f"🔗 状态: {result.status.value}\n"
+                                content += f"📝 详情: {result.message}\n"
+                                if result.session_name:
+                                    content += f"🎯 会话: {result.session_name}"
+                            else:
+                                content = f"❌ 获取状态失败: {result.message}"
+                        except ImportError:
+                            # 降级到原有实现
+                            status = manager.get_connection_status(server_name)
+                            content = json.dumps(status, ensure_ascii=False, indent=2)
+                        except Exception as e:
+                            content = f"❌ 获取状态异常: {str(e)}"
                     else:
                         # 获取所有服务器状态
-                        all_status = {}
-                        servers = manager.list_servers()
-                        for server in servers:
-                            server_name = server.get('name')
-                            if server_name:
-                                all_status[server_name] = manager.get_connection_status(server_name)
-                        content = json.dumps(all_status, ensure_ascii=False, indent=2)
+                        try:
+                            from python.connect import list_all_servers
+                            servers_info = list_all_servers()
+                            
+                            if servers_info:
+                                content = "📊 所有服务器状态:\n\n"
+                                for server in servers_info:
+                                    status_icon = {"connected": "🟢", "ready": "✅", "disconnected": "🔴", "error": "❌"}.get(server['status'], "❓")
+                                    content += f"{status_icon} **{server['name']}**\n"
+                                    content += f"   📍 主机: {server['host']}\n"
+                                    content += f"   👤 用户: {server['username']}\n"
+                                    content += f"   🔗 状态: {server['status']}\n"
+                                    if server.get('docker_container'):
+                                        content += f"   🐳 容器: {server['docker_container']}\n"
+                                    content += "\n"
+                            else:
+                                content = "📋 暂无配置的服务器"
+                        except ImportError:
+                            # 降级到原有实现
+                            all_status = {}
+                            servers = manager.list_servers()
+                            for server in servers:
+                                server_name = server.get('name')
+                                if server_name:
+                                    all_status[server_name] = manager.get_connection_status(server_name)
+                            content = json.dumps(all_status, ensure_ascii=False, indent=2)
+                        except Exception as e:
+                            content = f"❌ 获取服务器列表异常: {str(e)}"
                     
                 elif tool_name == "get_server_info":
                     server_name = tool_arguments.get("server_name")

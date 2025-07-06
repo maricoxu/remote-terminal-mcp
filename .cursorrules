@@ -71,6 +71,82 @@
    - 使用 diagnose_connection 进行深度诊断
 ```
 
+### 3. 🚨 Relay-CLI使用严格规范 (强制遵循)
+
+**⚠️ 这是防止连接失败的关键规则，必须严格遵循！**
+
+#### 3.1 relay-cli正确使用方式：
+```
+✅ **正确用法**：
+relay-cli
+
+然后进入relay环境后，再ssh到目标服务器：
+ssh bjhw-sys-rpm0221.bjhw
+```
+
+#### 3.2 relay-cli严格禁止的用法：
+```
+🚫 **绝对禁止**：
+- relay-cli [主机] --user [用户]
+- relay-cli [主机] --user [用户] --command "任何命令"
+- relay-cli [主机] --user [用户] --timeout N --command "任何命令"  
+- relay-cli [主机] --user [用户] "任何命令"
+- 在relay-cli后面接任何参数
+
+❌ **错误示例**：
+relay-cli bjhw-sys-rpm0221.bjhw --user xuyehua
+relay-cli bjhw-sys-rpm0221.bjhw --user xuyehua --command "pwd"
+relay-cli bjhw-sys-rpm0221.bjhw --user xuyehua --timeout 5 --command "echo test"
+```
+
+#### 3.3 正确的连接流程：
+```
+🎯 **正确流程**：
+1. 步骤1: 运行 relay-cli （不接任何参数）
+2. 步骤2: 完成relay认证（指纹、扫码等）
+3. 步骤3: 进入relay环境后，执行 ssh bjhw-sys-rpm0221.bjhw
+4. 步骤4: 在目标服务器上进行后续操作
+
+💡 **示例**：
+$ relay-cli
+[认证过程...]
+relay环境$ ssh bjhw-sys-rpm0221.bjhw
+[目标服务器]$ pwd && hostname && whoami
+```
+
+#### 3.4 使用原则：
+```
+🎯 **核心原则**：
+1. **纯净启动**：relay-cli不接任何参数
+2. **分步连接**：先进relay，再ssh到目标
+3. **手动认证**：允许用户手动完成认证流程
+4. **清晰分离**：relay环境和目标服务器操作分离
+```
+
+#### 3.5 违规处理：
+```
+🚨 **违规后果**：
+- 导致连接失败，无法建立relay连接
+- 认证流程被中断
+- MCP工具无法正常工作
+- 用户体验严重受损
+
+📝 **发现违规时**：
+1. 立即停止当前操作
+2. 道歉并说明错误
+3. 使用正确的relay-cli语法重新连接
+4. 更新相关文档和规则
+```
+
+#### 3.6 测试和验证：
+```
+🔍 **测试原则**：
+- 手动测试relay连接时必须使用正确语法
+- 所有relay相关代码必须遵循此规范
+- 文档中的所有relay示例必须符合规范
+- 回归测试必须包含relay使用规范验证
+```
+
 ## 🧪 质量保证与测试规范
 
 ### 1. 强制性回归测试要求

@@ -80,6 +80,20 @@ class InteractiveGuide:
                 r'verification code',
                 r'authenticator',
                 r'2FA'
+            ],
+            'relay_auth': [
+                r'请使用app扫描二维码',
+                r'scan qr code',
+                r'请确认指纹',
+                r'touch sensor',
+                r'fingerprint verification',
+                r'请输入验证码',
+                r'verification code',
+                r'press any key to continue',
+                r'扫码认证',
+                r'指纹认证',
+                r'二维码',
+                r'qr.*code'
             ]
         }
     
@@ -147,6 +161,24 @@ class InteractiveGuide:
                     f'5. 输入完成后按 Ctrl+B, D 退出会话'
                 ],
                 'timeout': 180,  # 3分钟超时
+                'auto_continue': True
+            },
+            'relay_auth': {
+                'title': '🚀 Relay认证需要用户操作',
+                'description': 'Relay-CLI需要您完成身份认证（扫码、指纹、验证码等）',
+                'instructions': [
+                    f'1. 打开新终端窗口',
+                    f'2. 执行: tmux attach -t {self.session_name}',
+                    f'3. 根据提示完成认证操作：',
+                    f'   - 扫描二维码（使用公司App或微信）',
+                    f'   - 确认指纹识别',
+                    f'   - 输入验证码',
+                    f'   - 按任意键继续',
+                    f'4. 认证成功后会自动进入relay环境',
+                    f'5. 完成后按 Ctrl+B, D 退出会话',
+                    f'6. 系统将自动继续连接到目标服务器'
+                ],
+                'timeout': 300,  # 5分钟超时
                 'auto_continue': True
             }
         }
@@ -297,7 +329,7 @@ class EnhancedSSHManager:
         return servers_info
     
     def execute_command_internal(self, server_name: str, command: str) -> Tuple[bool, str]:
-        """执行命令的内部实现"""
+        """执行命令的内部实现 - 增强版智能等待"""
         server = self.get_server(server_name)
         if not server:
             return False, f"服务器 {server_name} 不存在"
@@ -314,23 +346,97 @@ class EnhancedSSHManager:
                 if check_result.returncode != 0:
                     return False, f"会话 {session_name} 不存在，请先建立连接"
                 
+                # 🔧 获取执行前的输出基线
+                baseline_result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
+                                               capture_output=True, text=True)
+                baseline_output = baseline_result.stdout if baseline_result.returncode == 0 else ""
+                
                 # 发送命令
                 subprocess.run(['tmux', 'send-keys', '-t', session_name, command, 'Enter'], 
                              capture_output=True)
                 
-                # 等待执行完成
-                time.sleep(2)
+                # 🔧 智能等待命令执行完成
+                success, output = self._wait_for_command_completion(session_name, command, baseline_output)
                 
-                # 获取输出
-                result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
-                                      capture_output=True, text=True)
-                
-                return True, result.stdout if result.returncode == 0 else "命令执行完成"
+                return success, output
                 
             except Exception as e:
                 return False, f"命令执行失败: {str(e)}"
         else:
             return False, f"不支持的服务器类型: {server.type}"
+    
+    def _wait_for_command_completion(self, session_name: str, command: str, baseline_output: str, timeout: int = 30) -> Tuple[bool, str]:
+        """智能等待命令执行完成"""
+        start_time = time.time()
+        last_output = baseline_output
+        stable_count = 0
+        
+        log_output(f"⏳ 等待命令执行完成: {command[:50]}...", "DEBUG")
+        
+        while time.time() - start_time < timeout:
+            time.sleep(1)  # 每秒检查一次
+            
+            try:
+                # 获取当前输出
+                result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
+                                      capture_output=True, text=True)
+                
+                if result.returncode != 0:
+                    return False, "无法获取命令输出"
+                
+                current_output = result.stdout
+                
+                # 检查输出是否稳定
+                if current_output == last_output:
+                    stable_count += 1
+                    if stable_count >= 3:  # 连续3次输出相同，认为命令完成
+                        log_output("✅ 命令执行完成（输出稳定）", "DEBUG")
+                        return True, current_output
+                else:
+                    stable_count = 0
+                    last_output = current_output
+                
+                # 检查是否有新的提示符
+                if self._has_new_prompt(current_output, baseline_output):
+                    log_output("✅ 命令执行完成（检测到新提示符）", "DEBUG")
+                    return True, current_output
+                
+                # 检查是否有错误
+                if "command not found" in current_output.lower() or "Permission denied" in current_output:
+                    log_output("⚠️ 命令执行出错", "WARNING")
+                    return True, current_output  # 返回错误信息
+                
+            except Exception as e:
+                log_output(f"❌ 检查命令执行状态失败: {str(e)}", "ERROR")
+                return False, str(e)
+        
+        log_output("⏰ 命令执行超时", "WARNING")
+        return True, last_output  # 超时也返回最后的输出
+    
+    def _has_new_prompt(self, current_output: str, baseline_output: str) -> bool:
+        """检查是否有新的提示符出现"""
+        # 常见的提示符模式
+        prompt_patterns = [
+            r'\$\s*$',  # bash提示符
+            r'#\s*$',   # root提示符
+            r'>\s*$',   # 其他提示符
+            r'~\]\$\s*$',  # 完整bash提示符
+            r'@.*:\s*.*\$\s*$',  # 用户@主机:路径$
+        ]
+        
+        import re
+        current_lines = current_output.split('\n')
+        baseline_lines = baseline_output.split('\n')
+        
+        # 比较最后几行
+        if len(current_lines) > len(baseline_lines):
+            new_lines = current_lines[len(baseline_lines):]
+            for line in new_lines:
+                for pattern in prompt_patterns:
+                    if re.search(pattern, line):
+                        return True
+        
+        return False
     
     def smart_connect(self, server_name: str, force_recreate: bool = False) -> Tuple[bool, str]:
         """
@@ -460,7 +566,7 @@ class EnhancedSSHManager:
     
     def _detect_existing_connection(self, server_name: str, session_name: str) -> str:
         """
-        智能检测现有连接状态
+        智能检测现有连接状态 - 增强版针对relay连接
         返回: "ready", "recoverable", "failed", "none"
         """
         try:
@@ -471,11 +577,16 @@ class EnhancedSSHManager:
             if check_result.returncode != 0:
                 return "none"
             
-            # 发送测试命令
-            subprocess.run(['tmux', 'send-keys', '-t', session_name, 
-                          'echo "CONNECTION_TEST_$(date +%s)"', 'Enter'], 
+            # 获取服务器配置信息
+            server = self.get_server(server_name)
+            is_relay = server and hasattr(server, 'connection_type') and server.connection_type == 'relay'
+            target_host = server.host if server else None
+            
+            # 发送更明确的测试命令
+            test_command = f'echo "CONNECTION_TEST_$(hostname)_$(whoami)_$(date +%s)"'
+            subprocess.run(['tmux', 'send-keys', '-t', session_name, test_command, 'Enter'], 
                          capture_output=True)
-            time.sleep(2)
+            time.sleep(3)  # 增加等待时间
             
             # 获取输出
             result = subprocess.run(['tmux', 'capture-pane', '-t', session_name, '-p'],
@@ -485,20 +596,44 @@ class EnhancedSSHManager:
                 return "failed"
             
             output = result.stdout
+            log_output(f"🔍 连接状态检测输出: {output[-200:]}", "DEBUG")
             
             # 分析连接状态
             if 'CONNECTION_TEST_' in output:
-                # 检查是否在远程环境
-                if any(local_indicator in output for local_indicator in 
-                       ['MacBook-Pro', 'localhost', 'xuyehua@MacBook']):
-                    return "recoverable"  # 会话存在但回到本地
+                # 对于relay连接，使用更智能的检测逻辑
+                if is_relay:
+                    # 检查是否在目标服务器上
+                    if target_host and target_host.split('.')[0] in output:
+                        log_output(f"✅ 检测到目标服务器环境: {target_host}", "SUCCESS")
+                        return "ready"
+                    
+                    # 检查是否在relay环境中
+                    if '-bash-baidu-ssl$' in output or 'baidu' in output.lower():
+                        log_output("🔍 检测到relay环境，但可能未连接到目标服务器", "INFO")
+                        return "recoverable"
+                    
+                    # 检查是否在本地
+                    if any(local_indicator in output for local_indicator in 
+                           ['MacBook-Pro', 'localhost', 'xuyehua@MacBook']):
+                        log_output("⚠️ 检测到本地环境，relay连接可能需要重新认证", "WARNING")
+                        return "recoverable"
+                    
+                    # 无法明确判断，保守返回ready
+                    return "ready"
                 else:
-                    return "ready"  # 连接正常
+                    # 非relay连接的原有逻辑
+                    if any(local_indicator in output for local_indicator in 
+                           ['MacBook-Pro', 'localhost', 'xuyehua@MacBook']):
+                        return "recoverable"  # 会话存在但在本地
+                    else:
+                        return "ready"  # 连接正常
             else:
+                # 没有收到测试命令回应
+                log_output("❌ 测试命令无响应，连接可能已断开", "WARNING")
                 return "recoverable"  # 会话无响应但可能恢复
                 
         except Exception as e:
-            log_output(f"连接检测失败: {str(e)}", "ERROR")
+            log_output(f"❌ 连接状态检测异常: {str(e)}", "ERROR")
             return "failed"
     
     def _recover_connection(self, server_name: str, session_name: str) -> bool:
@@ -574,13 +709,18 @@ class EnhancedSSHManager:
             return False, f"Relay连接异常: {str(e)}"
     
     def _connect_via_simple_relay(self, server, session_name: str, target_host: str, username: str) -> Tuple[bool, str]:
-        """通过分步send-keys实现简单relay连接"""
+        """通过分步send-keys实现简单relay连接 - 增强版交互式认证支持"""
         try:
             log_output("📡 正在启动 relay-cli...", "INFO")
             subprocess.run(['tmux', 'send-keys', '-t', session_name, 'relay-cli', 'Enter'], check=True)
 
-            if not self._wait_for_output(session_name, ['-bash-baidu-ssl$'], timeout=60):
-                return False, "连接relay-cli超时或失败"
+            # 🔧 增强版: 检测认证状态并提供用户引导
+            log_output("🔍 检测relay认证状态...", "INFO")
+            auth_success = self._handle_relay_authentication(session_name, timeout=120)
+            
+            if not auth_success:
+                return False, "relay-cli认证失败或超时，请检查网络连接和认证信息"
+            
             log_output("✅ 已连接到跳板机环境。", "SUCCESS")
 
             ssh_cmd = f"ssh -t {username}@{target_host}"
@@ -597,6 +737,69 @@ class EnhancedSSHManager:
             
         except Exception as e:
             return False, f"简单Relay连接异常: {str(e)}"
+    
+    def _handle_relay_authentication(self, session_name: str, timeout: int = 120) -> bool:
+        """处理relay认证过程 - 检测认证提示并引导用户"""
+        start_time = time.time()
+        auth_prompts = [
+            "请使用App扫描二维码",
+            "请确认指纹",
+            "请输入验证码",
+            "verification code",
+            "scan QR code",
+            "touch sensor",
+            "Press any key to continue",
+            "-bash-baidu-ssl$"  # 最终成功标志
+        ]
+        
+        log_output("⏳ 等待relay认证完成...", "INFO")
+        
+        while time.time() - start_time < timeout:
+            try:
+                # 获取当前输出
+                pane_output = subprocess.run(
+                    ['tmux', 'capture-pane', '-p', '-t', session_name],
+                    capture_output=True, text=True, check=True
+                ).stdout
+                
+                # 检查认证成功
+                if '-bash-baidu-ssl$' in pane_output:
+                    log_output("✅ relay认证成功!", "SUCCESS")
+                    return True
+                
+                # 检查认证提示
+                for prompt in auth_prompts[:-1]:  # 排除成功标志
+                    if prompt in pane_output:
+                        log_output(f"🔔 检测到认证提示: {prompt}", "INFO")
+                        log_output("👤 请在终端或App中完成认证操作", "WARNING")
+                        log_output(f"📱 可以使用命令查看详细信息: tmux attach -t {session_name}", "INFO")
+                        break
+                
+                # 检查错误情况
+                if "authentication failed" in pane_output.lower() or "认证失败" in pane_output:
+                    log_output("❌ relay认证失败", "ERROR")
+                    return False
+                
+                if "network error" in pane_output.lower() or "网络错误" in pane_output:
+                    log_output("❌ 网络连接错误", "ERROR")
+                    return False
+                
+                # 检查是否需要交互
+                if self._handle_interactive_input(session_name, pane_output):
+                    # 如果需要交互，重置计时器
+                    start_time = time.time()
+                    log_output("🔄 检测到交互需求，重置等待计时器", "INFO")
+                    
+            except subprocess.CalledProcessError:
+                # 会话可能已关闭
+                log_output("❌ tmux会话不可用", "ERROR")
+                return False
+                
+            time.sleep(2)  # 每2秒检查一次
+        
+        log_output("⏰ relay认证超时", "WARNING")
+        log_output(f"💡 建议手动检查认证状态: tmux attach -t {session_name}", "INFO")
+        return False
 
     def _connect_via_multi_level_relay(self, server, session_name: str, jump_host_config: dict, target_host: str, username: str) -> Tuple[bool, str]:
         """通过分步send-keys实现多层relay连接"""

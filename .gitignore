@@ -198,6 +198,10 @@ servers.yaml
 .remote-terminal-mcp/
 .config/
 
+# Cursor编辑器规则文件（包含项目特定规则，不提交到git）
+.cursorrules
+.windsurfrules
+
 # Python
 __pycache__/
 *.py[cod]
