@@ -1466,7 +1466,7 @@ async def handle_request(request):
                                         del current_config["servers"][server_name]
                                         
                                         # 保存更新后的配置
-                                        mcp_config_manager.save_config(current_config, merge_mode=False)
+                                        mcp_config_manager.save_config(current_config, merge=False)
                                         
                                         content = json.dumps({
                                             "success": True,
