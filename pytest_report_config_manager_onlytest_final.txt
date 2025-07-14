@@ -1,0 +1,26 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0
+rootdir: /Users/xuyehua/Code/remote-terminal-mcp
+plugins: anyio-4.9.0, cov-6.1.1, asyncio-1.0.0
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 9 items
+
+tests/config_manager/test_docker_config.py >>> configure_docker called
+[smart_input] prompt: 选择, default: 2
+选择 [2]: [smart_input] user input: 2
+>>> 跳过docker详细配置，choice= 2
+.
+tests/config_manager/test_interaction.py .[smart_input] prompt: 提示, default: abc
+提示 [abc]: [smart_input] user input: abc
+.[smart_input] prompt: 请输入内容, default: default
+[smart_input] user input: mocked
+.
+tests/config_manager/test_io.py 
+✅ 配置已保存至 /var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmps84nufax
+.
+tests/config_manager/test_server_info.py ...
+tests/config_manager/test_sync_config.py [smart_input] prompt: 选择, default: 2
+选择 [2]: [smart_input] user input: 2
+.
+
+======================== 9 passed in 229.87s (0:03:49) =========================

@@ -1,0 +1,711 @@
+🧪 Remote Terminal MCP 回归测试套件
+==================================
+日期: Sat Jul 12 22:39:39 CST 2025
+Python版本: Python 3.9.6
+
+🔍 检查测试依赖...
+✅ 依赖检查完成
+
+🚀 开始运行回归测试...
+
+📋 运行测试: 预填充参数功能
+   描述: 测试MCP工具的预填充参数功能，确保参数正确传递和显示
+   文件: tests/regression/test_fix_prefill_parameters_20241222.py
+
+🧪 开始预填充参数功能回归测试
+============================================================
+
+🧪 测试2: _configure_server函数预填充参数使用
+✅ _configure_server函数正确接受prefill_params参数
+
+🧪 测试5: 边界情况测试
+✅ 空预填充参数处理正常
+✅ None预填充参数处理正常
+
+🧪 测试1: guided_setup函数预填充参数支持
+✅ guided_setup函数接受prefill_params参数（其他异常: ('test-server-prefill', {'connection_type': 'ssh', 'host': 'test.example.com', 'username': 'testuser', 'port': 2222, 'docker_enabled': False, 'docker_config': {}, 'auto_sync_enabled': False, 'sync_config': {}}) is not false : guided_setup在MCP模式下应该返回False）
+
+🧪 测试3: main函数预填充文件处理
+⚠️ main函数输出未包含预期内容: usage: enhanced_config_manager.py [-h]
+enhanced_config_manager.py: error: unrecognized arguments: --prefill /var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpim78kusw.json --cursor-terminal
+
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/case.py:550: RuntimeWarning: coroutine 'TestPrefillParametersFix.test_mcp_create_server_config_response_format' was never awaited
+  method()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/case.py:550: RuntimeWarning: coroutine 'TestPrefillParametersFix.test_temp_file_creation_and_cleanup' was never awaited
+  method()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+======================================================================
+FAIL: test_edge_cases (__main__.TestPrefillParametersFix)
+测试边界情况
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_prefill_parameters_20241222.py", line 302, in test_edge_cases
+    result = config_manager.guided_setup(prefill_params=partial_params)
+TypeError: 'NoneType' object is not iterable
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_prefill_parameters_20241222.py", line 306, in test_edge_cases
+    self.fail(f"❌ 部分预填充参数测试失败: {e}")
+AssertionError: ❌ 部分预填充参数测试失败: 'NoneType' object is not iterable
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.105s
+
+FAILED (failures=1)
+
+🔄 运行异步测试...
+
+🧪 测试4: MCP create_server_config响应格式
+✅ 使用新的响应格式（直接提供命令）
+✅ 响应包含所有预填充参数信息
+
+🧪 测试6: 临时预填充文件创建和清理
+✅ 临时预填充文件创建和验证成功
+✅ 临时文件清理完成
+
+============================================================
+❌ 部分测试失败
+  失败: test_edge_cases (__main__.TestPrefillParametersFix)
+❌ 预填充参数功能 - 失败
+
+----------------------------------------
+
+📋 运行测试: 交互界面启动机制
+   描述: 测试交互界面启动机制，确保不启动后台进程而是提供用户指导
+   文件: tests/regression/test_fix_interactive_interface_startup_20241222.py
+
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/case.py:550: RuntimeWarning: coroutine 'TestInteractiveInterfaceStartupFix.test_automated_interaction_compatibility' was never awaited
+  method()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/case.py:550: RuntimeWarning: coroutine 'TestInteractiveInterfaceStartupFix.test_create_server_config_response_format' was never awaited
+  method()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/case.py:550: RuntimeWarning: coroutine 'TestInteractiveInterfaceStartupFix.test_no_background_process_started' was never awaited
+  method()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/case.py:550: RuntimeWarning: coroutine 'TestInteractiveInterfaceStartupFix.test_response_consistency' was never awaited
+  method()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/case.py:550: RuntimeWarning: coroutine 'TestInteractiveInterfaceStartupFix.test_user_guidance_completeness' was never awaited
+  method()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+----------------------------------------------------------------------
+Ran 6 tests in 0.086s
+
+OK
+🧪 开始交互界面启动机制回归测试
+============================================================
+
+🧪 测试3: 手动命令执行验证
+⚠️ 输出内容不符合预期: usage: enhanced_config_manager.py [-h]
+enhanced_config_manager.py: error: unrecognized arguments: --prefill /var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpu46fq7qf.json --cursor-terminal --auto-c...
+
+🔄 运行异步测试...
+
+🧪 测试1: create_server_config响应格式验证
+✅ 使用新的响应格式（提供直接命令）
+✅ 响应包含完整的用户指导信息
+
+🧪 测试2: 确认无后台进程启动
+✅ 确认没有启动新的enhanced_config_manager后台进程
+
+🧪 测试4: 响应一致性验证
+  测试案例 1: minimal-test
+    ✅ 案例1: 使用新响应格式
+  测试案例 2: full-test
+    ✅ 案例2: 使用新响应格式
+  测试案例 3: relay-test
+    ✅ 案例3: 使用新响应格式
+✅ 所有测试案例响应格式一致
+
+🧪 测试5: 用户指导信息完整性
+✅ 用户指导信息完整
+
+🧪 测试6: 自动化交互测试框架兼容性
+⚠️ 自动化交互测试异常: AppleScript执行超时 (10秒)
+
+============================================================
+✅ 所有交互界面启动机制测试通过！
+🎯 修复验证成功：交互界面启动机制正常工作
+✅ 交互界面启动机制 - 通过
+
+----------------------------------------
+
+📋 运行测试: 交互启动要求
+   描述: 测试create_server_config工具必须启动交互配置界面，验证强制交互模式修复
+   文件: tests/regression/test_fix_interactive_startup_requirement_20241222.py
+
+🚀 开始回归测试：验证create_server_config交互启动要求
+============================================================
+test_create_server_config_must_start_interactive_interface (__main__.TestInteractiveStartupRequirement)
+核心测试：create_server_config工具必须启动交互配置界面 ... 
+🎯 开始测试：create_server_config必须启动交互配置界面
+📋 测试参数: {
+  "name": "test_interactive_startup",
+  "host": "test.example.com",
+  "username": "testuser",
+  "port": 22,
+  "connection_type": "relay",
+  "description": "测试交互启动功能",
+  "docker_enabled": true,
+  "docker_image": "ubuntu:20.04",
+  "docker_container": "test_container"
+}
+🚀 调用launch_cursor_terminal_config方法...
+FAIL
+test_interactive_startup_failure_diagnosis (__main__.TestInteractiveStartupRequirement)
+测试启动失败时的诊断信息 ... 
+🎯 开始测试：启动失败诊断
+ERROR
+test_interactive_startup_with_minimal_params (__main__.TestInteractiveStartupRequirement)
+测试最小参数下的交互启动 ... 
+🎯 开始测试：最小参数下的交互启动
+ERROR
+
+======================================================================
+ERROR: test_interactive_startup_failure_diagnosis (__main__.TestInteractiveStartupRequirement)
+测试启动失败时的诊断信息
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_interactive_startup_requirement_20241222.py", line 221, in test_interactive_startup_failure_diagnosis
+    result = self.config_manager.launch_cursor_terminal_config(prefill_params=invalid_params)
+AttributeError: 'EnhancedConfigManager' object has no attribute 'launch_cursor_terminal_config'
+
+======================================================================
+ERROR: test_interactive_startup_with_minimal_params (__main__.TestInteractiveStartupRequirement)
+测试最小参数下的交互启动
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_interactive_startup_requirement_20241222.py", line 195, in test_interactive_startup_with_minimal_params
+    result = self.config_manager.launch_cursor_terminal_config(prefill_params=minimal_params)
+AttributeError: 'EnhancedConfigManager' object has no attribute 'launch_cursor_terminal_config'
+
+======================================================================
+FAIL: test_create_server_config_must_start_interactive_interface (__main__.TestInteractiveStartupRequirement)
+核心测试：create_server_config工具必须启动交互配置界面
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_interactive_startup_requirement_20241222.py", line 91, in test_create_server_config_must_start_interactive_interface
+    result = self.config_manager.launch_cursor_terminal_config(prefill_params=test_params)
+AttributeError: 'EnhancedConfigManager' object has no attribute 'launch_cursor_terminal_config'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_interactive_startup_requirement_20241222.py", line 94, in test_create_server_config_must_start_interactive_interface
+    self.fail(f"❌ 调用launch_cursor_terminal_config失败: {e}")
+AssertionError: ❌ 调用launch_cursor_terminal_config失败: 'EnhancedConfigManager' object has no attribute 'launch_cursor_terminal_config'
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.001s
+
+FAILED (failures=1, errors=2)
+============================================================
+❌ 测试失败，需要修复问题
+失败数量: 1
+错误数量: 2
+
+❌ 失败测试: test_create_server_config_must_start_interactive_interface (__main__.TestInteractiveStartupRequirement)
+详细信息: Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_interactive_startup_requirement_20241222.py", line 91, in test_create_server_config_must_start_interactive_interface
+    result = self.config_manager.launch_cursor_terminal_config(prefill_params=test_params)
+AttributeError: 'EnhancedConfigManager' object has no attribute 'launch_cursor_terminal_config'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_interactive_startup_requirement_20241222.py", line 94, in test_create_server_config_must_start_interactive_interface
+    self.fail(f"❌ 调用launch_cursor_terminal_config失败: {e}")
+AssertionError: ❌ 调用launch_cursor_terminal_config失败: 'EnhancedConfigManager' object has no attribute 'launch_cursor_terminal_config'
+
+
+❌ 失败测试: test_interactive_startup_failure_diagnosis (__main__.TestInteractiveStartupRequirement)
+详细信息: Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_interactive_startup_requirement_20241222.py", line 221, in test_interactive_startup_failure_diagnosis
+    result = self.config_manager.launch_cursor_terminal_config(prefill_params=invalid_params)
+AttributeError: 'EnhancedConfigManager' object has no attribute 'launch_cursor_terminal_config'
+
+
+❌ 失败测试: test_interactive_startup_with_minimal_params (__main__.TestInteractiveStartupRequirement)
+详细信息: Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_interactive_startup_requirement_20241222.py", line 195, in test_interactive_startup_with_minimal_params
+    result = self.config_manager.launch_cursor_terminal_config(prefill_params=minimal_params)
+AttributeError: 'EnhancedConfigManager' object has no attribute 'launch_cursor_terminal_config'
+
+❌ 交互启动要求 - 失败
+
+----------------------------------------
+
+📋 运行测试: 用户可见交互界面
+   描述: 测试用户是否真的能看到交互配置界面，验证用户体验修复
+   文件: tests/regression/test_fix_user_visible_interaction_20241222.py
+
+🚀 开始用户可见交互界面验证测试
+============================================================
+test_background_process_detection (__main__.TestUserVisibleInteraction)
+测试检测后台进程问题（之前的bug） ... 
+🎯 测试后台进程检测
+🚀 使用旧方式启动（重定向输出）...
+📋 旧方式：进程已结束，退出码: 2
+标准输出: ...
+错误输出: usage: enhanced_config_manager.py [-h]
+enhanced_config_manager.py: error: unrecognized arguments: --cursor-terminal --force-interactive --prefill /var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpmq...
+✅ 后台进程问题检测完成
+✅ 清理文件: /var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpmqqqk6qq.json
+ok
+test_interactive_interface_accessibility (__main__.TestUserVisibleInteraction)
+测试交互界面是否可访问（用户能否与之交互） ... 
+🎯 测试交互界面可访问性
+ERROR
+test_process_output_visibility (__main__.TestUserVisibleInteraction)
+测试进程输出是否对用户可见 ... 
+🎯 测试进程输出可见性
+🚀 使用AppleScript启动测试脚本...
+✅ AppleScript执行成功
+💡 请检查是否有新的Terminal窗口打开并显示测试输出
+✅ 清理文件: /var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmp003txxzs.py
+ok
+test_terminal_window_creation_on_macos (__main__.TestUserVisibleInteraction)
+测试在macOS上是否真的创建了新的Terminal窗口 ... 
+🎯 测试Terminal窗口创建（macOS）
+📊 启动前Terminal窗口数: 2
+ERROR
+
+======================================================================
+ERROR: test_interactive_interface_accessibility (__main__.TestUserVisibleInteraction)
+测试交互界面是否可访问（用户能否与之交互）
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_user_visible_interaction_20241222.py", line 189, in test_interactive_interface_accessibility
+    result = self.config_manager.launch_cursor_terminal_config(prefill_params=test_params)
+AttributeError: 'EnhancedConfigManager' object has no attribute 'launch_cursor_terminal_config'
+
+======================================================================
+ERROR: test_terminal_window_creation_on_macos (__main__.TestUserVisibleInteraction)
+测试在macOS上是否真的创建了新的Terminal窗口
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_user_visible_interaction_20241222.py", line 94, in test_terminal_window_creation_on_macos
+    result = self.config_manager.launch_cursor_terminal_config(prefill_params=test_params)
+AttributeError: 'EnhancedConfigManager' object has no attribute 'launch_cursor_terminal_config'
+
+----------------------------------------------------------------------
+Ran 4 tests in 1.309s
+
+FAILED (errors=2)
+============================================================
+❌ 用户体验测试失败
+失败数量: 0
+错误数量: 2
+
+❌ 失败测试: test_interactive_interface_accessibility (__main__.TestUserVisibleInteraction)
+详细信息: Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_user_visible_interaction_20241222.py", line 189, in test_interactive_interface_accessibility
+    result = self.config_manager.launch_cursor_terminal_config(prefill_params=test_params)
+AttributeError: 'EnhancedConfigManager' object has no attribute 'launch_cursor_terminal_config'
+
+
+❌ 失败测试: test_terminal_window_creation_on_macos (__main__.TestUserVisibleInteraction)
+详细信息: Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_user_visible_interaction_20241222.py", line 94, in test_terminal_window_creation_on_macos
+    result = self.config_manager.launch_cursor_terminal_config(prefill_params=test_params)
+AttributeError: 'EnhancedConfigManager' object has no attribute 'launch_cursor_terminal_config'
+
+❌ 用户可见交互界面 - 失败
+
+----------------------------------------
+
+📋 运行测试: 完整交互序列和进程管理
+   描述: 测试完整的交互序列包括文件同步设置，以及进程生命周期管理
+   文件: tests/regression/test_fix_complete_interaction_and_process_management_20241222.py
+
+test_applescript_terminal_cleanup_integration (__main__.TestCompleteInteractionAndProcessManagement)
+测试AppleScript中的终端清理集成 ... ok
+test_complete_applescript_sequence (__main__.TestCompleteInteractionAndProcessManagement)
+测试完整的AppleScript交互序列 ... ok
+test_complete_expect_sequence (__main__.TestCompleteInteractionAndProcessManagement)
+测试完整的expect脚本序列 ... ok
+test_comprehensive_test_with_process_management (__main__.TestCompleteInteractionAndProcessManagement)
+测试包含进程管理的综合测试流程 ... ok
+test_error_handling_in_process_management (__main__.TestCompleteInteractionAndProcessManagement)
+测试进程管理中的错误处理 ... ok
+test_process_cleanup_functionality (__main__.TestCompleteInteractionAndProcessManagement)
+测试进程清理功能 ... ok
+test_process_tracking_mechanism (__main__.TestCompleteInteractionAndProcessManagement)
+测试进程跟踪机制 ... ok
+test_remaining_process_detection (__main__.TestCompleteInteractionAndProcessManagement)
+测试残留进程检测功能 ... ok
+test_temp_file_cleanup_integration (__main__.TestCompleteInteractionAndProcessManagement)
+测试临时文件清理与进程管理的集成 ... ok
+test_terminal_cleanup_functionality (__main__.TestCompleteInteractionAndProcessManagement)
+测试终端清理功能 ... ok
+test_timeout_handling_in_interactions (__main__.TestCompleteInteractionAndProcessManagement)
+测试交互过程中的超时处理 ... ok
+test_all_required_interaction_steps (__main__.TestInteractionSequenceCompleteness)
+测试所有必需的交互步骤 ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 1.114s
+
+OK
+🧪 开始运行完整交互序列和进程管理回归测试...
+================================================================================
+🧪 测试AppleScript终端清理集成
+✅ AppleScript终端清理集成测试通过
+🧪 测试完整的AppleScript交互序列
+✅ AppleScript交互序列验证通过
+🧪 测试完整的expect脚本序列
+✅ expect脚本交互序列验证通过
+🚀 开始运行自动化交互测试...
+
+📋 执行测试 1/1: auto-interaction-test
+
+🔍 开始验证配置创建...
+✅ PASS - 交互测试_auto-interaction-test: 配置创建成功
+✅ PASS - 配置验证_auto-interaction-test: 模拟验证成功
+✅ 测试后无残留进程
+
+📊 测试总结:
+   总测试数: 2
+   通过: 2
+   失败: 0
+
+🧹 清理测试终端...
+✅ 终端清理成功
+✅ 包含进程管理的综合测试流程测试通过
+✅ 进程管理错误处理测试通过
+✅ 进程清理功能测试通过
+✅ 进程跟踪机制测试通过
+✅ 残留进程检测功能测试通过
+✅ 临时文件清理集成测试通过
+🧪 测试终端清理功能
+✅ 终端清理功能测试通过
+✅ 交互超时处理测试通过
+✅ 交互序列完整性测试通过
+================================================================================
+🎉 所有完整交互序列和进程管理测试通过！
+✅ 完整交互序列和进程管理 - 通过
+
+----------------------------------------
+
+📋 运行测试: 终端清理Bug修复
+   描述: 测试修复后的终端清理逻辑，确保AppleScript不再使用有问题的pwd命令
+   文件: tests/regression/test_fix_terminal_cleanup_bug_20241222.py
+
+test_applescript_syntax_validation (__main__.TestTerminalCleanupBugFix)
+测试AppleScript语法验证 ... ok
+test_cleanup_configuration (__main__.TestTerminalCleanupBugFix)
+测试清理配置 ... ok
+test_cleanup_disabled_behavior (__main__.TestTerminalCleanupBugFix)
+测试禁用清理时的行为 ... /Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/case.py:550: RuntimeWarning: coroutine 'TestTerminalCleanupBugFix.test_cleanup_disabled_behavior' was never awaited
+  method()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_cleanup_script_no_pwd_command (__main__.TestTerminalCleanupBugFix)
+测试清理脚本不再包含有问题的pwd命令 ... ok
+test_cleanup_terminals_method (__main__.TestTerminalCleanupBugFix)
+测试清理终端方法 ... /Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/case.py:550: RuntimeWarning: coroutine 'TestTerminalCleanupBugFix.test_cleanup_terminals_method' was never awaited
+  method()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_force_cleanup_script_generation (__main__.TestTerminalCleanupBugFix)
+测试强制清理脚本生成 ... ok
+test_force_cleanup_terminals_method (__main__.TestTerminalCleanupBugFix)
+测试强制清理终端方法 ... /Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/case.py:550: RuntimeWarning: coroutine 'TestTerminalCleanupBugFix.test_force_cleanup_terminals_method' was never awaited
+  method()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_project_path_detection (__main__.TestTerminalCleanupBugFix)
+测试项目路径检测 ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.003s
+
+OK
+🚀 终端清理Bug修复回归测试开始
+==================================================
+✅ AppleScript语法验证通过
+✅ 清理配置测试通过
+✅ 清理脚本不再包含有问题的pwd命令
+✅ 强制清理脚本生成正确
+✅ 项目路径检测测试通过
+🧪 开始终端清理Bug修复回归测试...
+✅ 常规清理方法测试通过: 终端清理成功
+✅ 强制清理方法测试通过: 强制清理成功，关闭了 0 个终端窗口
+✅ 禁用清理行为测试通过
+✅ 所有异步测试通过
+==================================================
+🎉 所有终端清理Bug修复回归测试通过！
+
+📋 测试总结:
+✅ AppleScript清理逻辑修复验证
+✅ 强制清理功能测试
+✅ 清理配置和行为测试
+✅ 语法和路径检测验证
+✅ 终端清理Bug修复 - 通过
+
+----------------------------------------
+
+📋 运行测试: Docker配置保存和显示功能
+   描述: 测试Docker配置的保存、显示和格式兼容性，确保预填充参数正确应用
+   文件: tests/regression/test_fix_docker_config_save_20241222.py
+
+🚀 开始Docker配置保存和显示功能回归测试
+============================================================
+test_docker_config_formats_compatibility (__main__.TestDockerConfigSave)
+测试不同Docker配置格式的兼容性 ... 
+🎯 测试Docker配置格式兼容性
+✅ Docker配置格式兼容性测试通过
+✅ 清理文件: /var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmptwuy_3vk.yaml
+ok
+test_docker_config_save_with_prefill_params (__main__.TestDockerConfigSave)
+测试使用预填充参数时Docker配置的保存 ... 
+🎯 测试预填充Docker参数保存
+✅ Docker配置保存测试通过
+✅ 清理文件: /var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpizw9s_27.yaml
+ok
+test_docker_config_update_mechanism (__main__.TestDockerConfigSave)
+测试Docker配置的更新机制 ... 
+🎯 测试Docker配置更新机制
+✅ Docker配置更新机制测试通过
+✅ 清理文件: /var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpt_u73law.yaml
+ok
+test_list_servers_docker_display (__main__.TestDockerConfigSave)
+测试list_servers的Docker信息显示 ... 
+🎯 测试list_servers Docker信息显示
+✅ list_servers Docker显示测试通过
+✅ 清理文件: /var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmp4ijremfs.yaml
+ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.007s
+
+OK
+============================================================
+🎉 所有Docker配置测试通过！
+✅ Docker配置保存和显示功能 - 通过
+
+----------------------------------------
+
+📋 运行测试: Docker配置自动化功能
+   描述: 测试Docker配置的完整自动化保存流程，包括端到端测试和边界情况验证
+   文件: tests/regression/test_fix_docker_config_automation_20241222.py
+
+🚀 开始Docker配置保存自动化回归测试
+============================================================
+test_docker_config_automatic_save (__main__.TestDockerConfigAutomation)
+测试Docker配置的自动保存功能 ... 
+🎯 测试Docker配置自动保存
+FAIL
+test_docker_config_edge_cases (__main__.TestDockerConfigAutomation)
+测试Docker配置的边界情况 ... 
+🎯 测试Docker配置边界情况
+ERROR
+test_docker_config_persistence (__main__.TestDockerConfigAutomation)
+测试Docker配置的持久化 ... 
+🎯 测试Docker配置持久化
+ERROR
+test_docker_config_update_automation (__main__.TestDockerConfigAutomation)
+测试Docker配置的自动更新功能 ... 
+🎯 测试Docker配置自动更新
+ERROR
+test_mcp_integration_docker_config (__main__.TestDockerConfigAutomation)
+测试MCP集成的Docker配置保存 ... 
+🎯 测试MCP集成Docker配置保存
+⚠️ MCP集成测试异常: 'EnhancedConfigManager' object has no attribute 'mcp_direct_create'
+💡 这可能需要进一步的MCP集成修复
+ok
+test_mcp_create_server_config_with_docker (__main__.TestDockerConfigMCPIntegration)
+测试通过MCP创建包含Docker配置的服务器 ... /Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/case.py:550: RuntimeWarning: coroutine 'TestDockerConfigMCPIntegration.test_mcp_create_server_config_with_docker' was never awaited
+  method()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+ok
+
+======================================================================
+ERROR: test_docker_config_edge_cases (__main__.TestDockerConfigAutomation)
+测试Docker配置的边界情况
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_docker_config_automation_20241222.py", line 192, in test_docker_config_edge_cases
+    self.config_manager.mcp_direct_create(**edge_case_1)
+AttributeError: 'EnhancedConfigManager' object has no attribute 'mcp_direct_create'
+
+======================================================================
+ERROR: test_docker_config_persistence (__main__.TestDockerConfigAutomation)
+测试Docker配置的持久化
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_docker_config_automation_20241222.py", line 230, in test_docker_config_persistence
+    self.config_manager.mcp_direct_create(**full_config)
+AttributeError: 'EnhancedConfigManager' object has no attribute 'mcp_direct_create'
+
+======================================================================
+ERROR: test_docker_config_update_automation (__main__.TestDockerConfigAutomation)
+测试Docker配置的自动更新功能
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_docker_config_automation_20241222.py", line 141, in test_docker_config_update_automation
+    self.config_manager.mcp_direct_create(**initial_config)
+AttributeError: 'EnhancedConfigManager' object has no attribute 'mcp_direct_create'
+
+======================================================================
+FAIL: test_docker_config_automatic_save (__main__.TestDockerConfigAutomation)
+测试Docker配置的自动保存功能
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_docker_config_automation_20241222.py", line 90, in test_docker_config_automatic_save
+    result = self.config_manager.mcp_direct_create(**full_config)
+AttributeError: 'EnhancedConfigManager' object has no attribute 'mcp_direct_create'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_docker_config_automation_20241222.py", line 133, in test_docker_config_automatic_save
+    self.fail(f"Docker配置自动保存测试失败: {e}")
+AssertionError: Docker配置自动保存测试失败: 'EnhancedConfigManager' object has no attribute 'mcp_direct_create'
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.047s
+
+FAILED (failures=1, errors=3)
+
+🔄 运行异步Docker配置测试...
+
+🎯 测试MCP创建Docker服务器配置
+模拟MCP调用异常: 'EnhancedConfigManager' object has no attribute 'mcp_direct_create'
+⚠️ MCP调用未创建预期的配置文件
+============================================================
+🎉 所有Docker配置自动化测试完成！
+✅ Docker配置自动化功能 - 通过
+
+----------------------------------------
+
+📋 运行测试: MCP服务器重启和新代码加载
+   描述: 测试MCP服务器重启后新代码能正确加载，修复语法错误并验证update_server_config新逻辑
+   文件: tests/regression/test_fix_mcp_restart_and_new_code_loading_20241222.py
+
+test_code_change_detection (__main__.TestMCPRestartAndNewCodeLoading)
+测试代码变更检测 ... ok
+test_index_js_startup_with_python_backend (__main__.TestMCPRestartAndNewCodeLoading)
+测试通过index.js启动Python后端 ... ok
+test_mcp_server_import_validation (__main__.TestMCPRestartAndNewCodeLoading)
+测试MCP服务器模块导入验证 ... ok
+test_mcp_server_restart_simulation (__main__.TestMCPRestartAndNewCodeLoading)
+模拟MCP服务器重启过程 ... ok
+test_mcp_server_startup_without_errors (__main__.TestMCPRestartAndNewCodeLoading)
+测试MCP服务器能否无错误启动 ... ok
+test_mcp_server_syntax_validation (__main__.TestMCPRestartAndNewCodeLoading)
+测试MCP服务器Python语法验证 ... ok
+test_new_update_server_config_logic_loading (__main__.TestMCPRestartAndNewCodeLoading)
+测试新的update_server_config逻辑是否正确加载 ... ok
+test_tools_list_generation (__main__.TestMCPRestartAndNewCodeLoading)
+测试工具列表生成是否正常 ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 4.495s
+
+OK
+🚀 开始MCP服务器重启和新代码加载回归测试
+======================================================================
+🎯 测试代码变更检测
+⚠️ 代码文件较旧（5699.2分钟前修改）
+✅ 发现 7 个True默认值
+✅ 发现 6 个False默认值
+✅ 没有发现有问题的小写true/false
+✅ 代码变更检测通过
+🎯 测试通过index.js启动Python后端
+✅ 通过index.js启动Python后端测试通过
+🎯 测试MCP服务器模块导入
+✅ MCP服务器模块导入验证通过
+🎯 模拟MCP服务器重启过程
+🚀 第一次启动MCP服务器...
+✅ 第一次启动成功
+🔄 终止第一个进程...
+🚀 第二次启动MCP服务器（模拟重启）...
+✅ 重启后启动成功
+✅ MCP服务器重启模拟测试通过
+🎯 测试MCP服务器无错误启动
+✅ 收到有效的初始化响应
+✅ MCP服务器启动测试通过
+🎯 测试MCP服务器Python语法
+✅ MCP服务器Python语法验证通过
+🎯 测试新的update_server_config逻辑加载
+✅ 新的update_server_config逻辑标记验证通过
+🎯 测试工具列表生成
+✅ 工具列表生成测试通过
+======================================================================
+🎉 所有MCP重启和新代码加载测试通过！
+🎯 修复验证成功：
+  ✅ 语法错误已修复（true -> True）
+  ✅ MCP服务器能正常重启
+  ✅ 新的update_server_config逻辑已加载
+  ✅ 重启后服务器能正常响应
+✅ MCP服务器重启和新代码加载 - 通过
+
+----------------------------------------
+
+🔍 运行JavaScript语法回归测试...
+
+📋 检查JavaScript语法: index.js
+✅ index.js - 语法正确
+
+📋 检查JavaScript语法: node_mcp_server.js
+✅ node_mcp_server.js - 语法正确
+
+📋 检查JavaScript语法: scripts/check-dependencies.js
+✅ scripts/check-dependencies.js - 语法正确
+
+📋 检查JavaScript语法: scripts/post-install.js
+✅ scripts/post-install.js - 语法正确
+
+🧹 进程清理验证...
+
+📋 检查残留测试进程
+✅ 无残留测试进程
+
+📁 配置文件完整性检查...
+
+📋 检查配置模板文件
+✅ 所有配置模板文件存在
+
+==========================================
+📊 回归测试总结
+==========================================
+总测试数: 15
+通过: 12
+失败: 3
+通过率: 80.0%
+
+详细结果:
+  ❌ 预填充参数功能 - 失败
+  ✅ 交互界面启动机制 - 通过
+  ❌ 交互启动要求 - 失败
+  ❌ 用户可见交互界面 - 失败
+  ✅ 完整交互序列和进程管理 - 通过
+  ✅ 终端清理Bug修复 - 通过
+  ✅ Docker配置保存和显示功能 - 通过
+  ✅ Docker配置自动化功能 - 通过
+  ✅ MCP服务器重启和新代码加载 - 通过
+  ✅ index.js - 语法正确
+  ✅ node_mcp_server.js - 语法正确
+  ✅ scripts/check-dependencies.js - 语法正确
+  ✅ scripts/post-install.js - 语法正确
+  ✅ 无残留测试进程
+  ✅ 配置模板文件完整
+
+🔧 测试环境信息:
+   操作系统: Darwin
+   Python路径: /usr/bin/python3
+   工作目录: /Users/xuyehua/Code/remote-terminal-mcp
+   用户: xuyehua
+
+💥 有 3 个测试失败！请修复问题后重新运行测试。
+
+🔧 调试建议:
+1. 检查失败的测试详细输出
+2. 确保所有依赖已正确安装
+3. 验证代码修改是否引入了回归问题
+4. 检查是否有进程或文件资源未正确清理

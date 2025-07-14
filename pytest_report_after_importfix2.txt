@@ -1,0 +1,96 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0
+rootdir: /Users/xuyehua/Code/remote-terminal-mcp
+plugins: anyio-4.9.0, cov-6.1.1, asyncio-1.0.0
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+>>> EnhancedConfigManager loaded from: <class 'python.config_manager.main.EnhancedConfigManager'>
+collected 238 items / 5 errors
+
+==================================== ERRORS ====================================
+_________ ERROR collecting tests/config_manager/test_docker_config.py __________
+ImportError while importing test module '/Users/xuyehua/Code/remote-terminal-mcp/tests/config_manager/test_docker_config.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/importlib/__init__.py:127: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/config_manager/test_docker_config.py:2: in <module>
+    from config_manager.interaction import UserInteraction
+E   ModuleNotFoundError: No module named 'config_manager'
+__________ ERROR collecting tests/config_manager/test_interaction.py ___________
+ImportError while importing test module '/Users/xuyehua/Code/remote-terminal-mcp/tests/config_manager/test_interaction.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/importlib/__init__.py:127: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/config_manager/test_interaction.py:3: in <module>
+    from config_manager.interaction import UserInteraction
+E   ModuleNotFoundError: No module named 'config_manager'
+_______________ ERROR collecting tests/config_manager/test_io.py _______________
+ImportError while importing test module '/Users/xuyehua/Code/remote-terminal-mcp/tests/config_manager/test_io.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/importlib/__init__.py:127: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/config_manager/test_io.py:4: in <module>
+    from config_manager.io import ConfigIO
+E   ModuleNotFoundError: No module named 'config_manager'
+__________ ERROR collecting tests/config_manager/test_server_info.py ___________
+ImportError while importing test module '/Users/xuyehua/Code/remote-terminal-mcp/tests/config_manager/test_server_info.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/importlib/__init__.py:127: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/config_manager/test_server_info.py:3: in <module>
+    from config_manager.interaction import UserInteraction
+E   ModuleNotFoundError: No module named 'config_manager'
+__________ ERROR collecting tests/config_manager/test_sync_config.py ___________
+ImportError while importing test module '/Users/xuyehua/Code/remote-terminal-mcp/tests/config_manager/test_sync_config.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/importlib/__init__.py:127: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/config_manager/test_sync_config.py:2: in <module>
+    from config_manager.interaction import UserInteraction
+E   ModuleNotFoundError: No module named 'config_manager'
+=============================== warnings summary ===============================
+tests/regression/test_fix_always_interactive_mode_20240622.py:33
+  /Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_always_interactive_mode_20240622.py:33: PytestCollectionWarning: cannot collect test class 'TestAlwaysInteractiveMode' because it has a __init__ constructor (from: tests/regression/test_fix_always_interactive_mode_20240622.py)
+    class TestAlwaysInteractiveMode:
+
+tests/regression/test_fix_automated_interaction_20240622.py:32
+  /Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_automated_interaction_20240622.py:32: PytestCollectionWarning: cannot collect test class 'TestAutomatedInteractionIntegration' because it has a __init__ constructor (from: tests/regression/test_fix_automated_interaction_20240622.py)
+    class TestAutomatedInteractionIntegration:
+
+tests/regression/test_fix_chat_terminal_interactive_20240622.py:30
+  /Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_chat_terminal_interactive_20240622.py:30: PytestCollectionWarning: cannot collect test class 'TestChatTerminalInteractive' because it has a __init__ constructor (from: tests/regression/test_fix_chat_terminal_interactive_20240622.py)
+    class TestChatTerminalInteractive:
+
+tests/regression/test_fix_cursor_interactive_mode_20240622.py:30
+  /Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_cursor_interactive_mode_20240622.py:30: PytestCollectionWarning: cannot collect test class 'TestCursorTerminalInteractiveMode' because it has a __init__ constructor (from: tests/regression/test_fix_cursor_interactive_mode_20240622.py)
+    class TestCursorTerminalInteractiveMode:
+
+tests/regression/test_fix_parameter_error_and_ux_20240622.py:32
+  /Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_parameter_error_and_ux_20240622.py:32: PytestCollectionWarning: cannot collect test class 'TestParameterErrorAndUXFix' because it has a __init__ constructor (from: tests/regression/test_fix_parameter_error_and_ux_20240622.py)
+    class TestParameterErrorAndUXFix:
+
+tests/regression/test_fix_smart_auto_switch_mode_20240622.py:33
+  /Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_smart_auto_switch_mode_20240622.py:33: PytestCollectionWarning: cannot collect test class 'TestSmartAutoSwitchMode' because it has a __init__ constructor (from: tests/regression/test_fix_smart_auto_switch_mode_20240622.py)
+    class TestSmartAutoSwitchMode:
+
+tests/utils/test_helpers.py:23
+  /Users/xuyehua/Code/remote-terminal-mcp/tests/utils/test_helpers.py:23: PytestCollectionWarning: cannot collect test class 'TestEnvironment' because it has a __init__ constructor (from: tests/utils/test_helpers.py)
+    class TestEnvironment:
+
+tests/utils/test_helpers.py:228
+  /Users/xuyehua/Code/remote-terminal-mcp/tests/utils/test_helpers.py:228: PytestCollectionWarning: cannot collect test class 'TestReporter' because it has a __init__ constructor (from: tests/utils/test_helpers.py)
+    class TestReporter:
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR tests/config_manager/test_docker_config.py
+ERROR tests/config_manager/test_interaction.py
+ERROR tests/config_manager/test_io.py
+ERROR tests/config_manager/test_server_info.py
+ERROR tests/config_manager/test_sync_config.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 5 errors during collection !!!!!!!!!!!!!!!!!!!!
+======================== 8 warnings, 5 errors in 0.24s =========================

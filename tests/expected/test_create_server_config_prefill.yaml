@@ -1,0 +1,9 @@
+servers:
+  hg225:
+    host: 192.168.1.225
+    username: admin
+    port: 22
+    docker_enabled: false
+    docker_config: {}
+    auto_sync_enabled: false
+    sync_config: {}
