@@ -70,3 +70,43 @@ class EnhancedConfigManager:
         self.io.save_config({'servers': config['servers']})
         self.ia.colored_print(f"\n✅ 配置已保存至 {self.io.config_path}")
         return name, config['servers'][name]
+
+    def list_servers(self):
+        """
+        列出所有已配置服务器
+        :return: 服务器字典
+        """
+        config = self.io.load_config()
+        return config.get('servers', {})
+
+    def create_server(self, server_info: dict):
+        """
+        新增服务器配置
+        :param server_info: 服务器信息字典
+        :return: 新增后的服务器名和配置
+        """
+        config = self.io.load_config()
+        name = server_info.get('name')
+        if not name:
+            raise ValueError('服务器名称不能为空')
+        if 'servers' not in config:
+            config['servers'] = {}
+        if name in config['servers']:
+            raise ValueError(f'服务器 {name} 已存在')
+        config['servers'][name] = server_info
+        self.io.save_config({'servers': config['servers']})
+        return name, config['servers'][name]
+
+    def update_server(self, name: str, update_info: dict):
+        """
+        更新指定服务器配置
+        :param name: 服务器名称
+        :param update_info: 更新内容字典
+        :return: 更新后的服务器配置
+        """
+        config = self.io.load_config()
+        if 'servers' not in config or name not in config['servers']:
+            raise ValueError(f'服务器 {name} 不存在')
+        config['servers'][name].update(update_info)
+        self.io.save_config({'servers': config['servers']})
+        return config['servers'][name]
