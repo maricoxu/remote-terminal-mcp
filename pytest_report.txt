@@ -1,96 +1,790 @@
 ============================= test session starts ==============================
-platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0
+platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0 -- /Applications/Xcode.app/Contents/Developer/usr/bin/python3
+cachedir: .pytest_cache
 rootdir: /Users/xuyehua/Code/remote-terminal-mcp
 plugins: anyio-4.9.0, cov-6.1.1, asyncio-1.0.0
 asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
->>> EnhancedConfigManager loaded from: <class 'python.config_manager.main.EnhancedConfigManager'>
-collected 238 items / 5 errors
+collecting ... collected 85 items
 
-==================================== ERRORS ====================================
-_________ ERROR collecting tests/config_manager/test_docker_config.py __________
-ImportError while importing test module '/Users/xuyehua/Code/remote-terminal-mcp/tests/config_manager/test_docker_config.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/importlib/__init__.py:127: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-tests/config_manager/test_docker_config.py:2: in <module>
-    from config_manager.interaction import UserInteraction
-E   ModuleNotFoundError: No module named 'config_manager'
-__________ ERROR collecting tests/config_manager/test_interaction.py ___________
-ImportError while importing test module '/Users/xuyehua/Code/remote-terminal-mcp/tests/config_manager/test_interaction.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/importlib/__init__.py:127: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-tests/config_manager/test_interaction.py:3: in <module>
-    from config_manager.interaction import UserInteraction
-E   ModuleNotFoundError: No module named 'config_manager'
-_______________ ERROR collecting tests/config_manager/test_io.py _______________
-ImportError while importing test module '/Users/xuyehua/Code/remote-terminal-mcp/tests/config_manager/test_io.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/importlib/__init__.py:127: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-tests/config_manager/test_io.py:4: in <module>
-    from config_manager.io import ConfigIO
-E   ModuleNotFoundError: No module named 'config_manager'
-__________ ERROR collecting tests/config_manager/test_server_info.py ___________
-ImportError while importing test module '/Users/xuyehua/Code/remote-terminal-mcp/tests/config_manager/test_server_info.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/importlib/__init__.py:127: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-tests/config_manager/test_server_info.py:3: in <module>
-    from config_manager.interaction import UserInteraction
-E   ModuleNotFoundError: No module named 'config_manager'
-__________ ERROR collecting tests/config_manager/test_sync_config.py ___________
-ImportError while importing test module '/Users/xuyehua/Code/remote-terminal-mcp/tests/config_manager/test_sync_config.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/importlib/__init__.py:127: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-tests/config_manager/test_sync_config.py:2: in <module>
-    from config_manager.interaction import UserInteraction
-E   ModuleNotFoundError: No module named 'config_manager'
-=============================== warnings summary ===============================
-tests/regression/test_fix_always_interactive_mode_20240622.py:33
-  /Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_always_interactive_mode_20240622.py:33: PytestCollectionWarning: cannot collect test class 'TestAlwaysInteractiveMode' because it has a __init__ constructor (from: tests/regression/test_fix_always_interactive_mode_20240622.py)
-    class TestAlwaysInteractiveMode:
+tests/tool_add_server_config/test_docker_config.py::TestDockerConfigCollector::test_configure_docker_skip PASSED [  1%]
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_config_directory_creation PASSED [  2%]
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_ensure_config_exists_no_auto_creation PASSED [  3%]
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_ensure_config_exists_with_invalid_config PASSED [  4%]
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_ensure_config_exists_with_valid_config PASSED [  5%]
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_ensure_config_exists_with_yaml_error PASSED [  7%]
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_get_existing_servers_no_config PASSED [  8%]
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_mcp_mode_behavior PASSED [  9%]
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py::TestSaveConfigParameterFix::test_regression_server_deletion_scenario PASSED [ 10%]
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py::TestSaveConfigParameterFix::test_save_config_parameter_name_consistency PASSED [ 11%]
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py::TestSaveConfigParameterFix::test_save_config_with_merge_false PASSED [ 12%]
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py::TestSaveConfigParameterFix::test_save_config_with_merge_parameter PASSED [ 14%]
+tests/tool_add_server_config/test_interaction.py::TestUserInteraction::test_colored_print PASSED [ 15%]
+tests/tool_add_server_config/test_interaction.py::TestUserInteraction::test_smart_input_default PASSED [ 16%]
+tests/tool_add_server_config/test_interaction.py::TestUserInteraction::test_smart_input_with_mock PASSED [ 17%]
+tests/tool_add_server_config/test_interactive_create_server_config.py::test_interactive_create_server_config PASSED [ 18%]
+tests/tool_add_server_config/test_interactive_create_server_config_prefill.py::test_interactive_create_server_config_prefill PASSED [ 20%]
+tests/tool_add_server_config/test_io.py::TestConfigIO::test_save_and_load_config PASSED [ 21%]
+tests/tool_delete_server_config/test_fix_config_ux_and_prefill_bug.py::TestConfigUXPrefillFix::test_guided_setup_for_relay_server PASSED [ 22%]
+tests/tool_delete_server_config/test_fix_config_ux_and_prefill_bug.py::TestConfigUXPrefillFix::test_update_relay_server_with_prefill_issues PASSED [ 23%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_applescript_syntax_validation PASSED [ 24%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_cleanup_configuration PASSED [ 25%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_cleanup_disabled_behavior PASSED [ 27%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_cleanup_script_no_pwd_command PASSED [ 28%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_cleanup_terminals_method PASSED [ 29%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_force_cleanup_script_generation PASSED [ 30%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_force_cleanup_terminals_method PASSED [ 31%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_project_path_detection PASSED [ 32%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_reproduce_original_issue PASSED [ 34%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_verify_fix PASSED [ 35%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_boundary_conditions PASSED [ 36%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_integration_with_other_components PASSED [ 37%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_mcp_tool_error_handling PASSED [ 38%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_mcp_tool_command_validation PASSED [ 40%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_mcp_testing_utils_import PASSED [ 41%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_environment_isolation PASSED [ 42%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_code_change_detection PASSED [ 43%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_index_js_startup_with_python_backend PASSED [ 44%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_mcp_server_import_validation PASSED [ 45%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_mcp_server_restart_simulation PASSED [ 47%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_mcp_server_startup_without_errors PASSED [ 48%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_mcp_server_syntax_validation PASSED [ 49%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_new_update_server_config_logic_loading PASSED [ 50%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_tools_list_generation PASSED [ 51%]
+tests/tool_get_server_info/test_server_info.py::TestServerInfoCollector::test_get_user_host_with_mock PASSED [ 52%]
+tests/tool_get_server_info/test_server_info.py::TestServerInfoCollector::test_parse_user_host PASSED [ 54%]
+tests/tool_get_server_info/test_server_info.py::TestServerInfoCollector::test_validate_port PASSED [ 55%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py::QualityAssuranceRulesTest::test_cursorrules_quality_gates PASSED [ 56%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py::QualityAssuranceRulesTest::test_quality_assurance_workflow_compliance PASSED [ 57%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py::QualityAssuranceRulesTest::test_regression_directory_structure PASSED [ 58%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py::QualityAssuranceRulesTest::test_regression_test_content_quality FAILED [ 60%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py::QualityAssuranceRulesTest::test_regression_test_naming_convention PASSED [ 61%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py::QualityAssuranceRulesTest::test_regression_test_script_exists PASSED [ 62%]
+tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_constructor_without_force_interactive PASSED [ 63%]
+tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_mcp_silent_setup_auto_defaults FAILED [ 64%]
+tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_mcp_silent_setup_basic PASSED [ 65%]
+tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_mcp_silent_setup_validation FAILED [ 67%]
+tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_smart_input_detailed_error_messages FAILED [ 68%]
+tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPServerSilentIntegration::test_create_server_config_tool_error_handling SKIPPED [ 69%]
+tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPServerSilentIntegration::test_create_server_config_tool_silent_mode SKIPPED [ 70%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py::TestAutoSyncManagerImplementation::test_auto_sync_manager_creation PASSED [ 71%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py::TestAutoSyncManagerImplementation::test_auto_sync_manager_import PASSED [ 72%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py::TestAutoSyncManagerImplementation::test_docker_environment_integration PASSED [ 74%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py::TestAutoSyncManagerImplementation::test_error_handling_and_fallback PASSED [ 75%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py::TestAutoSyncManagerImplementation::test_mcp_tools_sync_parameters PASSED [ 76%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py::TestAutoSyncManagerImplementation::test_proftpd_file_validation PASSED [ 77%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py::TestAutoSyncManagerImplementation::test_server_config_auto_sync_fields PASSED [ 78%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py::TestAutoSyncManagerImplementation::test_sync_config_creation PASSED [ 80%]
+tests/tool_sync_config/test_sync_config.py::TestSyncConfigCollector::test_configure_sync_skip PASSED [ 81%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_collect_sync_patterns_add_new FAILED [ 82%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_collect_sync_patterns_method_exists PASSED [ 83%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_collect_sync_patterns_with_defaults PASSED [ 84%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_configure_sync_disabled FAILED [ 85%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_configure_sync_enabled_full_config FAILED [ 87%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_configure_sync_method_exists PASSED [ 88%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_configure_sync_with_defaults FAILED [ 89%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_guided_setup_integration FAILED [ 90%]
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_behavior_consistency_with_create PASSED [ 91%]
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_server_docker_config_handling PASSED [ 92%]
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_server_error_handling PASSED [ 94%]
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_server_launches_interactive_interface PASSED [ 95%]
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_server_preserves_existing_config PASSED [ 96%]
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_server_relay_config_handling PASSED [ 97%]
+tests/tool_update_server_config/test_interactive_update_server_config.py::test_interactive_update_server_config FAILED [ 98%]
+tests/tool_update_server_config/test_interactive_update_server_config_prefill.py::test_interactive_update_server_config_prefill FAILED [100%]
 
-tests/regression/test_fix_automated_interaction_20240622.py:32
-  /Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_automated_interaction_20240622.py:32: PytestCollectionWarning: cannot collect test class 'TestAutomatedInteractionIntegration' because it has a __init__ constructor (from: tests/regression/test_fix_automated_interaction_20240622.py)
-    class TestAutomatedInteractionIntegration:
+=================================== FAILURES ===================================
+________ QualityAssuranceRulesTest.test_regression_test_content_quality ________
 
-tests/regression/test_fix_chat_terminal_interactive_20240622.py:30
-  /Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_chat_terminal_interactive_20240622.py:30: PytestCollectionWarning: cannot collect test class 'TestChatTerminalInteractive' because it has a __init__ constructor (from: tests/regression/test_fix_chat_terminal_interactive_20240622.py)
-    class TestChatTerminalInteractive:
+self = <test_fix_quality_assurance_rules_20240622.QualityAssuranceRulesTest testMethod=test_regression_test_content_quality>
 
-tests/regression/test_fix_cursor_interactive_mode_20240622.py:30
-  /Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_cursor_interactive_mode_20240622.py:30: PytestCollectionWarning: cannot collect test class 'TestCursorTerminalInteractiveMode' because it has a __init__ constructor (from: tests/regression/test_fix_cursor_interactive_mode_20240622.py)
-    class TestCursorTerminalInteractiveMode:
+    def test_regression_test_content_quality(self):
+        """测试3：验证测试内容完整性"""
+        print("🧪 测试回归测试内容质量...")
+    
+>       test_files = list(self.regression_dir.glob("test_fix_*.py"))
+E       AttributeError: 'QualityAssuranceRulesTest' object has no attribute 'regression_dir'
 
-tests/regression/test_fix_parameter_error_and_ux_20240622.py:32
-  /Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_parameter_error_and_ux_20240622.py:32: PytestCollectionWarning: cannot collect test class 'TestParameterErrorAndUXFix' because it has a __init__ constructor (from: tests/regression/test_fix_parameter_error_and_ux_20240622.py)
-    class TestParameterErrorAndUXFix:
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py:101: AttributeError
+----------------------------- Captured stdout call -----------------------------
+🧪 测试回归测试内容质量...
+______ TestMCPSilentConfigRegression.test_mcp_silent_setup_auto_defaults _______
 
-tests/regression/test_fix_smart_auto_switch_mode_20240622.py:33
-  /Users/xuyehua/Code/remote-terminal-mcp/tests/regression/test_fix_smart_auto_switch_mode_20240622.py:33: PytestCollectionWarning: cannot collect test class 'TestSmartAutoSwitchMode' because it has a __init__ constructor (from: tests/regression/test_fix_smart_auto_switch_mode_20240622.py)
-    class TestSmartAutoSwitchMode:
+self = <test_mcp_silent_config_regression.TestMCPSilentConfigRegression testMethod=test_mcp_silent_setup_auto_defaults>
 
-tests/utils/test_helpers.py:23
-  /Users/xuyehua/Code/remote-terminal-mcp/tests/utils/test_helpers.py:23: PytestCollectionWarning: cannot collect test class 'TestEnvironment' because it has a __init__ constructor (from: tests/utils/test_helpers.py)
-    class TestEnvironment:
+    def test_mcp_silent_setup_auto_defaults(self):
+        """测试mcp_silent_setup的自动默认值生成"""
+        # 只提供必要参数，测试自动生成
+        result = self.config_manager.mcp_silent_setup(
+            host='192.168.1.201'
+        )
+    
+        self.assertTrue(result['success'], "自动默认值配置应该成功")
+    
+        server_config = result['server_config']
+        self.assertEqual(server_config['host'], '192.168.1.201')
+        self.assertEqual(server_config['username'], 'ubuntu')  # 默认用户名
+        self.assertEqual(server_config['port'], 22)  # 默认端口
+        self.assertEqual(server_config['connection_type'], 'ssh')  # 默认连接类型
+    
+        # 验证自动生成的服务器名称
+        server_name = result['server_name']
+>       self.assertTrue(server_name.startswith('mcp-server-'))
+E       AssertionError: False is not true
 
-tests/utils/test_helpers.py:228
-  /Users/xuyehua/Code/remote-terminal-mcp/tests/utils/test_helpers.py:228: PytestCollectionWarning: cannot collect test class 'TestReporter' because it has a __init__ constructor (from: tests/utils/test_helpers.py)
-    class TestReporter:
+tests/tool_list_servers/test_mcp_silent_config_regression.py:105: AssertionError
+________ TestMCPSilentConfigRegression.test_mcp_silent_setup_validation ________
 
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+self = <test_mcp_silent_config_regression.TestMCPSilentConfigRegression testMethod=test_mcp_silent_setup_validation>
+
+    def test_mcp_silent_setup_validation(self):
+        """测试mcp_silent_setup的参数验证"""
+        # 测试无效的主机地址
+        result = self.config_manager.mcp_silent_setup(
+            name='invalid-host-server',
+            host='invalid host with spaces',
+            username='testuser'
+        )
+    
+        self.assertFalse(result['success'], "无效主机地址应该导致失败")
+>       self.assertIn('无效的服务器地址', result['error'])
+E       AssertionError: '无效的服务器地址' not found in '无效的主机地址: invalid host with spaces'
+
+tests/tool_list_servers/test_mcp_silent_config_regression.py:117: AssertionError
+____ TestMCPSilentConfigRegression.test_smart_input_detailed_error_messages ____
+
+self = <test_mcp_silent_config_regression.TestMCPSilentConfigRegression testMethod=test_smart_input_detailed_error_messages>
+
+    def test_smart_input_detailed_error_messages(self):
+        """测试smart_input的详细错误信息"""
+        # 模拟非MCP模式
+        self.config_manager.is_mcp_mode = False
+    
+        # 测试主机地址验证
+        with patch('builtins.input', side_effect=['invalid host', '192.168.1.100']):
+            with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+                result = self.config_manager.smart_input(
+                    "🌐 服务器地址",
+                    validator=self.config_manager.validate_hostname
+                )
+    
+                output = mock_stdout.getvalue()
+                self.assertIn('输入验证失败', output)
+                self.assertIn('服务器地址不能包含空格', output)
+                self.assertIn('正确格式示例', output)
+                self.assertEqual(result, '192.168.1.100')
+    
+        # 测试用户名验证（使用无效字符而不是长度）
+        with patch('builtins.input', side_effect=['invalid@user', 'validuser']):
+            with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+                result = self.config_manager.smart_input(
+                    "👤 用户名",
+                    validator=self.config_manager.validate_username
+                )
+    
+                output = mock_stdout.getvalue()
+>               self.assertIn('输入验证失败', output)
+E               AssertionError: '输入验证失败' not found in ''
+
+tests/tool_list_servers/test_mcp_silent_config_regression.py:168: AssertionError
+________ TestSyncConfigUIEnhancement.test_collect_sync_patterns_add_new ________
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_collect_sync_patterns_add_new>
+mock_colored_print = <MagicMock name='colored_print' id='4405824432'>
+mock_smart_input = <MagicMock name='smart_input' id='4412154784'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    def test_collect_sync_patterns_add_new(self, mock_colored_print, mock_smart_input):
+        """测试7: _collect_sync_patterns方法添加新模式"""
+        log_test_output("测试7: _collect_sync_patterns添加新模式", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = EnhancedConfigManager()
+    
+            # 模拟用户输入（保留默认值，添加新值）
+            mock_smart_input.side_effect = [
+                "*.py",     # 保留第一个默认值
+                "*.ts",     # 添加新的模式
+                "*.vue",    # 添加新的模式
+                ""          # 完成配置
+            ]
+    
+            # 调用_collect_sync_patterns方法
+            result = config_manager._collect_sync_patterns(
+                "包含模式",
+                defaults=['*.py']
+            )
+    
+            # 验证结果
+            self.assertIsInstance(result, list)
+>           self.assertEqual(len(result), 3)
+E           AssertionError: 1 != 3
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:293: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_collect_sync_patterns_add_new>
+mock_colored_print = <MagicMock name='colored_print' id='4405824432'>
+mock_smart_input = <MagicMock name='smart_input' id='4412154784'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    def test_collect_sync_patterns_add_new(self, mock_colored_print, mock_smart_input):
+        """测试7: _collect_sync_patterns方法添加新模式"""
+        log_test_output("测试7: _collect_sync_patterns添加新模式", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = EnhancedConfigManager()
+    
+            # 模拟用户输入（保留默认值，添加新值）
+            mock_smart_input.side_effect = [
+                "*.py",     # 保留第一个默认值
+                "*.ts",     # 添加新的模式
+                "*.vue",    # 添加新的模式
+                ""          # 完成配置
+            ]
+    
+            # 调用_collect_sync_patterns方法
+            result = config_manager._collect_sync_patterns(
+                "包含模式",
+                defaults=['*.py']
+            )
+    
+            # 验证结果
+            self.assertIsInstance(result, list)
+            self.assertEqual(len(result), 3)
+            self.assertIn('*.py', result)
+            self.assertIn('*.ts', result)
+            self.assertIn('*.vue', result)
+    
+            log_test_output("✅ _collect_sync_patterns正确添加新模式", "SUCCESS")
+    
+        except Exception as e:
+>           self.fail(f"测试_collect_sync_patterns添加新模式失败: {str(e)}")
+E           AssertionError: 测试_collect_sync_patterns添加新模式失败: 1 != 3
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:301: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ℹ️ 开始测试: TestSyncConfigUIEnhancement
+ℹ️ 测试7: _collect_sync_patterns添加新模式
+ℹ️ 完成测试: TestSyncConfigUIEnhancement
+___________ TestSyncConfigUIEnhancement.test_configure_sync_disabled ___________
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_configure_sync_disabled>
+mock_colored_print = <MagicMock name='colored_print' id='4412406656'>
+mock_smart_input = <MagicMock name='smart_input' id='4412397744'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    def test_configure_sync_disabled(self, mock_colored_print, mock_smart_input):
+        """测试3: 用户选择不启用自动同步"""
+        log_test_output("测试3: 用户选择不启用自动同步", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = EnhancedConfigManager()
+    
+            # 模拟用户选择不启用同步
+            mock_smart_input.return_value = "2"
+    
+            # 调用_configure_sync方法
+            result = config_manager._configure_sync()
+    
+            # 验证结果
+            self.assertIsNone(result)
+    
+            # 验证smart_input被调用
+>           mock_smart_input.assert_called_once()
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:110: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <MagicMock name='smart_input' id='4412397744'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'smart_input' to have been called once. Called 0 times.
+
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/mock.py:886: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_configure_sync_disabled>
+mock_colored_print = <MagicMock name='colored_print' id='4412406656'>
+mock_smart_input = <MagicMock name='smart_input' id='4412397744'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    def test_configure_sync_disabled(self, mock_colored_print, mock_smart_input):
+        """测试3: 用户选择不启用自动同步"""
+        log_test_output("测试3: 用户选择不启用自动同步", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = EnhancedConfigManager()
+    
+            # 模拟用户选择不启用同步
+            mock_smart_input.return_value = "2"
+    
+            # 调用_configure_sync方法
+            result = config_manager._configure_sync()
+    
+            # 验证结果
+            self.assertIsNone(result)
+    
+            # 验证smart_input被调用
+            mock_smart_input.assert_called_once()
+    
+            log_test_output("✅ 用户选择不启用同步时正确返回None", "SUCCESS")
+    
+        except Exception as e:
+>           self.fail(f"测试用户选择不启用同步失败: {str(e)}")
+E           AssertionError: 测试用户选择不启用同步失败: Expected 'smart_input' to have been called once. Called 0 times.
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:115: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ℹ️ 开始测试: TestSyncConfigUIEnhancement
+ℹ️ 测试3: 用户选择不启用自动同步
+ℹ️ 完成测试: TestSyncConfigUIEnhancement
+_____ TestSyncConfigUIEnhancement.test_configure_sync_enabled_full_config ______
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_configure_sync_enabled_full_config>
+mock_collect_patterns = <MagicMock name='_collect_sync_patterns' id='4412366752'>
+mock_colored_print = <MagicMock name='colored_print' id='4412314864'>
+mock_smart_input = <MagicMock name='smart_input' id='4412173040'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    @patch('enhanced_config_manager.EnhancedConfigManager._collect_sync_patterns')
+    def test_configure_sync_enabled_full_config(self, mock_collect_patterns, mock_colored_print, mock_smart_input):
+        """测试4: 用户启用自动同步并完整配置"""
+        log_test_output("测试4: 用户启用自动同步并完整配置", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = EnhancedConfigManager()
+    
+            # 模拟用户输入序列
+            mock_smart_input.side_effect = [
+                "1",  # 启用自动同步
+                "/home/Code",  # 远程工作目录
+                "8021",  # FTP端口
+                "ftpuser",  # FTP用户名
+                "mypassword",  # FTP密码
+                "/local/workspace"  # 本地工作目录
+            ]
+    
+            # 模拟collect_sync_patterns返回值
+            mock_collect_patterns.side_effect = [
+                ['*.py', '*.js', '*.md'],  # 包含模式
+                ['*.pyc', '__pycache__', '.git']  # 排除模式
+            ]
+    
+            # 调用_configure_sync方法
+            result = config_manager._configure_sync()
+    
+            # 验证结果
+>           self.assertIsNotNone(result)
+E           AssertionError: unexpectedly None
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:150: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_configure_sync_enabled_full_config>
+mock_collect_patterns = <MagicMock name='_collect_sync_patterns' id='4412366752'>
+mock_colored_print = <MagicMock name='colored_print' id='4412314864'>
+mock_smart_input = <MagicMock name='smart_input' id='4412173040'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    @patch('enhanced_config_manager.EnhancedConfigManager._collect_sync_patterns')
+    def test_configure_sync_enabled_full_config(self, mock_collect_patterns, mock_colored_print, mock_smart_input):
+        """测试4: 用户启用自动同步并完整配置"""
+        log_test_output("测试4: 用户启用自动同步并完整配置", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = EnhancedConfigManager()
+    
+            # 模拟用户输入序列
+            mock_smart_input.side_effect = [
+                "1",  # 启用自动同步
+                "/home/Code",  # 远程工作目录
+                "8021",  # FTP端口
+                "ftpuser",  # FTP用户名
+                "mypassword",  # FTP密码
+                "/local/workspace"  # 本地工作目录
+            ]
+    
+            # 模拟collect_sync_patterns返回值
+            mock_collect_patterns.side_effect = [
+                ['*.py', '*.js', '*.md'],  # 包含模式
+                ['*.pyc', '__pycache__', '.git']  # 排除模式
+            ]
+    
+            # 调用_configure_sync方法
+            result = config_manager._configure_sync()
+    
+            # 验证结果
+            self.assertIsNotNone(result)
+            self.assertIsInstance(result, dict)
+            self.assertTrue(result.get('enabled'))
+            self.assertEqual(result.get('remote_workspace'), '/home/Code')
+            self.assertEqual(result.get('ftp_port'), '8021')
+            self.assertEqual(result.get('ftp_user'), 'ftpuser')
+            self.assertEqual(result.get('ftp_password'), 'mypassword')
+            self.assertEqual(result.get('local_workspace'), '/local/workspace')
+            self.assertEqual(result.get('include_patterns'), ['*.py', '*.js', '*.md'])
+            self.assertEqual(result.get('exclude_patterns'), ['*.pyc', '__pycache__', '.git'])
+    
+            # 验证smart_input被正确调用
+            self.assertEqual(mock_smart_input.call_count, 6)
+    
+            # 验证_collect_sync_patterns被调用两次
+            self.assertEqual(mock_collect_patterns.call_count, 2)
+    
+            log_test_output("✅ 用户启用同步时正确收集所有配置", "SUCCESS")
+    
+        except Exception as e:
+>           self.fail(f"测试用户启用同步配置失败: {str(e)}")
+E           AssertionError: 测试用户启用同步配置失败: unexpectedly None
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:170: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ℹ️ 开始测试: TestSyncConfigUIEnhancement
+ℹ️ 测试4: 用户启用自动同步并完整配置
+ℹ️ 完成测试: TestSyncConfigUIEnhancement
+________ TestSyncConfigUIEnhancement.test_configure_sync_with_defaults _________
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_configure_sync_with_defaults>
+mock_collect_patterns = <MagicMock name='_collect_sync_patterns' id='4430711728'>
+mock_colored_print = <MagicMock name='colored_print' id='4431955040'>
+mock_smart_input = <MagicMock name='smart_input' id='4431459808'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    @patch('enhanced_config_manager.EnhancedConfigManager._collect_sync_patterns')
+    def test_configure_sync_with_defaults(self, mock_collect_patterns, mock_colored_print, mock_smart_input):
+        """测试5: 使用默认值配置自动同步"""
+        log_test_output("测试5: 使用默认值配置自动同步", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = EnhancedConfigManager()
+    
+            # 准备默认配置
+            defaults = {
+                'enabled': True,
+                'remote_workspace': '/test/workspace',
+                'ftp_port': 9021,
+                'ftp_user': 'testuser',
+                'ftp_password': 'testpassword',
+                'local_workspace': '/test/local',
+                'include_patterns': ['*.test'],
+                'exclude_patterns': ['*.temp']
+            }
+    
+            # 模拟用户输入序列（使用默认值）
+            mock_smart_input.side_effect = [
+                "1",  # 启用自动同步
+                "/test/workspace",  # 远程工作目录（使用默认值）
+                "9021",  # FTP端口（使用默认值）
+                "testuser",  # FTP用户名（使用默认值）
+                "testpassword",  # FTP密码（使用默认值）
+                "/test/local"  # 本地工作目录（使用默认值）
+            ]
+    
+            # 模拟collect_sync_patterns返回默认值
+            mock_collect_patterns.side_effect = [
+                ['*.test'],  # 包含模式
+                ['*.temp']   # 排除模式
+            ]
+    
+            # 调用_configure_sync方法
+            result = config_manager._configure_sync(defaults)
+    
+            # 验证结果
+>           self.assertIsNotNone(result)
+E           AssertionError: unexpectedly None
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:217: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_configure_sync_with_defaults>
+mock_collect_patterns = <MagicMock name='_collect_sync_patterns' id='4430711728'>
+mock_colored_print = <MagicMock name='colored_print' id='4431955040'>
+mock_smart_input = <MagicMock name='smart_input' id='4431459808'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    @patch('enhanced_config_manager.EnhancedConfigManager._collect_sync_patterns')
+    def test_configure_sync_with_defaults(self, mock_collect_patterns, mock_colored_print, mock_smart_input):
+        """测试5: 使用默认值配置自动同步"""
+        log_test_output("测试5: 使用默认值配置自动同步", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = EnhancedConfigManager()
+    
+            # 准备默认配置
+            defaults = {
+                'enabled': True,
+                'remote_workspace': '/test/workspace',
+                'ftp_port': 9021,
+                'ftp_user': 'testuser',
+                'ftp_password': 'testpassword',
+                'local_workspace': '/test/local',
+                'include_patterns': ['*.test'],
+                'exclude_patterns': ['*.temp']
+            }
+    
+            # 模拟用户输入序列（使用默认值）
+            mock_smart_input.side_effect = [
+                "1",  # 启用自动同步
+                "/test/workspace",  # 远程工作目录（使用默认值）
+                "9021",  # FTP端口（使用默认值）
+                "testuser",  # FTP用户名（使用默认值）
+                "testpassword",  # FTP密码（使用默认值）
+                "/test/local"  # 本地工作目录（使用默认值）
+            ]
+    
+            # 模拟collect_sync_patterns返回默认值
+            mock_collect_patterns.side_effect = [
+                ['*.test'],  # 包含模式
+                ['*.temp']   # 排除模式
+            ]
+    
+            # 调用_configure_sync方法
+            result = config_manager._configure_sync(defaults)
+    
+            # 验证结果
+            self.assertIsNotNone(result)
+            self.assertEqual(result.get('remote_workspace'), '/test/workspace')
+            self.assertEqual(result.get('ftp_port'), '9021')
+            self.assertEqual(result.get('ftp_user'), 'testuser')
+            self.assertEqual(result.get('ftp_password'), 'testpassword')
+            self.assertEqual(result.get('local_workspace'), '/test/local')
+    
+            log_test_output("✅ 默认值配置正确应用", "SUCCESS")
+    
+        except Exception as e:
+>           self.fail(f"测试默认值配置失败: {str(e)}")
+E           AssertionError: 测试默认值配置失败: unexpectedly None
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:227: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ℹ️ 开始测试: TestSyncConfigUIEnhancement
+ℹ️ 测试5: 使用默认值配置自动同步
+ℹ️ 完成测试: TestSyncConfigUIEnhancement
+__________ TestSyncConfigUIEnhancement.test_guided_setup_integration ___________
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_guided_setup_integration>
+mock_guided_setup = <MagicMock name='guided_setup' id='4430293456'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.guided_setup')
+    def test_guided_setup_integration(self, mock_guided_setup):
+        """测试8: guided_setup集成自动同步配置"""
+        log_test_output("测试8: guided_setup集成自动同步配置", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = EnhancedConfigManager()
+    
+            # 模拟guided_setup返回值
+            mock_guided_setup.return_value = ("test_server", {
+                'connection_type': 'ssh',
+                'host': 'test.example.com',
+                'username': 'testuser',
+                'docker_enabled': True,
+                'docker_config': {},
+                'auto_sync_enabled': True,
+                'sync_config': {
+                    'enabled': True,
+                    'remote_workspace': '/home/Code',
+                    'ftp_port': '8021',
+                    'ftp_user': 'ftpuser',
+                    'ftp_password': 'syncpassword'
+                }
+            })
+    
+            # 调用guided_setup方法
+            result = config_manager.guided_setup()
+    
+            # 验证结果
+            self.assertIsNotNone(result)
+            self.assertEqual(len(result), 2)
+    
+            server_name, config = result
+>           self.assertEqual(server_name, "test_server")
+E           AssertionError: 'test_server_001' != 'test_server'
+E           - test_server_001
+E           ?            ----
+E           + test_server
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:339: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_guided_setup_integration>
+mock_guided_setup = <MagicMock name='guided_setup' id='4430293456'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.guided_setup')
+    def test_guided_setup_integration(self, mock_guided_setup):
+        """测试8: guided_setup集成自动同步配置"""
+        log_test_output("测试8: guided_setup集成自动同步配置", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = EnhancedConfigManager()
+    
+            # 模拟guided_setup返回值
+            mock_guided_setup.return_value = ("test_server", {
+                'connection_type': 'ssh',
+                'host': 'test.example.com',
+                'username': 'testuser',
+                'docker_enabled': True,
+                'docker_config': {},
+                'auto_sync_enabled': True,
+                'sync_config': {
+                    'enabled': True,
+                    'remote_workspace': '/home/Code',
+                    'ftp_port': '8021',
+                    'ftp_user': 'ftpuser',
+                    'ftp_password': 'syncpassword'
+                }
+            })
+    
+            # 调用guided_setup方法
+            result = config_manager.guided_setup()
+    
+            # 验证结果
+            self.assertIsNotNone(result)
+            self.assertEqual(len(result), 2)
+    
+            server_name, config = result
+            self.assertEqual(server_name, "test_server")
+            self.assertIn('sync_config', config)
+            self.assertTrue(config.get('auto_sync_enabled'))
+    
+            log_test_output("✅ guided_setup正确集成自动同步配置", "SUCCESS")
+    
+        except Exception as e:
+>           self.fail(f"测试guided_setup集成失败: {str(e)}")
+E           AssertionError: 测试guided_setup集成失败: 'test_server_001' != 'test_server'
+E           - test_server_001
+E           ?            ----
+E           + test_server
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:346: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ℹ️ 开始测试: TestSyncConfigUIEnhancement
+ℹ️ 测试8: guided_setup集成自动同步配置
+ℹ️ 完成测试: TestSyncConfigUIEnhancement
+____________________ test_interactive_update_server_config _____________________
+
+    def test_interactive_update_server_config():
+        # 写入初始配置
+        with open(TEST_CONFIG_PATH, 'w', encoding='utf-8') as f:
+            yaml.safe_dump(INIT_CONFIG, f, allow_unicode=True)
+        # 自动化交互
+        with patch("builtins.input", side_effect=MOCK_INPUTS):
+            manager = EnhancedConfigManager(config_path=TEST_CONFIG_PATH, force_interactive=True)
+            manager.guided_setup(edit_server='cpu_221')
+        # 校验配置内容
+        actual = load_yaml(TEST_CONFIG_PATH)
+        expected = load_yaml(EXPECTED_CONFIG_PATH)
+>       assert actual == expected, f"配置内容不一致\n实际: {actual}\n预期: {expected}"
+E       AssertionError: 配置内容不一致
+E         实际: {'servers': {'cpu_221': {'auto_sync_enabled': False, 'docker_config': {}, 'docker_enabled': False, 'host': 'host', 'port': 22, 'sync_config': {}, 'username': 'user'}}}
+E         预期: {'servers': {'cpu_221': {'host': '10.0.0.221', 'username': 'root', 'port': 22, 'docker_enabled': False, 'docker_config': {}, 'auto_sync_enabled': False, 'sync_config': {}}}}
+E       assert {'servers': {...'host', ...}}} == {'servers': {...0.221', ...}}}
+E         
+E         Differing items:
+E         {'servers': {'cpu_221': {'auto_sync_enabled': False, 'docker_config': {}, 'docker_enabled': False, 'host': 'host', ...}}} != {'servers': {'cpu_221': {'auto_sync_enabled': False, 'docker_config': {}, 'docker_enabled': False, 'host': '10.0.0.221', ...}}}
+E         
+E         Full diff:
+E           {
+E               'servers': {...
+E         
+E         ...Full output truncated (17 lines hidden), use '-vv' to show
+
+tests/tool_update_server_config/test_interactive_update_server_config.py:60: AssertionError
+________________ test_interactive_update_server_config_prefill _________________
+
+    def test_interactive_update_server_config_prefill():
+        # 写入初始配置
+        with open(TEST_CONFIG_PATH, 'w', encoding='utf-8') as f:
+            yaml.safe_dump(INIT_CONFIG, f, allow_unicode=True)
+        # 预填参数
+        prefill = {
+            'name': 'hg225',
+            'host': '192.168.1.226',  # 修改后的host
+            'username': 'admin',
+        }
+        with patch("builtins.input", side_effect=MOCK_INPUTS):
+            manager = EnhancedConfigManager(config_path=TEST_CONFIG_PATH, force_interactive=True)
+            manager.guided_setup(edit_server='hg225', prefill=prefill)
+        # 校验配置内容
+        actual = load_yaml(TEST_CONFIG_PATH)
+        expected = load_yaml(EXPECTED_CONFIG_PATH)
+>       assert actual == expected, f"配置内容不一致\n实际: {actual}\n预期: {expected}"
+E       AssertionError: 配置内容不一致
+E         实际: {'servers': {'hg225': {'auto_sync_enabled': False, 'docker_config': {}, 'docker_enabled': False, 'host': 'host', 'port': 22, 'sync_config': {}, 'username': 'user'}}}
+E         预期: {'servers': {'hg225': {'host': '192.168.1.226', 'username': 'admin', 'port': 22, 'docker_enabled': False, 'docker_config': {}, 'auto_sync_enabled': False, 'sync_config': {}}}}
+E       assert {'servers': {...'host', ...}}} == {'servers': {...1.226', ...}}}
+E         
+E         Differing items:
+E         {'servers': {'hg225': {'auto_sync_enabled': False, 'docker_config': {}, 'docker_enabled': False, 'host': 'host', ...}}} != {'servers': {'hg225': {'auto_sync_enabled': False, 'docker_config': {}, 'docker_enabled': False, 'host': '192.168.1.226', ...}}}
+E         
+E         Full diff:
+E           {
+E               'servers': {...
+E         
+E         ...Full output truncated (15 lines hidden), use '-vv' to show
+
+tests/tool_update_server_config/test_interactive_update_server_config_prefill.py:65: AssertionError
 =========================== short test summary info ============================
-ERROR tests/config_manager/test_docker_config.py
-ERROR tests/config_manager/test_interaction.py
-ERROR tests/config_manager/test_io.py
-ERROR tests/config_manager/test_server_info.py
-ERROR tests/config_manager/test_sync_config.py
-!!!!!!!!!!!!!!!!!!! Interrupted: 5 errors during collection !!!!!!!!!!!!!!!!!!!!
-======================== 8 warnings, 5 errors in 0.31s =========================
+FAILED tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py::QualityAssuranceRulesTest::test_regression_test_content_quality
+FAILED tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_mcp_silent_setup_auto_defaults
+FAILED tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_mcp_silent_setup_validation
+FAILED tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_smart_input_detailed_error_messages
+FAILED tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_collect_sync_patterns_add_new
+FAILED tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_configure_sync_disabled
+FAILED tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_configure_sync_enabled_full_config
+FAILED tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_configure_sync_with_defaults
+FAILED tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_guided_setup_integration
+FAILED tests/tool_update_server_config/test_interactive_update_server_config.py::test_interactive_update_server_config
+FAILED tests/tool_update_server_config/test_interactive_update_server_config_prefill.py::test_interactive_update_server_config_prefill
+======= 11 failed, 72 passed, 2 skipped, 5 warnings in 72.70s (0:01:12) ========

@@ -1,0 +1,24 @@
+/Users/xuyehua/Library/Python/3.9/lib/python/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0 -- /Applications/Xcode.app/Contents/Developer/usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/xuyehua/Code/remote-terminal-mcp
+plugins: anyio-4.9.0, cov-6.1.1, asyncio-1.0.0
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 206 items / 1 error
+
+==================================== ERRORS ====================================
+_ ERROR collecting tests/tool_delete_server_config/test_fix_config_ux_and_prefill_bug.py _
+import file mismatch:
+imported module 'test_fix_config_ux_and_prefill_bug' has this __file__ attribute:
+  /Users/xuyehua/Code/remote-terminal-mcp/python/tests/tool_delete_server_config/test_fix_config_ux_and_prefill_bug.py
+which is not the same as the test file we want to collect:
+  /Users/xuyehua/Code/remote-terminal-mcp/tests/tool_delete_server_config/test_fix_config_ux_and_prefill_bug.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+=========================== short test summary info ============================
+ERROR tests/tool_delete_server_config/test_fix_config_ux_and_prefill_bug.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+========================= 6 warnings, 1 error in 0.19s =========================

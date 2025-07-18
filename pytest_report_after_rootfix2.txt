@@ -1,0 +1,577 @@
+/Users/xuyehua/Library/Python/3.9/lib/python/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0 -- /Applications/Xcode.app/Contents/Developer/usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/xuyehua/Code/remote-terminal-mcp
+plugins: anyio-4.9.0, cov-6.1.1, asyncio-1.0.0
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 208 items
+
+python/tests/config_manager/test_io.py::TestConfigIO::test_dummy PASSED  [  0%]
+python/tests/tool_connect_server/test_connection_manager_integration.py::test_integration_imports PASSED [  0%]
+python/tests/tool_connect_server/test_connection_manager_integration.py::test_manager_creation PASSED [  1%]
+python/tests/tool_connect_server/test_connection_manager_integration.py::test_api_backward_compatibility PASSED [  1%]
+python/tests/tool_connect_server/test_connection_manager_integration.py::test_mcp_server_compatibility PASSED [  2%]
+python/tests/tool_connect_server/test_connection_manager_integration.py::test_simple_mode_parameter PASSED [  2%]
+python/tests/tool_connect_server/test_end_to_end.py::test_environment PASSED [  3%]
+python/tests/tool_connect_server/test_end_to_end.py::TestEndToEndWorkflow::test_complete_server_setup_workflow PASSED [  3%]
+python/tests/tool_connect_server/test_end_to_end.py::TestEndToEndWorkflow::test_docker_setup_workflow PASSED [  4%]
+python/tests/tool_connect_server/test_end_to_end.py::TestEndToEndWorkflow::test_mcp_integration_workflow PASSED [  4%]
+python/tests/tool_connect_server/test_end_to_end.py::TestUserScenarios::test_configuration_migration_scenario PASSED [  5%]
+python/tests/tool_connect_server/test_end_to_end.py::TestUserScenarios::test_multiple_servers_scenario PASSED [  5%]
+python/tests/tool_connect_server/test_end_to_end.py::TestUserScenarios::test_new_user_setup_scenario PASSED [  6%]
+python/tests/tool_connect_server/test_end_to_end.py::TestErrorHandling::test_invalid_config_handling PASSED [  6%]
+python/tests/tool_connect_server/test_end_to_end.py::TestErrorHandling::test_permission_error_handling PASSED [  7%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_applescript_terminal_cleanup_integration PASSED [  7%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_complete_applescript_sequence PASSED [  8%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_complete_expect_sequence PASSED [  8%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_comprehensive_test_with_process_management PASSED [  9%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_error_handling_in_process_management PASSED [  9%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_process_cleanup_functionality PASSED [ 10%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_process_tracking_mechanism PASSED [ 10%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_remaining_process_detection PASSED [ 11%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_temp_file_cleanup_integration PASSED [ 11%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_terminal_cleanup_functionality PASSED [ 12%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_timeout_handling_in_interactions PASSED [ 12%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestInteractionSequenceCompleteness::test_all_required_interaction_steps PASSED [ 12%]
+python/tests/tool_connect_server/test_fix_interactive_interface_startup_20241222.py::TestInteractiveInterfaceStartupFix::test_automated_interaction_compatibility PASSED [ 13%]
+python/tests/tool_connect_server/test_fix_interactive_interface_startup_20241222.py::TestInteractiveInterfaceStartupFix::test_create_server_config_response_format PASSED [ 13%]
+python/tests/tool_connect_server/test_fix_interactive_interface_startup_20241222.py::TestInteractiveInterfaceStartupFix::test_manual_command_execution PASSED [ 14%]
+python/tests/tool_connect_server/test_fix_interactive_interface_startup_20241222.py::TestInteractiveInterfaceStartupFix::test_no_background_process_started PASSED [ 14%]
+python/tests/tool_connect_server/test_fix_interactive_interface_startup_20241222.py::TestInteractiveInterfaceStartupFix::test_response_consistency PASSED [ 15%]
+python/tests/tool_connect_server/test_fix_interactive_interface_startup_20241222.py::TestInteractiveInterfaceStartupFix::test_user_guidance_completeness PASSED [ 15%]
+python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py::TestInteractiveStartupRequirement::test_create_server_config_must_start_interactive_interface FAILED [ 16%]
+python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py::TestInteractiveStartupRequirement::test_interactive_startup_failure_diagnosis PASSED [ 16%]
+python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py::TestInteractiveStartupRequirement::test_interactive_startup_with_minimal_params FAILED [ 17%]
+python/tests/tool_connect_server/test_fix_mcp_timeout_issue_20240622.py::TestMCPTimeoutFix::test_reproduce_timeout_issue PASSED [ 17%]
+python/tests/tool_connect_server/test_fix_mcp_timeout_issue_20240622.py::TestMCPTimeoutFix::test_verify_timeout_mechanism PASSED [ 18%]
+python/tests/tool_connect_server/test_fix_mcp_timeout_issue_20240622.py::TestMCPTimeoutFix::test_timeout_parameter_validation PASSED [ 18%]
+python/tests/tool_connect_server/test_fix_mcp_timeout_issue_20240622.py::TestMCPTimeoutFix::test_process_cleanup_after_timeout PASSED [ 19%]
+python/tests/tool_connect_server/test_fix_mcp_timeout_issue_20240622.py::TestMCPTimeoutFix::test_normal_operation_with_timeout PASSED [ 19%]
+python/tests/tool_connect_server/test_fix_mcp_timeout_issue_20240622.py::TestMCPTimeoutFix::test_different_tools_timeout_behavior PASSED [ 20%]
+python/tests/tool_connect_server/test_fix_mcp_timeout_issue_20240622.py::TestMCPTimeoutFix::test_timeout_fix_documentation PASSED [ 20%]
+python/tests/tool_connect_server/test_fix_relay_cli_usage_20250105.py::TestRelayCLIUsageCompliance::test_code_examples_in_documentation PASSED [ 21%]
+python/tests/tool_connect_server/test_fix_relay_cli_usage_20250105.py::TestRelayCLIUsageCompliance::test_correct_relay_cli_usage PASSED [ 21%]
+python/tests/tool_connect_server/test_fix_relay_cli_usage_20250105.py::TestRelayCLIUsageCompliance::test_edge_cases PASSED [ 22%]
+python/tests/tool_connect_server/test_fix_relay_cli_usage_20250105.py::TestRelayCLIUsageCompliance::test_forbidden_relay_cli_usage PASSED [ 22%]
+python/tests/tool_connect_server/test_fix_relay_cli_usage_20250105.py::TestRelayCLIUsageCompliance::test_parse_relay_cli_command PASSED [ 23%]
+python/tests/tool_connect_server/test_fix_relay_cli_usage_20250105.py::TestRelayCLIUsageCompliance::test_rule_documentation_compliance PASSED [ 23%]
+python/tests/tool_connect_server/test_fix_relay_cli_usage_20250105.py::TestRelayCLIRegressionPrevention::test_correct_usage_still_works PASSED [ 24%]
+python/tests/tool_connect_server/test_fix_relay_cli_usage_20250105.py::TestRelayCLIRegressionPrevention::test_prevent_command_parameter_regression PASSED [ 24%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionLogicFix::test_all_fixes_integration PASSED [ 25%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionLogicFix::test_command_execution_enhanced PASSED [ 25%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionLogicFix::test_connection_detection_enhanced PASSED [ 25%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionLogicFix::test_connection_error_logging_enhanced PASSED [ 26%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionLogicFix::test_interactive_guide_relay_patterns PASSED [ 26%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionLogicFix::test_relay_authentication_handler_added PASSED [ 27%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionLogicFix::test_relay_cli_usage_compliance PASSED [ 27%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionSpecific::test_relay_authentication_success_detection PASSED [ 28%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionSpecific::test_relay_authentication_timeout_handling PASSED [ 28%]
+python/tests/tool_connect_server/test_fix_tj09_server_creation_20240622.py::TJ09ServerCreationTest::test_tj09_connection_type PASSED [ 29%]
+python/tests/tool_connect_server/test_fix_tj09_server_creation_20240622.py::TJ09ServerCreationTest::test_tj09_docker_config PASSED [ 29%]
+python/tests/tool_connect_server/test_fix_tj09_server_creation_20240622.py::TJ09ServerCreationTest::test_tj09_server_config PASSED [ 30%]
+python/tests/tool_connect_server/test_fix_tj09_server_creation_20240622.py::TJ09ServerCreationTest::test_tj09_server_exists PASSED [ 30%]
+python/tests/tool_connect_server/test_fix_tj09_server_creation_20240622.py::TJ09ServerCreationTest::test_tj09_status_check PASSED [ 31%]
+python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py::TestUserVisibleInteraction::test_background_process_detection PASSED [ 31%]
+python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py::TestUserVisibleInteraction::test_interactive_interface_accessibility PASSED [ 32%]
+python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py::TestUserVisibleInteraction::test_process_output_visibility SKIPPED [ 32%]
+python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py::TestUserVisibleInteraction::test_terminal_window_creation_on_macos SKIPPED [ 33%]
+python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_guided_setup_docker_server_full_automation FAILED [ 33%]
+python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_guided_setup_relay_server_full_automation FAILED [ 34%]
+python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_guided_setup_ssh_server_full_automation FAILED [ 34%]
+python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_main_menu_automation PASSED [ 35%]
+python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_smart_input_error_recovery_automation FAILED [ 35%]
+python/tests/tool_connect_server/test_fully_automated_interactive.py::TestInputValidationAutomation::test_hostname_validation_automation FAILED [ 36%]
+python/tests/tool_connect_server/test_fully_automated_interactive.py::TestInputValidationAutomation::test_port_validation_automation FAILED [ 36%]
+python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_config_file_operations PASSED [ 37%]
+python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_config_manager_tools PASSED [ 37%]
+python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_docker_command_generation PASSED [ 37%]
+python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_docker_config_tools PASSED [ 38%]
+python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_mcp_server_import PASSED [ 38%]
+python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_mcp_tool_availability PASSED [ 39%]
+python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_server_config_creation PASSED [ 39%]
+python/tests/tool_connect_server/test_mcp_tools.py::TestConfigurationConsistency::test_config_directory_consistency PASSED [ 40%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageIntegrity::test_dependencies_installable PASSED [ 40%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageIntegrity::test_main_entry_file PASSED [ 41%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageIntegrity::test_package_json_exists PASSED [ 41%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageIntegrity::test_package_json_structure PASSED [ 42%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageIntegrity::test_required_python_files PASSED [ 42%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageIntegrity::test_scripts_configuration PASSED [ 43%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageInstallation::test_npm_pack_success FAILED [ 43%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageInstallation::test_package_size_reasonable PASSED [ 44%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackagePublishing::test_npm_publish_dry_run PASSED [ 44%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackagePublishing::test_version_consistency PASSED [ 45%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestConfigurationRegression::test_config_directory_consistency PASSED [ 45%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestConfigurationRegression::test_config_file_structure PASSED [ 46%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestMCPToolsRegression::test_interactive_wizard_functionality PASSED [ 46%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestMCPToolsRegression::test_mcp_tools_availability PASSED [ 47%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestDockerConfigRegression::test_docker_command_completeness PASSED [ 47%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestConfigurationPersistenceRegression::test_ensure_config_exists_preserves_user_config FAILED [ 48%]
+
+=================================== FAILURES ===================================
+_ TestInteractiveStartupRequirement.test_create_server_config_must_start_interactive_interface _
+
+self = <python.tests.tool_connect_server.test_fix_interactive_startup_requirement_20241222.TestInteractiveStartupRequirement testMethod=test_create_server_config_must_start_interactive_interface>
+
+    def test_create_server_config_must_start_interactive_interface(self):
+        """
+        核心测试：create_server_config工具必须启动交互配置界面
+    
+        测试步骤：
+        1. 准备测试参数
+        2. 调用launch_cursor_terminal_config方法
+        3. 验证返回结果表明成功启动（而不是提供手动命令）
+        4. 验证进程确实在运行
+        5. 验证预填充文件存在且内容正确
+        """
+        print("\n🎯 开始测试：create_server_config必须启动交互配置界面")
+    
+        # 第1步：准备测试参数
+        test_params = {
+            'name': 'test_interactive_startup',
+            'host': 'test.example.com',
+            'username': 'testuser',
+            'port': 22,
+            'connection_type': 'relay',
+            'description': '测试交互启动功能',
+            'docker_enabled': True,
+            'docker_image': 'ubuntu:20.04',
+            'docker_container': 'test_container'
+        }
+    
+        print(f"📋 测试参数: {json.dumps(test_params, ensure_ascii=False, indent=2)}")
+    
+        # 第2步：调用配置管理器的启动方法
+        print("🚀 调用launch_cursor_terminal_config方法...")
+        try:
+            result = self.config_manager.launch_cursor_terminal_config(prefill_params=test_params)
+            print(f"📄 返回结果: {json.dumps(result, ensure_ascii=False, indent=2)}")
+        except Exception as e:
+            self.fail(f"❌ 调用launch_cursor_terminal_config失败: {e}")
+    
+        # 第3步：验证返回结果表明成功启动
+        print("🔍 验证返回结果...")
+    
+        # 必须返回成功状态
+        self.assertTrue(result.get('success'),
+                       f"❌ 期望返回success=True，实际得到: {result.get('success')}")
+        print("✅ 返回状态为成功")
+    
+        # 必须包含成功启动的消息
+        message = result.get('message', '')
+        self.assertIn('启动', message,
+                     f"❌ 期望消息包含'启动'，实际消息: {message}")
+        print(f"✅ 消息包含启动信息: {message}")
+    
+        # 验证返回了启动标识（可能是进程ID或窗口标识）
+        process_id = result.get('process_id')
+>       self.assertIsNotNone(process_id,
+                           "❌ 期望返回process_id，但为None")
+E       AssertionError: unexpectedly None : ❌ 期望返回process_id，但为None
+
+python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py:124: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+🎯 开始测试：create_server_config必须启动交互配置界面
+📋 测试参数: {
+  "name": "test_interactive_startup",
+  "host": "test.example.com",
+  "username": "testuser",
+  "port": 22,
+  "connection_type": "relay",
+  "description": "测试交互启动功能",
+  "docker_enabled": true,
+  "docker_image": "ubuntu:20.04",
+  "docker_container": "test_container"
+}
+🚀 调用launch_cursor_terminal_config方法...
+📄 返回结果: {
+  "success": true,
+  "message": "交互配置界面已成功启动",
+  "platform": "macOS Terminal",
+  "terminal_type": "new_window",
+  "prefill_file": "/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpltp2u26w.json"
+}
+🔍 验证返回结果...
+✅ 返回状态为成功
+✅ 消息包含启动信息: 交互配置界面已成功启动
+_ TestInteractiveStartupRequirement.test_interactive_startup_with_minimal_params _
+
+self = <python.tests.tool_connect_server.test_fix_interactive_startup_requirement_20241222.TestInteractiveStartupRequirement testMethod=test_interactive_startup_with_minimal_params>
+
+    def test_interactive_startup_with_minimal_params(self):
+        """测试最小参数下的交互启动"""
+        print("\n🎯 开始测试：最小参数下的交互启动")
+    
+        minimal_params = {
+            'name': 'test_minimal',
+            'host': 'minimal.test.com',
+            'username': 'minimal_user'
+        }
+    
+        result = self.config_manager.launch_cursor_terminal_config(prefill_params=minimal_params)
+    
+        # 验证基本成功条件
+        self.assertTrue(result.get('success'), "最小参数测试失败")
+>       self.assertIsNotNone(result.get('process_id'), "最小参数测试未返回进程ID")
+E       AssertionError: unexpectedly None : 最小参数测试未返回进程ID
+
+python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py:211: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+🎯 开始测试：最小参数下的交互启动
+_ TestFullyAutomatedInteractive.test_guided_setup_docker_server_full_automation _
+
+self = <python.tests.tool_connect_server.test_fully_automated_interactive.TestFullyAutomatedInteractive testMethod=test_guided_setup_docker_server_full_automation>
+
+    def test_guided_setup_docker_server_full_automation(self):
+        """测试完全自动化的Docker服务器配置"""
+        # 模拟用户输入序列（包含Docker配置）
+        user_inputs = [
+            '1',                    # 选择引导配置
+            'test-docker-server',   # 服务器名称
+            '192.168.1.101',        # 服务器地址
+            'dockeruser',           # 用户名
+            '2222',                 # SSH端口
+            '1',                    # 选择SSH连接类型
+            'Test Docker Server',   # 服务器描述
+            'y',                    # 启用Docker
+            'ubuntu:22.04',         # Docker镜像
+            'test-container',       # 容器名称
+            'y',                    # 自动创建容器
+            'y'                     # 确认保存配置
+        ]
+        all_inputs = itertools.chain(user_inputs, itertools.repeat('22'))
+        def input_side_effect(prompt):
+            if "端口" in str(prompt) or "port" in str(prompt):
+                return "22"
+            try:
+                return next(all_inputs)
+            except StopIteration:
+                return ""
+        with patch('builtins.input', side_effect=input_side_effect):
+            with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+                result = self.config_manager.guided_setup()
+    
+        # 验证配置成功
+        self.assertTrue(result, "Docker引导配置应该成功")
+    
+        # 验证配置文件内容
+        with open(self.config_file, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+    
+>       server_config = config['servers']['test-docker-server']
+E       KeyError: 'test-docker-server'
+
+python/tests/tool_connect_server/test_fully_automated_interactive.py:123: KeyError
+_ TestFullyAutomatedInteractive.test_guided_setup_relay_server_full_automation _
+
+self = <python.tests.tool_connect_server.test_fully_automated_interactive.TestFullyAutomatedInteractive testMethod=test_guided_setup_relay_server_full_automation>
+
+    def test_guided_setup_relay_server_full_automation(self):
+        """测试完全自动化的Relay服务器配置"""
+        # 模拟用户输入序列（Relay连接）
+        user_inputs = [
+            '1',                        # 选择引导配置
+            'test-relay-server',        # 服务器名称
+            'internal.server.com',      # 服务器地址
+            'relayuser',                # 用户名
+            '22',                       # SSH端口
+            '2',                        # 选择Relay连接类型
+            'internal.server.com',      # Relay目标主机
+            'Test Relay Server',        # 服务器描述
+            'n',                        # 不启用Docker
+            'y'                         # 确认保存配置
+        ]
+        all_inputs = itertools.chain(user_inputs, itertools.repeat('22'))
+        def input_side_effect(prompt):
+            if "端口" in str(prompt) or "port" in str(prompt):
+                return "22"
+            try:
+                return next(all_inputs)
+            except StopIteration:
+                return ""
+        with patch('builtins.input', side_effect=input_side_effect):
+            with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+                result = self.config_manager.guided_setup()
+    
+        # 验证配置成功
+        self.assertTrue(result, "Relay引导配置应该成功")
+    
+        # 验证配置文件内容
+        with open(self.config_file, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+    
+>       server_config = config['servers']['test-relay-server']
+E       KeyError: 'test-relay-server'
+
+python/tests/tool_connect_server/test_fully_automated_interactive.py:171: KeyError
+__ TestFullyAutomatedInteractive.test_guided_setup_ssh_server_full_automation __
+
+self = <python.tests.tool_connect_server.test_fully_automated_interactive.TestFullyAutomatedInteractive testMethod=test_guided_setup_ssh_server_full_automation>
+
+    def test_guided_setup_ssh_server_full_automation(self):
+        """测试完全自动化的SSH服务器配置"""
+        # 模拟用户输入序列
+        user_inputs = [
+            '1',                    # 选择引导配置
+            'test-ssh-server',      # 服务器名称
+            '192.168.1.100',        # 服务器地址
+            'testuser',             # 用户名
+            '22',                   # SSH端口
+            '1',                    # 选择SSH连接类型
+            'Test SSH Server',      # 服务器描述
+            'n',                    # 不启用Docker
+            'y'                     # 确认保存配置
+        ]
+        all_inputs = itertools.chain(user_inputs, itertools.repeat('22'))
+        def input_side_effect(prompt):
+            if "端口" in str(prompt) or "port" in str(prompt):
+                return "22"
+            try:
+                return next(all_inputs)
+            except StopIteration:
+                return ""
+        with patch('builtins.input', side_effect=input_side_effect):
+            with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+                result = self.config_manager.guided_setup()
+    
+        # 验证配置成功
+        self.assertTrue(result, "引导配置应该成功")
+    
+        # 验证配置文件内容
+        self.assertTrue(self.config_file.exists(), "配置文件应该被创建")
+    
+        with open(self.config_file, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+    
+        self.assertIn('servers', config)
+>       self.assertIn('test-ssh-server', config['servers'])
+E       AssertionError: 'test-ssh-server' not found in {'test_server': {'auto_sync_enabled': False, 'docker_config': {}, 'docker_enabled': False, 'host': '127.0.0.1', 'port': 22, 'sync_config': {}, 'username': 'user'}}
+
+python/tests/tool_connect_server/test_fully_automated_interactive.py:78: AssertionError
+___ TestFullyAutomatedInteractive.test_smart_input_error_recovery_automation ___
+
+self = <python.tests.tool_connect_server.test_fully_automated_interactive.TestFullyAutomatedInteractive testMethod=test_smart_input_error_recovery_automation>
+
+    def test_smart_input_error_recovery_automation(self):
+        """测试智能输入的错误恢复自动化"""
+        # 模拟用户输入错误然后纠正的场景
+        user_inputs = [
+            '1',                        # 选择引导配置
+            'test-error-recovery',      # 服务器名称
+            'invalid host with spaces', # 无效的服务器地址（第一次）
+            '192.168.1.102',            # 正确的服务器地址（第二次）
+            'a',                        # 无效的用户名（太短）
+            'validuser',                # 正确的用户名
+            '99999',                    # 无效的端口号
+            '22',                       # 正确的端口号
+            '1',                        # 选择SSH连接类型
+            'Error Recovery Test',      # 服务器描述
+            'n',                        # 不启用Docker
+            'y'                         # 确认保存配置
+        ]
+        all_inputs = itertools.chain(user_inputs, itertools.repeat('22'))
+        def input_side_effect(prompt):
+            if "端口" in str(prompt) or "port" in str(prompt):
+                return "22"
+            try:
+                return next(all_inputs)
+            except StopIteration:
+                return ""
+        with patch('builtins.input', side_effect=input_side_effect):
+            with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+                result = self.config_manager.guided_setup()
+                output = mock_stdout.getvalue()
+    
+        # 验证配置最终成功
+        self.assertTrue(result, "错误恢复后的配置应该成功")
+    
+        # 验证错误提示出现在输出中
+>       self.assertIn('输入验证失败', output)
+E       AssertionError: '输入验证失败' not found in ''
+
+python/tests/tool_connect_server/test_fully_automated_interactive.py:217: AssertionError
+______ TestInputValidationAutomation.test_hostname_validation_automation _______
+
+self = <python.tests.tool_connect_server.test_fully_automated_interactive.TestInputValidationAutomation testMethod=test_hostname_validation_automation>
+
+    def test_hostname_validation_automation(self):
+        """测试主机名验证的自动化"""
+        invalid_then_valid_inputs = [
+            'invalid host',         # 包含空格
+            '192.168.1.999',        # 无效IP
+            'host..invalid',        # 双点
+            'valid-host.com'        # 有效主机名
+        ]
+        inputs_iter = iter(invalid_then_valid_inputs)
+        def smart_input_side_effect(prompt, validator=None, example=None, default=None):
+            try:
+                return next(inputs_iter)
+            except StopIteration:
+                return "valid-host.com"
+        from io import StringIO
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout, \
+             patch.object(EnhancedConfigManager, 'smart_input', side_effect=smart_input_side_effect):
+            result = self.config_manager.smart_input(
+                "🌐 服务器地址",
+                validator=self.config_manager.validate_hostname
+            )
+            output = mock_stdout.getvalue()
+>       self.assertEqual(result, 'valid-host.com')
+E       AssertionError: 'invalid host' != 'valid-host.com'
+E       - invalid host
+E       + valid-host.com
+
+python/tests/tool_connect_server/test_fully_automated_interactive.py:273: AssertionError
+________ TestInputValidationAutomation.test_port_validation_automation _________
+
+self = <python.tests.tool_connect_server.test_fully_automated_interactive.TestInputValidationAutomation testMethod=test_port_validation_automation>
+
+    def test_port_validation_automation(self):
+        """测试端口验证的自动化"""
+        invalid_then_valid_inputs = [
+            '0',            # 端口号太小
+            '99999',        # 端口号太大
+            'abc',          # 非数字
+            '22'            # 有效端口
+        ]
+        inputs_iter = iter(invalid_then_valid_inputs)
+        def smart_input_side_effect(prompt, validator=None, example=None, default=None):
+            try:
+                return next(inputs_iter)
+            except StopIteration:
+                return "22"
+        from io import StringIO
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout, \
+             patch.object(EnhancedConfigManager, 'smart_input', side_effect=smart_input_side_effect):
+            result = self.config_manager.smart_input(
+                "🔌 SSH端口",
+                validator=self.config_manager.validate_port
+            )
+            output = mock_stdout.getvalue()
+>       self.assertEqual(result, '22')
+E       AssertionError: '0' != '22'
+E       - 0
+E       + 22
+
+python/tests/tool_connect_server/test_fully_automated_interactive.py:299: AssertionError
+_______________ TestNPMPackageInstallation.test_npm_pack_success _______________
+
+self = <python.tests.tool_connect_server.test_package_integrity.TestNPMPackageInstallation testMethod=test_npm_pack_success>
+
+    def test_npm_pack_success(self):
+        """测试npm pack成功"""
+        try:
+            result = run_command(['npm', 'pack'],
+                                cwd=self.project_root, timeout=60)
+    
+>           self.assertEqual(result.returncode, 0,
+                           f"npm pack失败: {result.stderr}")
+E                          AssertionError: 1 != 0 : npm pack失败: npm error no files or directories specified
+E                          npm error A complete log of this run can be found in: /Users/xuyehua/.npm/_logs/2025-07-17T00_49_35_523Z-debug-0.log
+
+python/tests/tool_connect_server/test_package_integrity.py:120: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <python.tests.tool_connect_server.test_package_integrity.TestNPMPackageInstallation testMethod=test_npm_pack_success>
+
+    def test_npm_pack_success(self):
+        """测试npm pack成功"""
+        try:
+            result = run_command(['npm', 'pack'],
+                                cwd=self.project_root, timeout=60)
+    
+            self.assertEqual(result.returncode, 0,
+                           f"npm pack失败: {result.stderr}")
+    
+            # npm pack会生成.tgz文件，检查文件是否生成
+            output = result.stdout.strip()
+            self.assertTrue(output.endswith('.tgz'),
+                          f"npm pack应该生成.tgz文件，实际输出: {output}")
+    
+            # 检查生成的文件是否存在
+            tgz_file = self.project_root / output
+            self.assertTrue(tgz_file.exists(),
+                          f"生成的包文件{output}应该存在")
+    
+            # 清理生成的文件
+            if tgz_file.exists():
+                tgz_file.unlink()
+    
+        except subprocess.TimeoutExpired:
+            self.fail("npm pack命令超时")
+        except Exception as e:
+>           self.fail(f"npm pack测试失败: {e}")
+E           AssertionError: npm pack测试失败: 1 != 0 : npm pack失败: npm error no files or directories specified
+E           npm error A complete log of this run can be found in: /Users/xuyehua/.npm/_logs/2025-07-17T00_49_35_523Z-debug-0.log
+
+python/tests/tool_connect_server/test_package_integrity.py:140: AssertionError
+_ TestConfigurationPersistenceRegression.test_ensure_config_exists_preserves_user_config _
+
+self = <python.tests.tool_connect_server.test_regression_prevention.TestConfigurationPersistenceRegression testMethod=test_ensure_config_exists_preserves_user_config>
+
+        def test_ensure_config_exists_preserves_user_config(self):
+            """测试ensure_config_exists不会覆盖用户配置"""
+            # 设置测试环境
+            os.environ['HOME'] = str(self.test_dir)
+            self.config_dir.mkdir(parents=True, exist_ok=True)
+    
+            # 创建用户配置
+            user_config = """# User Configuration
+    global_settings:
+      auto_recovery: true
+      default_shell: zsh
+      default_timeout: 90
+      log_level: DEBUG
+      default_server: "production"
+    
+    servers:
+      example-server:
+        description: "我的开发服务器"
+        host: dev.mycompany.com
+        port: 2222
+        username: developer
+        type: script_based
+    
+      production:
+        description: "生产服务器"
+        host: prod.mycompany.com
+        port: 22
+        username: admin
+        type: script_based
+    """
+    
+            with open(self.config_file, "w") as f:
+                f.write(user_config)
+    
+            # 记录原始状态
+            original_mtime = self.config_file.stat().st_mtime
+            original_content = self.config_file.read_text()
+    
+            # 多次调用ensure_config_exists
+            from config_manager.main import EnhancedConfigManager
+            manager = EnhancedConfigManager()
+    
+            for _ in range(5):
+>               manager.ensure_config_exists()
+E               AttributeError: 'EnhancedConfigManager' object has no attribute 'ensure_config_exists'
+
+python/tests/tool_connect_server/test_regression_prevention.py:230: AttributeError
+=========================== short test summary info ============================
+FAILED python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py::TestInteractiveStartupRequirement::test_create_server_config_must_start_interactive_interface
+FAILED python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py::TestInteractiveStartupRequirement::test_interactive_startup_with_minimal_params
+FAILED python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_guided_setup_docker_server_full_automation
+FAILED python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_guided_setup_relay_server_full_automation
+FAILED python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_guided_setup_ssh_server_full_automation
+FAILED python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_smart_input_error_recovery_automation
+FAILED python/tests/tool_connect_server/test_fully_automated_interactive.py::TestInputValidationAutomation::test_hostname_validation_automation
+FAILED python/tests/tool_connect_server/test_fully_automated_interactive.py::TestInputValidationAutomation::test_port_validation_automation
+FAILED python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageInstallation::test_npm_pack_success
+FAILED python/tests/tool_connect_server/test_regression_prevention.py::TestConfigurationPersistenceRegression::test_ensure_config_exists_preserves_user_config
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 10 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+============ 10 failed, 88 passed, 2 skipped, 22 warnings in 16.75s ============

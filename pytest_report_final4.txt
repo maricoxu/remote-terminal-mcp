@@ -1,0 +1,193 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0 -- /Applications/Xcode.app/Contents/Developer/usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/xuyehua/Code/remote-terminal-mcp
+plugins: anyio-4.9.0, cov-6.1.1, asyncio-1.0.0
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 91 items
+
+tests/tool_add_server_config/test_docker_config.py::TestDockerConfigCollector::test_configure_docker_skip PASSED [  1%]
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_config_directory_creation PASSED [  2%]
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_ensure_config_exists_no_auto_creation PASSED [  3%]
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_ensure_config_exists_with_invalid_config PASSED [  4%]
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_ensure_config_exists_with_valid_config PASSED [  5%]
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_ensure_config_exists_with_yaml_error PASSED [  6%]
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_get_existing_servers_no_config PASSED [  7%]
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_mcp_mode_behavior PASSED [  8%]
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py::TestSaveConfigParameterFix::test_regression_server_deletion_scenario PASSED [  9%]
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py::TestSaveConfigParameterFix::test_save_config_parameter_name_consistency PASSED [ 10%]
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py::TestSaveConfigParameterFix::test_save_config_with_merge_false PASSED [ 12%]
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py::TestSaveConfigParameterFix::test_save_config_with_merge_parameter PASSED [ 13%]
+tests/tool_add_server_config/test_interaction.py::TestUserInteraction::test_colored_print PASSED [ 14%]
+tests/tool_add_server_config/test_interaction.py::TestUserInteraction::test_smart_input_default PASSED [ 15%]
+tests/tool_add_server_config/test_interaction.py::TestUserInteraction::test_smart_input_with_mock PASSED [ 16%]
+tests/tool_add_server_config/test_interactive_create_server_config.py::test_interactive_create_server_config PASSED [ 17%]
+tests/tool_add_server_config/test_interactive_create_server_config_prefill.py::test_interactive_create_server_config_prefill PASSED [ 18%]
+tests/tool_add_server_config/test_io.py::TestConfigIO::test_save_and_load_config PASSED [ 19%]
+tests/tool_delete_server_config/test_fix_config_ux_and_prefill_bug.py::TestConfigUXPrefillFix::test_guided_setup_for_relay_server PASSED [ 20%]
+tests/tool_delete_server_config/test_fix_config_ux_and_prefill_bug.py::TestConfigUXPrefillFix::test_update_relay_server_with_prefill_issues PASSED [ 21%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_applescript_syntax_validation PASSED [ 23%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_cleanup_configuration PASSED [ 24%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_cleanup_disabled_behavior PASSED [ 25%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_cleanup_script_no_pwd_command PASSED [ 26%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_cleanup_terminals_method PASSED [ 27%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_force_cleanup_script_generation PASSED [ 28%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_force_cleanup_terminals_method PASSED [ 29%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_project_path_detection PASSED [ 30%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_reproduce_original_issue PASSED [ 31%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_verify_fix PASSED [ 32%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_boundary_conditions PASSED [ 34%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_integration_with_other_components PASSED [ 35%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_mcp_tool_error_handling PASSED [ 36%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_mcp_tool_command_validation PASSED [ 37%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_mcp_testing_utils_import PASSED [ 38%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_environment_isolation PASSED [ 39%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_code_change_detection PASSED [ 40%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_index_js_startup_with_python_backend PASSED [ 41%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_mcp_server_import_validation PASSED [ 42%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_mcp_server_restart_simulation PASSED [ 43%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_mcp_server_startup_without_errors PASSED [ 45%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_mcp_server_syntax_validation PASSED [ 46%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_new_update_server_config_logic_loading PASSED [ 47%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_tools_list_generation PASSED [ 48%]
+tests/tool_get_server_info/test_server_info.py::TestServerInfoCollector::test_get_user_host_with_mock PASSED [ 49%]
+tests/tool_get_server_info/test_server_info.py::TestServerInfoCollector::test_parse_user_host PASSED [ 50%]
+tests/tool_get_server_info/test_server_info.py::TestServerInfoCollector::test_validate_port PASSED [ 51%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py::QualityAssuranceRulesTest::test_cursorrules_quality_gates PASSED [ 52%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py::QualityAssuranceRulesTest::test_quality_assurance_workflow_compliance PASSED [ 53%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py::QualityAssuranceRulesTest::test_regression_directory_structure PASSED [ 54%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py::QualityAssuranceRulesTest::test_regression_test_content_quality PASSED [ 56%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py::QualityAssuranceRulesTest::test_regression_test_naming_convention PASSED [ 57%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py::QualityAssuranceRulesTest::test_regression_test_script_exists PASSED [ 58%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20241222.py::QualityAssuranceRulesTest::test_cursorrules_quality_gates PASSED [ 59%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20241222.py::QualityAssuranceRulesTest::test_quality_assurance_workflow_compliance PASSED [ 60%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20241222.py::QualityAssuranceRulesTest::test_regression_directory_structure PASSED [ 61%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20241222.py::QualityAssuranceRulesTest::test_regression_test_content_quality PASSED [ 62%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20241222.py::QualityAssuranceRulesTest::test_regression_test_naming_convention PASSED [ 63%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20241222.py::QualityAssuranceRulesTest::test_regression_test_script_exists PASSED [ 64%]
+tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_constructor_without_force_interactive PASSED [ 65%]
+tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_mcp_silent_setup_auto_defaults PASSED [ 67%]
+tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_mcp_silent_setup_basic PASSED [ 68%]
+tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_mcp_silent_setup_validation PASSED [ 69%]
+tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_smart_input_detailed_error_messages PASSED [ 70%]
+tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPServerSilentIntegration::test_create_server_config_tool_error_handling SKIPPED [ 71%]
+tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPServerSilentIntegration::test_create_server_config_tool_silent_mode SKIPPED [ 72%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py::TestAutoSyncManagerImplementation::test_auto_sync_manager_creation PASSED [ 73%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py::TestAutoSyncManagerImplementation::test_auto_sync_manager_import PASSED [ 74%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py::TestAutoSyncManagerImplementation::test_docker_environment_integration PASSED [ 75%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py::TestAutoSyncManagerImplementation::test_error_handling_and_fallback PASSED [ 76%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py::TestAutoSyncManagerImplementation::test_mcp_tools_sync_parameters PASSED [ 78%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py::TestAutoSyncManagerImplementation::test_proftpd_file_validation PASSED [ 79%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py::TestAutoSyncManagerImplementation::test_server_config_auto_sync_fields PASSED [ 80%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py::TestAutoSyncManagerImplementation::test_sync_config_creation PASSED [ 81%]
+tests/tool_sync_config/test_sync_config.py::TestSyncConfigCollector::test_configure_sync_skip PASSED [ 82%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_collect_sync_patterns_add_new FAILED [ 83%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_collect_sync_patterns_method_exists PASSED [ 84%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_collect_sync_patterns_with_defaults PASSED [ 85%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_configure_sync_disabled PASSED [ 86%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_configure_sync_enabled_full_config PASSED [ 87%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_configure_sync_method_exists PASSED [ 89%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_configure_sync_with_defaults PASSED [ 90%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_guided_setup_integration PASSED [ 91%]
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_behavior_consistency_with_create PASSED [ 92%]
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_server_docker_config_handling PASSED [ 93%]
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_server_error_handling PASSED [ 94%]
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_server_launches_interactive_interface PASSED [ 95%]
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_server_preserves_existing_config PASSED [ 96%]
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_server_relay_config_handling PASSED [ 97%]
+tests/tool_update_server_config/test_interactive_update_server_config.py::test_interactive_update_server_config PASSED [ 98%]
+tests/tool_update_server_config/test_interactive_update_server_config_prefill.py::test_interactive_update_server_config_prefill PASSED [100%]
+
+=================================== FAILURES ===================================
+________ TestSyncConfigUIEnhancement.test_collect_sync_patterns_add_new ________
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_collect_sync_patterns_add_new>
+mock_colored_print = <MagicMock name='colored_print' id='4342036752'>
+mock_smart_input = <MagicMock name='smart_input' id='4342835664'>
+
+    @patch('config_manager.main.EnhancedConfigManager.smart_input')
+    @patch('config_manager.main.EnhancedConfigManager.colored_print')
+    def test_collect_sync_patterns_add_new(self, mock_colored_print, mock_smart_input):
+        """测试7: _collect_sync_patterns方法添加新模式"""
+        log_test_output("测试7: _collect_sync_patterns添加新模式", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = EnhancedConfigManager()
+    
+            # 模拟用户输入（保留默认值，添加新值）
+            mock_smart_input.side_effect = [
+                "*.py",     # 保留第一个默认值
+                "*.ts",     # 添加新的模式
+                "*.vue",    # 添加新的模式
+                ""          # 完成配置
+            ]
+    
+            # 调用_collect_sync_patterns方法
+            result = config_manager._collect_sync_patterns(
+                "包含模式",
+                defaults=['*.py']
+            )
+    
+            # 验证结果
+            self.assertIsInstance(result, list)
+>           self.assertEqual(len(result), 3)
+E           AssertionError: 1 != 3
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:293: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_collect_sync_patterns_add_new>
+mock_colored_print = <MagicMock name='colored_print' id='4342036752'>
+mock_smart_input = <MagicMock name='smart_input' id='4342835664'>
+
+    @patch('config_manager.main.EnhancedConfigManager.smart_input')
+    @patch('config_manager.main.EnhancedConfigManager.colored_print')
+    def test_collect_sync_patterns_add_new(self, mock_colored_print, mock_smart_input):
+        """测试7: _collect_sync_patterns方法添加新模式"""
+        log_test_output("测试7: _collect_sync_patterns添加新模式", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = EnhancedConfigManager()
+    
+            # 模拟用户输入（保留默认值，添加新值）
+            mock_smart_input.side_effect = [
+                "*.py",     # 保留第一个默认值
+                "*.ts",     # 添加新的模式
+                "*.vue",    # 添加新的模式
+                ""          # 完成配置
+            ]
+    
+            # 调用_collect_sync_patterns方法
+            result = config_manager._collect_sync_patterns(
+                "包含模式",
+                defaults=['*.py']
+            )
+    
+            # 验证结果
+            self.assertIsInstance(result, list)
+            self.assertEqual(len(result), 3)
+            self.assertIn('*.py', result)
+            self.assertIn('*.ts', result)
+            self.assertIn('*.vue', result)
+    
+            log_test_output("✅ _collect_sync_patterns正确添加新模式", "SUCCESS")
+    
+        except Exception as e:
+>           self.fail(f"测试_collect_sync_patterns添加新模式失败: {str(e)}")
+E           AssertionError: 测试_collect_sync_patterns添加新模式失败: 1 != 3
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:301: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ℹ️ 开始测试: TestSyncConfigUIEnhancement
+ℹ️ 测试7: _collect_sync_patterns添加新模式
+ℹ️ 完成测试: TestSyncConfigUIEnhancement
+=========================== short test summary info ============================
+FAILED tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_collect_sync_patterns_add_new
+======== 1 failed, 88 passed, 2 skipped, 5 warnings in 72.62s (0:01:12) ========

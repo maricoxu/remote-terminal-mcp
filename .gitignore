@@ -134,6 +134,9 @@ Vue.js
 # TernJS port file
 .tern-port
 
+# 取消忽略 tests 目录下的所有 .py 测试文件
+!tests/**/*.py
+
 # Python
 *.py[cod]
 *$py.class
@@ -334,7 +337,6 @@ test_report_*.txt
 *_test_report_*.txt
 
 # 连接测试文件
-test_*_connection.py
 connect_*.py
 debug_*.py
 fix_*.py
@@ -349,12 +351,6 @@ input_password.py
 demo_*.py
 check_*.py
 
-# 测试和调试文件
-test_*.py
-debug_*.py
-*_test.py
-*_debug.py
-
 # 配置管理器备份文件
 enhanced_config_manager_*.py
 
@@ -362,12 +358,6 @@ enhanced_config_manager_*.py
 *sync*.py
 add_sync_config.py
 vscode_sync_manager.py
-
-# MCP 测试文件
-test_mcp_*.py
-test_npm_*.py
-test_edit_*.py
-test_direct_*.py
 
 # 其他临时文件
 copy_*.py

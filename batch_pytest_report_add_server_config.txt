@@ -1,0 +1,306 @@
+==== tests/tool_add_server_config/test_docker_config.py ====
+/Users/xuyehua/Library/Python/3.9/lib/python/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0
+rootdir: /Users/xuyehua/Code/remote-terminal-mcp
+plugins: anyio-4.9.0, cov-6.1.1, asyncio-1.0.0
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1 item
+
+tests/tool_add_server_config/test_docker_config.py .                     [100%]
+
+============================== 1 passed in 0.03s ===============================
+==== tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py ====
+/Users/xuyehua/Library/Python/3.9/lib/python/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0
+rootdir: /Users/xuyehua/Code/remote-terminal-mcp
+plugins: anyio-4.9.0, cov-6.1.1, asyncio-1.0.0
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 7 items
+
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py F [ 14%]
+FFFFFF                                                                   [100%]
+
+=================================== FAILURES ===================================
+_________ TestConfigAutoCreationRemoval.test_config_directory_creation _________
+
+self = <test_fix_config_auto_creation_removal_20241222.TestConfigAutoCreationRemoval testMethod=test_config_directory_creation>
+
+    def test_config_directory_creation(self):
+        """测试配置目录的创建行为"""
+        # 使用不存在的目录路径
+        non_existent_dir = os.path.join(self.test_dir, 'non_existent')
+        config_path = os.path.join(non_existent_dir, 'config.yaml')
+    
+>       manager = config_manager.main.EnhancedConfigManager(config_path)
+E       NameError: name 'config_manager' is not defined
+
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py:156: NameError
+___ TestConfigAutoCreationRemoval.test_ensure_config_exists_no_auto_creation ___
+
+self = <test_fix_config_auto_creation_removal_20241222.TestConfigAutoCreationRemoval testMethod=test_ensure_config_exists_no_auto_creation>
+
+    def test_ensure_config_exists_no_auto_creation(self):
+        """测试配置文件不会自动创建"""
+>       manager = config_manager.main.EnhancedConfigManager(self.config_path)
+E       NameError: name 'config_manager' is not defined
+
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py:43: NameError
+_ TestConfigAutoCreationRemoval.test_ensure_config_exists_with_invalid_config __
+
+self = <test_fix_config_auto_creation_removal_20241222.TestConfigAutoCreationRemoval testMethod=test_ensure_config_exists_with_invalid_config>
+
+    def test_ensure_config_exists_with_invalid_config(self):
+        """测试有无效配置文件时的行为"""
+>       manager = config_manager.main.EnhancedConfigManager(self.config_path)
+E       NameError: name 'config_manager' is not defined
+
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py:84: NameError
+__ TestConfigAutoCreationRemoval.test_ensure_config_exists_with_valid_config ___
+
+self = <test_fix_config_auto_creation_removal_20241222.TestConfigAutoCreationRemoval testMethod=test_ensure_config_exists_with_valid_config>
+
+    def test_ensure_config_exists_with_valid_config(self):
+        """测试有有效配置文件时的行为"""
+>       manager = config_manager.main.EnhancedConfigManager(self.config_path)
+E       NameError: name 'config_manager' is not defined
+
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py:58: NameError
+___ TestConfigAutoCreationRemoval.test_ensure_config_exists_with_yaml_error ____
+
+self = <test_fix_config_auto_creation_removal_20241222.TestConfigAutoCreationRemoval testMethod=test_ensure_config_exists_with_yaml_error>
+
+    def test_ensure_config_exists_with_yaml_error(self):
+        """测试YAML格式错误的配置文件"""
+>       manager = config_manager.main.EnhancedConfigManager(self.config_path)
+E       NameError: name 'config_manager' is not defined
+
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py:99: NameError
+______ TestConfigAutoCreationRemoval.test_get_existing_servers_no_config _______
+
+self = <test_fix_config_auto_creation_removal_20241222.TestConfigAutoCreationRemoval testMethod=test_get_existing_servers_no_config>
+
+    def test_get_existing_servers_no_config(self):
+        """测试没有配置文件时获取服务器列表"""
+>       manager = config_manager.main.EnhancedConfigManager(self.config_path)
+E       NameError: name 'config_manager' is not defined
+
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py:122: NameError
+_____________ TestConfigAutoCreationRemoval.test_mcp_mode_behavior _____________
+
+self = <test_fix_config_auto_creation_removal_20241222.TestConfigAutoCreationRemoval testMethod=test_mcp_mode_behavior>
+
+    def test_mcp_mode_behavior(self):
+        """测试MCP模式下的行为（静默模式）"""
+>       manager = config_manager.main.EnhancedConfigManager(self.config_path)
+E       NameError: name 'config_manager' is not defined
+
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py:136: NameError
+=========================== short test summary info ============================
+FAILED tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_config_directory_creation
+FAILED tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_ensure_config_exists_no_auto_creation
+FAILED tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_ensure_config_exists_with_invalid_config
+FAILED tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_ensure_config_exists_with_valid_config
+FAILED tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_ensure_config_exists_with_yaml_error
+FAILED tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_get_existing_servers_no_config
+FAILED tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py::TestConfigAutoCreationRemoval::test_mcp_mode_behavior
+============================== 7 failed in 0.13s ===============================
+==== tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py ====
+/Users/xuyehua/Library/Python/3.9/lib/python/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0
+rootdir: /Users/xuyehua/Code/remote-terminal-mcp
+plugins: anyio-4.9.0, cov-6.1.1, asyncio-1.0.0
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 4 items
+
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py F [ 25%]
+FFF                                                                      [100%]
+
+=================================== FAILURES ===================================
+_____ TestSaveConfigParameterFix.test_regression_server_deletion_scenario ______
+
+self = <test_fix_save_config_parameter_mismatch_20250615.TestSaveConfigParameterFix testMethod=test_regression_server_deletion_scenario>
+
+    def setUp(self):
+        """测试前准备"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_path = Path(self.temp_dir) / 'config.yaml'
+>       self.config_manager = config_manager.main.EnhancedConfigManager(str(self.config_path))
+E       NameError: name 'config_manager' is not defined
+
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py:28: NameError
+____ TestSaveConfigParameterFix.test_save_config_parameter_name_consistency ____
+
+self = <test_fix_save_config_parameter_mismatch_20250615.TestSaveConfigParameterFix testMethod=test_save_config_parameter_name_consistency>
+
+    def setUp(self):
+        """测试前准备"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_path = Path(self.temp_dir) / 'config.yaml'
+>       self.config_manager = config_manager.main.EnhancedConfigManager(str(self.config_path))
+E       NameError: name 'config_manager' is not defined
+
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py:28: NameError
+_________ TestSaveConfigParameterFix.test_save_config_with_merge_false _________
+
+self = <test_fix_save_config_parameter_mismatch_20250615.TestSaveConfigParameterFix testMethod=test_save_config_with_merge_false>
+
+    def setUp(self):
+        """测试前准备"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_path = Path(self.temp_dir) / 'config.yaml'
+>       self.config_manager = config_manager.main.EnhancedConfigManager(str(self.config_path))
+E       NameError: name 'config_manager' is not defined
+
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py:28: NameError
+_______ TestSaveConfigParameterFix.test_save_config_with_merge_parameter _______
+
+self = <test_fix_save_config_parameter_mismatch_20250615.TestSaveConfigParameterFix testMethod=test_save_config_with_merge_parameter>
+
+    def setUp(self):
+        """测试前准备"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_path = Path(self.temp_dir) / 'config.yaml'
+>       self.config_manager = config_manager.main.EnhancedConfigManager(str(self.config_path))
+E       NameError: name 'config_manager' is not defined
+
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py:28: NameError
+=========================== short test summary info ============================
+FAILED tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py::TestSaveConfigParameterFix::test_regression_server_deletion_scenario
+FAILED tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py::TestSaveConfigParameterFix::test_save_config_parameter_name_consistency
+FAILED tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py::TestSaveConfigParameterFix::test_save_config_with_merge_false
+FAILED tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py::TestSaveConfigParameterFix::test_save_config_with_merge_parameter
+============================== 4 failed in 0.06s ===============================
+==== tests/tool_add_server_config/test_interaction.py ====
+/Users/xuyehua/Library/Python/3.9/lib/python/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0
+rootdir: /Users/xuyehua/Code/remote-terminal-mcp
+plugins: anyio-4.9.0, cov-6.1.1, asyncio-1.0.0
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3 items
+
+tests/tool_add_server_config/test_interaction.py .FF                     [100%]
+
+=================================== FAILURES ===================================
+_________________ TestUserInteraction.test_smart_input_default _________________
+
+self = <test_interaction.TestUserInteraction testMethod=test_smart_input_default>
+
+    def test_smart_input_default(self):
+        ia = UserInteraction(force_interactive=True, auto_mode=True)
+>       self.assertEqual(ia.smart_input("提示", default="abc"), "abc")
+E       AssertionError: '' != 'abc'
+E       + abc
+
+tests/tool_add_server_config/test_interaction.py:12: AssertionError
+________________ TestUserInteraction.test_smart_input_with_mock ________________
+
+self = <test_interaction.TestUserInteraction testMethod=test_smart_input_with_mock>
+
+    def test_smart_input_with_mock(self):
+        ia = UserInteraction(force_interactive=True, auto_mode=False)
+        with patch('builtins.input', return_value='mocked'):
+>           self.assertEqual(ia.smart_input("请输入内容", default="default"), "mocked")
+E           AssertionError: '' != 'mocked'
+E           + mocked
+
+tests/tool_add_server_config/test_interaction.py:17: AssertionError
+=========================== short test summary info ============================
+FAILED tests/tool_add_server_config/test_interaction.py::TestUserInteraction::test_smart_input_default
+FAILED tests/tool_add_server_config/test_interaction.py::TestUserInteraction::test_smart_input_with_mock
+========================= 2 failed, 1 passed in 0.04s ==========================
+==== tests/tool_add_server_config/test_interactive_create_server_config_prefill.py ====
+/Users/xuyehua/Library/Python/3.9/lib/python/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0
+rootdir: /Users/xuyehua/Code/remote-terminal-mcp
+plugins: anyio-4.9.0, cov-6.1.1, asyncio-1.0.0
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1 item
+
+tests/tool_add_server_config/test_interactive_create_server_config_prefill.py F [100%]
+
+=================================== FAILURES ===================================
+________________ test_interactive_create_server_config_prefill _________________
+
+    def test_interactive_create_server_config_prefill():
+        # 测试前清理
+        if os.path.exists(TEST_CONFIG_PATH):
+            os.remove(TEST_CONFIG_PATH)
+        # 预填参数
+        prefill = {
+            'name': 'hg225',
+            'host': '192.168.1.225',
+            'username': 'admin',
+        }
+        with patch("builtins.input", side_effect=MOCK_INPUTS):
+>           manager = config_manager.main.EnhancedConfigManager(config_path=TEST_CONFIG_PATH, force_interactive=True)
+E           NameError: name 'config_manager' is not defined
+
+tests/tool_add_server_config/test_interactive_create_server_config_prefill.py:44: NameError
+=========================== short test summary info ============================
+FAILED tests/tool_add_server_config/test_interactive_create_server_config_prefill.py::test_interactive_create_server_config_prefill
+============================== 1 failed in 0.05s ===============================
+==== tests/tool_add_server_config/test_interactive_create_server_config.py ====
+/Users/xuyehua/Library/Python/3.9/lib/python/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0
+rootdir: /Users/xuyehua/Code/remote-terminal-mcp
+plugins: anyio-4.9.0, cov-6.1.1, asyncio-1.0.0
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1 item
+
+tests/tool_add_server_config/test_interactive_create_server_config.py F  [100%]
+
+=================================== FAILURES ===================================
+____________________ test_interactive_create_server_config _____________________
+
+    def test_interactive_create_server_config():
+        # 测试前清理
+        if os.path.exists(TEST_CONFIG_PATH):
+            os.remove(TEST_CONFIG_PATH)
+        # patch input 实现自动化交互
+        with patch("builtins.input", side_effect=MOCK_INPUTS):
+>           manager = config_manager.main.EnhancedConfigManager(config_path=TEST_CONFIG_PATH, force_interactive=True)
+E           NameError: name 'config_manager' is not defined
+
+tests/tool_add_server_config/test_interactive_create_server_config.py:42: NameError
+=========================== short test summary info ============================
+FAILED tests/tool_add_server_config/test_interactive_create_server_config.py::test_interactive_create_server_config
+============================== 1 failed in 0.05s ===============================
+==== tests/tool_add_server_config/test_io.py ====
+/Users/xuyehua/Library/Python/3.9/lib/python/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0
+rootdir: /Users/xuyehua/Code/remote-terminal-mcp
+plugins: anyio-4.9.0, cov-6.1.1, asyncio-1.0.0
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1 item
+
+tests/tool_add_server_config/test_io.py .                                [100%]
+
+============================== 1 passed in 0.03s ===============================

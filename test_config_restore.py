@@ -59,7 +59,7 @@ security_settings:
 
 # 现在测试 EnhancedConfigManager
 try:
-    from enhanced_config_manager import EnhancedConfigManager
+    from config_manager.main import EnhancedConfigManager
     
     print("Initializing EnhancedConfigManager in MCP mode...")
     manager = EnhancedConfigManager()

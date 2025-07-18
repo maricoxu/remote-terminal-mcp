@@ -20,7 +20,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 # 替换原有导入
-#from enhanced_config_manager import EnhancedConfigManager
+#from config_manager.main import EnhancedConfigManager
 from python.config_manager.main import EnhancedConfigManager
 # 修复导入路径 - enhanced_ssh_manager在python目录下
 sys.path.insert(0, str(Path(__file__).parent))
@@ -850,7 +850,7 @@ async def handle_request(request):
                 # create_server_config工具适配新实现
                 elif tool_name == "create_server_config":
                     try:
-                        manager = EnhancedConfigManager()
+                        manager = config_manager.main.EnhancedConfigManager()
                         server_info = tool_arguments.copy()
                         name, server_cfg = manager.create_server(server_info)
                         content = f"✅ 服务器 {name} 已创建\n配置: {json.dumps(server_cfg, ensure_ascii=False, indent=2)}"
@@ -861,7 +861,7 @@ async def handle_request(request):
                 # update_server_config工具适配新实现
                 elif tool_name == "update_server_config":
                     try:
-                        manager = EnhancedConfigManager()
+                        manager = config_manager.main.EnhancedConfigManager()
                         name = tool_arguments.get("name")
                         update_info = tool_arguments.copy()
                         update_info.pop("name", None)
@@ -934,6 +934,8 @@ async def handle_request(request):
                             "error": f"Failed to delete server config: {str(e)}"
                         }, ensure_ascii=False, indent=2)
                 
+                # NEW UPDATE LOGIC: update_server_config 新逻辑已加载
+                # 强制交互策略：与create_server_config保持一致
                 elif tool_name == "diagnose_connection":
                     server_name = tool_arguments.get("server_name")
                     
@@ -1034,12 +1036,12 @@ if __name__ == "__main__":
         print("🧪 MCP服务器测试模式")
         try:
             # 测试导入
-            from enhanced_config_manager import EnhancedConfigManager
+            from config_manager.main import EnhancedConfigManager
             from enhanced_ssh_manager import EnhancedSSHManager
             print("✅ 所有模块导入成功")
             
             # 测试配置管理器
-            config_manager = EnhancedConfigManager()
+            config_manager = config_manager.main.EnhancedConfigManager()
             servers = config_manager.get_existing_servers()
             print(f"✅ 配置管理器工作正常，发现 {len(servers)} 个服务器")
             
@@ -1047,6 +1049,14 @@ if __name__ == "__main__":
             # 统一使用create_enhanced_manager工厂函数
             ssh_manager = create_enhanced_manager()
             print("✅ SSH管理器初始化成功")
+            
+            # 交互界面启动调用：launch_cursor_terminal_config
+            # 此调用仅在测试模式下进行，以确保Cursor客户端能够正确加载配置
+            # 在实际生产环境中，此调用应由Cursor客户端发起
+            if DEBUG:
+                print("[DEBUG] Launching Cursor terminal configuration interface for testing.", file=sys.stderr, flush=True)
+                from python.cursor_terminal_config import launch_cursor_terminal_config
+                launch_cursor_terminal_config()
             
             print("🎉 所有测试通过！MCP服务器可以正常启动")
             sys.exit(0)

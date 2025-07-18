@@ -31,7 +31,27 @@ class UserInteraction:
                 print(f"[smart_input] user input: {val}")
                 if validator and not validator(val):
                     self.colored_print("❌ 输入无效。", Fore.RED)
+                    print("输入验证失败")
                     continue
                 return val
             except KeyboardInterrupt:
                 return None
+
+    def validate_hostname(self, hostname: str) -> bool:
+        # 简单校验：不能有空格，且长度大于3
+        if not hostname or ' ' in hostname or len(hostname) < 4:
+            return False
+        return True
+
+    def validate_port(self, port: str) -> bool:
+        try:
+            p = int(port)
+            return 0 < p < 65536
+        except Exception:
+            return False
+
+    def validate_username(self, username: str) -> bool:
+        # 简单校验：不能有空格，且长度大于1
+        if not username or ' ' in username or len(username) < 2:
+            return False
+        return True

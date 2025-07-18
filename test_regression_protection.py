@@ -8,6 +8,7 @@ import subprocess
 import sys
 import os
 from datetime import datetime
+from pathlib import Path
 
 class RegressionProtector:
     """回归测试保护器"""
@@ -15,6 +16,8 @@ class RegressionProtector:
     def __init__(self):
         self.test_results = []
         self.failed_tests = []
+        # 获取项目根目录
+        self.project_root = Path(__file__).parent
     
     def run_test(self, test_name, test_command):
         """运行单个测试"""
@@ -27,7 +30,8 @@ class RegressionProtector:
                 shell=True, 
                 capture_output=True, 
                 text=True,
-                timeout=60
+                timeout=60,
+                cwd=str(self.project_root)  # 设置工作目录
             )
             
             if result.returncode == 0:
@@ -61,8 +65,8 @@ class RegressionProtector:
         core_tests = [
             ("Shell配置测试", "python3 test_shell_config.py"),
             # ("Zsh连接测试", "python3 test_zsh_connection.py"),  # 暂时禁用，需要实际网络连接
-            ("配置文件语法检查", "python3 -c 'import enhanced_config_manager; print(\"配置管理器导入成功\")'"),
-            ("MCP服务器语法检查", "python3 -c 'import sys; sys.path.append(\"python\"); import mcp_server; print(\"MCP服务器导入成功\")'"),
+            ("配置文件语法检查", f"python3 -c 'import sys; sys.path.insert(0, \"{self.project_root}/python\"); import config_manager.main; print(\"配置管理器导入成功\")'"),
+            ("MCP服务器语法检查", f"python3 -c 'import sys; sys.path.insert(0, \"{self.project_root}/python\"); import mcp_server; print(\"MCP服务器导入成功\")'"),
         ]
         
         # 运行所有测试

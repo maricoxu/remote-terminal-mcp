@@ -14,7 +14,11 @@ class ConfigIO:
             return {}
         with self.config_path.open('r', encoding='utf-8') as f:
             content = f.read()
-        return yaml.safe_load(content) if content and content.strip() else {}
+        try:
+            return yaml.safe_load(content) if content and content.strip() else {}
+        except Exception as e:
+            print(f"⚠️ 配置文件解析失败: {e}")
+            return {}
 
     def save_config(self, config: dict, merge: bool = True):
         final_cfg = config
@@ -22,6 +26,7 @@ class ConfigIO:
             existing = self.load_config().get('servers', {})
             existing.update(config.get('servers', {}))
             final_cfg = {'servers': existing}
+        # 确保父目录存在
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
         with self.config_path.open('w', encoding='utf-8') as f:
             yaml.dump(final_cfg, f, allow_unicode=True)

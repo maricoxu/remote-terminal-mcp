@@ -1,0 +1,9 @@
+servers:
+  test_server_001:
+    host: test-host-001
+    username: testuser
+    port: 22
+    docker_enabled: false
+    docker_config: {}
+    auto_sync_enabled: false
+    sync_config: {}

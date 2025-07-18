@@ -1,0 +1,9 @@
+servers:
+  cpu_221:
+    host: 10.0.0.221
+    username: root
+    port: 22
+    docker_enabled: false
+    docker_config: {}
+    auto_sync_enabled: false
+    sync_config: {}

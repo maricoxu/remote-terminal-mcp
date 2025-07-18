@@ -1,0 +1,1926 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0 -- /Applications/Xcode.app/Contents/Developer/usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/xuyehua/Code/remote-terminal-mcp
+plugins: anyio-4.9.0, cov-6.1.1, asyncio-1.0.0
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 208 items
+
+python/tests/config_manager/test_io.py::TestConfigIO::test_dummy PASSED  [  0%]
+python/tests/tool_connect_server/test_connection_manager_integration.py::test_integration_imports PASSED [  0%]
+python/tests/tool_connect_server/test_connection_manager_integration.py::test_manager_creation PASSED [  1%]
+python/tests/tool_connect_server/test_connection_manager_integration.py::test_api_backward_compatibility PASSED [  1%]
+python/tests/tool_connect_server/test_connection_manager_integration.py::test_mcp_server_compatibility PASSED [  2%]
+python/tests/tool_connect_server/test_connection_manager_integration.py::test_simple_mode_parameter PASSED [  2%]
+python/tests/tool_connect_server/test_end_to_end.py::test_environment PASSED [  3%]
+python/tests/tool_connect_server/test_end_to_end.py::TestEndToEndWorkflow::test_complete_server_setup_workflow FAILED [  3%]
+python/tests/tool_connect_server/test_end_to_end.py::TestEndToEndWorkflow::test_docker_setup_workflow FAILED [  4%]
+python/tests/tool_connect_server/test_end_to_end.py::TestEndToEndWorkflow::test_mcp_integration_workflow FAILED [  4%]
+python/tests/tool_connect_server/test_end_to_end.py::TestUserScenarios::test_configuration_migration_scenario FAILED [  5%]
+python/tests/tool_connect_server/test_end_to_end.py::TestUserScenarios::test_multiple_servers_scenario FAILED [  5%]
+python/tests/tool_connect_server/test_end_to_end.py::TestUserScenarios::test_new_user_setup_scenario FAILED [  6%]
+python/tests/tool_connect_server/test_end_to_end.py::TestErrorHandling::test_invalid_config_handling FAILED [  6%]
+python/tests/tool_connect_server/test_end_to_end.py::TestErrorHandling::test_permission_error_handling PASSED [  7%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_applescript_terminal_cleanup_integration PASSED [  7%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_complete_applescript_sequence PASSED [  8%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_complete_expect_sequence PASSED [  8%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_comprehensive_test_with_process_management PASSED [  9%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_error_handling_in_process_management PASSED [  9%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_process_cleanup_functionality PASSED [ 10%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_process_tracking_mechanism PASSED [ 10%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_remaining_process_detection PASSED [ 11%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_temp_file_cleanup_integration PASSED [ 11%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_terminal_cleanup_functionality PASSED [ 12%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestCompleteInteractionAndProcessManagement::test_timeout_handling_in_interactions PASSED [ 12%]
+python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py::TestInteractionSequenceCompleteness::test_all_required_interaction_steps PASSED [ 12%]
+python/tests/tool_connect_server/test_fix_interactive_interface_startup_20241222.py::TestInteractiveInterfaceStartupFix::test_automated_interaction_compatibility PASSED [ 13%]
+python/tests/tool_connect_server/test_fix_interactive_interface_startup_20241222.py::TestInteractiveInterfaceStartupFix::test_create_server_config_response_format PASSED [ 13%]
+python/tests/tool_connect_server/test_fix_interactive_interface_startup_20241222.py::TestInteractiveInterfaceStartupFix::test_manual_command_execution PASSED [ 14%]
+python/tests/tool_connect_server/test_fix_interactive_interface_startup_20241222.py::TestInteractiveInterfaceStartupFix::test_no_background_process_started PASSED [ 14%]
+python/tests/tool_connect_server/test_fix_interactive_interface_startup_20241222.py::TestInteractiveInterfaceStartupFix::test_response_consistency PASSED [ 15%]
+python/tests/tool_connect_server/test_fix_interactive_interface_startup_20241222.py::TestInteractiveInterfaceStartupFix::test_user_guidance_completeness PASSED [ 15%]
+python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py::TestInteractiveStartupRequirement::test_create_server_config_must_start_interactive_interface FAILED [ 16%]
+python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py::TestInteractiveStartupRequirement::test_interactive_startup_failure_diagnosis FAILED [ 16%]
+python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py::TestInteractiveStartupRequirement::test_interactive_startup_with_minimal_params FAILED [ 17%]
+python/tests/tool_connect_server/test_fix_mcp_timeout_issue_20240622.py::TestMCPTimeoutFix::test_reproduce_timeout_issue PASSED [ 17%]
+python/tests/tool_connect_server/test_fix_mcp_timeout_issue_20240622.py::TestMCPTimeoutFix::test_verify_timeout_mechanism PASSED [ 18%]
+python/tests/tool_connect_server/test_fix_mcp_timeout_issue_20240622.py::TestMCPTimeoutFix::test_timeout_parameter_validation PASSED [ 18%]
+python/tests/tool_connect_server/test_fix_mcp_timeout_issue_20240622.py::TestMCPTimeoutFix::test_process_cleanup_after_timeout PASSED [ 19%]
+python/tests/tool_connect_server/test_fix_mcp_timeout_issue_20240622.py::TestMCPTimeoutFix::test_normal_operation_with_timeout PASSED [ 19%]
+python/tests/tool_connect_server/test_fix_mcp_timeout_issue_20240622.py::TestMCPTimeoutFix::test_different_tools_timeout_behavior PASSED [ 20%]
+python/tests/tool_connect_server/test_fix_mcp_timeout_issue_20240622.py::TestMCPTimeoutFix::test_timeout_fix_documentation PASSED [ 20%]
+python/tests/tool_connect_server/test_fix_relay_cli_usage_20250105.py::TestRelayCLIUsageCompliance::test_code_examples_in_documentation PASSED [ 21%]
+python/tests/tool_connect_server/test_fix_relay_cli_usage_20250105.py::TestRelayCLIUsageCompliance::test_correct_relay_cli_usage PASSED [ 21%]
+python/tests/tool_connect_server/test_fix_relay_cli_usage_20250105.py::TestRelayCLIUsageCompliance::test_edge_cases PASSED [ 22%]
+python/tests/tool_connect_server/test_fix_relay_cli_usage_20250105.py::TestRelayCLIUsageCompliance::test_forbidden_relay_cli_usage PASSED [ 22%]
+python/tests/tool_connect_server/test_fix_relay_cli_usage_20250105.py::TestRelayCLIUsageCompliance::test_parse_relay_cli_command PASSED [ 23%]
+python/tests/tool_connect_server/test_fix_relay_cli_usage_20250105.py::TestRelayCLIUsageCompliance::test_rule_documentation_compliance PASSED [ 23%]
+python/tests/tool_connect_server/test_fix_relay_cli_usage_20250105.py::TestRelayCLIRegressionPrevention::test_correct_usage_still_works PASSED [ 24%]
+python/tests/tool_connect_server/test_fix_relay_cli_usage_20250105.py::TestRelayCLIRegressionPrevention::test_prevent_command_parameter_regression PASSED [ 24%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionLogicFix::test_all_fixes_integration PASSED [ 25%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionLogicFix::test_command_execution_enhanced PASSED [ 25%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionLogicFix::test_connection_detection_enhanced PASSED [ 25%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionLogicFix::test_connection_error_logging_enhanced PASSED [ 26%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionLogicFix::test_interactive_guide_relay_patterns PASSED [ 26%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionLogicFix::test_relay_authentication_handler_added PASSED [ 27%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionLogicFix::test_relay_cli_usage_compliance PASSED [ 27%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionSpecific::test_relay_authentication_success_detection PASSED [ 28%]
+python/tests/tool_connect_server/test_fix_relay_connection_logic_20250105.py::TestRelayConnectionSpecific::test_relay_authentication_timeout_handling PASSED [ 28%]
+python/tests/tool_connect_server/test_fix_tj09_server_creation_20240622.py::TJ09ServerCreationTest::test_tj09_connection_type PASSED [ 29%]
+python/tests/tool_connect_server/test_fix_tj09_server_creation_20240622.py::TJ09ServerCreationTest::test_tj09_docker_config PASSED [ 29%]
+python/tests/tool_connect_server/test_fix_tj09_server_creation_20240622.py::TJ09ServerCreationTest::test_tj09_server_config PASSED [ 30%]
+python/tests/tool_connect_server/test_fix_tj09_server_creation_20240622.py::TJ09ServerCreationTest::test_tj09_server_exists PASSED [ 30%]
+python/tests/tool_connect_server/test_fix_tj09_server_creation_20240622.py::TJ09ServerCreationTest::test_tj09_status_check PASSED [ 31%]
+python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py::TestUserVisibleInteraction::test_background_process_detection FAILED [ 31%]
+python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py::TestUserVisibleInteraction::test_interactive_interface_accessibility FAILED [ 32%]
+python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py::TestUserVisibleInteraction::test_process_output_visibility FAILED [ 32%]
+python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py::TestUserVisibleInteraction::test_terminal_window_creation_on_macos FAILED [ 33%]
+python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_guided_setup_docker_server_full_automation FAILED [ 33%]
+python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_guided_setup_relay_server_full_automation FAILED [ 34%]
+python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_guided_setup_ssh_server_full_automation FAILED [ 34%]
+python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_main_menu_automation FAILED [ 35%]
+python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_smart_input_error_recovery_automation FAILED [ 35%]
+python/tests/tool_connect_server/test_fully_automated_interactive.py::TestInputValidationAutomation::test_hostname_validation_automation FAILED [ 36%]
+python/tests/tool_connect_server/test_fully_automated_interactive.py::TestInputValidationAutomation::test_port_validation_automation FAILED [ 36%]
+python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_config_file_operations FAILED [ 37%]
+python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_config_manager_tools FAILED [ 37%]
+python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_docker_command_generation FAILED [ 37%]
+python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_docker_config_tools PASSED [ 38%]
+python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_mcp_server_import PASSED [ 38%]
+python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_mcp_tool_availability PASSED [ 39%]
+python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_server_config_creation FAILED [ 39%]
+python/tests/tool_connect_server/test_mcp_tools.py::TestConfigurationConsistency::test_config_directory_consistency FAILED [ 40%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageIntegrity::test_dependencies_installable PASSED [ 40%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageIntegrity::test_main_entry_file FAILED [ 41%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageIntegrity::test_package_json_exists PASSED [ 41%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageIntegrity::test_package_json_structure PASSED [ 42%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageIntegrity::test_required_python_files FAILED [ 42%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageIntegrity::test_scripts_configuration PASSED [ 43%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageInstallation::test_npm_pack_success FAILED [ 43%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageInstallation::test_package_size_reasonable PASSED [ 44%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackagePublishing::test_npm_publish_dry_run PASSED [ 44%]
+python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackagePublishing::test_version_consistency PASSED [ 45%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestConfigurationRegression::test_config_directory_consistency FAILED [ 45%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestConfigurationRegression::test_config_file_structure FAILED [ 46%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestMCPToolsRegression::test_interactive_wizard_functionality FAILED [ 46%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestMCPToolsRegression::test_mcp_tools_availability PASSED [ 47%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestDockerConfigRegression::test_docker_command_completeness FAILED [ 47%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestConfigurationPersistenceRegression::test_ensure_config_exists_preserves_user_config FAILED [ 48%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestConfigurationPersistenceRegression::test_get_existing_servers_preserves_user_modifications FAILED [ 48%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestConfigurationPersistenceRegression::test_modified_example_server_detection FAILED [ 49%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestConfigurationPersistenceRegression::test_npm_installation_protection FAILED [ 49%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestUserExperienceRegression::test_configuration_backup FAILED [ 50%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestUserExperienceRegression::test_error_messages_quality FAILED [ 50%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestAPIConsistency::test_docker_config_manager_api FAILED [ 50%]
+python/tests/tool_connect_server/test_regression_prevention.py::TestAPIConsistency::test_enhanced_config_manager_api FAILED [ 51%]
+python/tests/tool_connect_server/test_simple_automated_demo.py::TestSimpleAutomationDemo::test_mcp_guided_setup_automation FAILED [ 51%]
+python/tests/tool_connect_server/test_simple_automated_demo.py::TestSimpleAutomationDemo::test_multiple_validation_types FAILED [ 52%]
+python/tests/tool_connect_server/test_simple_automated_demo.py::TestSimpleAutomationDemo::test_smart_input_basic_automation FAILED [ 52%]
+python/tests/tool_connect_server/test_simple_automated_demo.py::TestSimpleAutomationDemo::test_smart_input_error_recovery_automation FAILED [ 53%]
+python/tests/tool_connect_server/test_zero_interaction_demo.py::TestZeroInteractionDemo::test_batch_server_creation FAILED [ 53%]
+python/tests/tool_connect_server/test_zero_interaction_demo.py::TestZeroInteractionDemo::test_completely_headless_operation FAILED [ 54%]
+python/tests/tool_connect_server/test_zero_interaction_demo.py::TestZeroInteractionDemo::test_completely_silent_mcp_setup FAILED [ 54%]
+python/tests/tool_connect_server/test_zero_interaction_demo.py::TestZeroInteractionDemo::test_mock_all_interactions_completely FAILED [ 55%]
+python/tests/tool_connect_server/test_zero_interaction_demo.py::TestZeroInteractionDemo::test_smart_input_with_defaults FAILED [ 55%]
+
+=================================== FAILURES ===================================
+___________ TestEndToEndWorkflow.test_complete_server_setup_workflow ___________
+
+self = <python.tests.tool_connect_server.test_end_to_end.TestEndToEndWorkflow testMethod=test_complete_server_setup_workflow>
+
+    def test_complete_server_setup_workflow(self):
+        """测试完整的服务器设置工作流程"""
+        with test_environment() as env:
+            # 1. 创建配置管理器
+            from config_manager.main import EnhancedConfigManager
+    
+>           config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_end_to_end.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x10478fa90>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_______________ TestEndToEndWorkflow.test_docker_setup_workflow ________________
+
+self = <python.tests.tool_connect_server.test_end_to_end.TestEndToEndWorkflow testMethod=test_docker_setup_workflow>
+
+    def test_docker_setup_workflow(self):
+        """测试Docker设置工作流程"""
+        with test_environment() as env:
+            # 1. 创建Docker配置管理器
+            from docker_config_manager import DockerConfigManager
+            from config_manager.main import EnhancedConfigManager
+    
+            docker_manager = DockerConfigManager()
+>           config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_end_to_end.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104794be0>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+______________ TestEndToEndWorkflow.test_mcp_integration_workflow ______________
+
+self = <python.tests.tool_connect_server.test_end_to_end.TestEndToEndWorkflow testMethod=test_mcp_integration_workflow>
+
+    def test_mcp_integration_workflow(self):
+        """测试MCP集成工作流程"""
+        try:
+            # 1. 导入MCP服务器模块
+            import mcp_server
+    
+            # 2. 测试工具列表创建
+            tools = mcp_server.create_tools_list()
+            self.assertIsNotNone(tools, "MCP工具列表创建成功")
+            self.assertGreater(len(tools), 0, "应该有可用的MCP工具")
+    
+            # 3. 测试配置管理器集成
+            from config_manager.main import EnhancedConfigManager
+>           config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_end_to_end.py:112: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x10483f5e0>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+
+During handling of the above exception, another exception occurred:
+
+self = <python.tests.tool_connect_server.test_end_to_end.TestEndToEndWorkflow testMethod=test_mcp_integration_workflow>
+
+    def test_mcp_integration_workflow(self):
+        """测试MCP集成工作流程"""
+        try:
+            # 1. 导入MCP服务器模块
+            import mcp_server
+    
+            # 2. 测试工具列表创建
+            tools = mcp_server.create_tools_list()
+            self.assertIsNotNone(tools, "MCP工具列表创建成功")
+            self.assertGreater(len(tools), 0, "应该有可用的MCP工具")
+    
+            # 3. 测试配置管理器集成
+            from config_manager.main import EnhancedConfigManager
+            config_manager = EnhancedConfigManager()
+    
+            # 4. 验证配置目录一致性
+            config_path = config_manager.io.config_path
+            self.assertTrue(str(config_path).endswith('.remote-terminal/config.yaml'),
+                           "MCP集成应该使用正确的配置目录")
+    
+        except Exception as e:
+>           self.fail(f"MCP集成工作流程失败: {e}")
+E           AssertionError: MCP集成工作流程失败: name 'kwargs' is not defined
+
+python/tests/tool_connect_server/test_end_to_end.py:120: AssertionError
+___________ TestUserScenarios.test_configuration_migration_scenario ____________
+
+self = <python.tests.tool_connect_server.test_end_to_end.TestUserScenarios testMethod=test_configuration_migration_scenario>
+
+    def test_configuration_migration_scenario(self):
+        """测试配置迁移场景"""
+        with test_environment() as env:
+            # 模拟从旧配置目录迁移的场景
+            from config_manager.main import EnhancedConfigManager
+    
+>           config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_end_to_end.py:234: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104756ca0>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_______________ TestUserScenarios.test_multiple_servers_scenario _______________
+
+self = <python.tests.tool_connect_server.test_end_to_end.TestUserScenarios testMethod=test_multiple_servers_scenario>
+
+    def test_multiple_servers_scenario(self):
+        """测试多服务器管理场景"""
+        with test_environment() as env:
+            from config_manager.main import EnhancedConfigManager
+    
+>           config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_end_to_end.py:179: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x10478f340>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+________________ TestUserScenarios.test_new_user_setup_scenario ________________
+
+self = <python.tests.tool_connect_server.test_end_to_end.TestUserScenarios testMethod=test_new_user_setup_scenario>
+
+    def test_new_user_setup_scenario(self):
+        """测试新用户设置场景"""
+        with test_environment() as env:
+            # 模拟新用户首次使用
+            from config_manager.main import EnhancedConfigManager
+    
+>           config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_end_to_end.py:145: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104850940>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+________________ TestErrorHandling.test_invalid_config_handling ________________
+
+self = <python.tests.tool_connect_server.test_end_to_end.TestErrorHandling testMethod=test_invalid_config_handling>
+
+    def test_invalid_config_handling(self):
+        """测试无效配置处理"""
+        from config_manager.main import EnhancedConfigManager
+    
+>       config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_end_to_end.py:274: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104794730>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_ TestInteractiveStartupRequirement.test_create_server_config_must_start_interactive_interface _
+
+self = <python.tests.tool_connect_server.test_fix_interactive_startup_requirement_20241222.TestInteractiveStartupRequirement testMethod=test_create_server_config_must_start_interactive_interface>
+
+    def setUp(self):
+        """测试前准备"""
+        # 自动创建最小化配置文件
+        config_file = Path.home() / '.remote-terminal' / 'config.yaml'
+        config_file.parent.mkdir(parents=True, exist_ok=True)
+        if not config_file.exists():
+            config_file.write_text('servers: {}\n', encoding='utf-8')
+        # 同步创建项目根目录 config/servers.local.yaml
+        import os
+        project_root = Path(__file__).parent.parent.parent
+        config_dir = project_root / 'config'
+        config_dir.mkdir(parents=True, exist_ok=True)
+        servers_local = config_dir / 'servers.local.yaml'
+        servers_local.write_text('servers: {}\n', encoding='utf-8')
+>       self.config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104a7cd60>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_ TestInteractiveStartupRequirement.test_interactive_startup_failure_diagnosis _
+
+self = <python.tests.tool_connect_server.test_fix_interactive_startup_requirement_20241222.TestInteractiveStartupRequirement testMethod=test_interactive_startup_failure_diagnosis>
+
+    def setUp(self):
+        """测试前准备"""
+        # 自动创建最小化配置文件
+        config_file = Path.home() / '.remote-terminal' / 'config.yaml'
+        config_file.parent.mkdir(parents=True, exist_ok=True)
+        if not config_file.exists():
+            config_file.write_text('servers: {}\n', encoding='utf-8')
+        # 同步创建项目根目录 config/servers.local.yaml
+        import os
+        project_root = Path(__file__).parent.parent.parent
+        config_dir = project_root / 'config'
+        config_dir.mkdir(parents=True, exist_ok=True)
+        servers_local = config_dir / 'servers.local.yaml'
+        servers_local.write_text('servers: {}\n', encoding='utf-8')
+>       self.config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104a422e0>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_ TestInteractiveStartupRequirement.test_interactive_startup_with_minimal_params _
+
+self = <python.tests.tool_connect_server.test_fix_interactive_startup_requirement_20241222.TestInteractiveStartupRequirement testMethod=test_interactive_startup_with_minimal_params>
+
+    def setUp(self):
+        """测试前准备"""
+        # 自动创建最小化配置文件
+        config_file = Path.home() / '.remote-terminal' / 'config.yaml'
+        config_file.parent.mkdir(parents=True, exist_ok=True)
+        if not config_file.exists():
+            config_file.write_text('servers: {}\n', encoding='utf-8')
+        # 同步创建项目根目录 config/servers.local.yaml
+        import os
+        project_root = Path(__file__).parent.parent.parent
+        config_dir = project_root / 'config'
+        config_dir.mkdir(parents=True, exist_ok=True)
+        servers_local = config_dir / 'servers.local.yaml'
+        servers_local.write_text('servers: {}\n', encoding='utf-8')
+>       self.config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104a866a0>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_________ TestUserVisibleInteraction.test_background_process_detection _________
+
+self = <python.tests.tool_connect_server.test_fix_user_visible_interaction_20241222.TestUserVisibleInteraction testMethod=test_background_process_detection>
+
+    def setUp(self):
+        """测试前准备"""
+        # 自动创建最小化配置文件
+        config_file = Path.home() / '.remote-terminal' / 'config.yaml'
+        config_file.parent.mkdir(parents=True, exist_ok=True)
+        if not config_file.exists():
+            config_file.write_text('servers: {}\n', encoding='utf-8')
+        # 同步创建项目根目录 config/servers.local.yaml
+        import os
+        project_root = Path(__file__).parent.parent.parent
+        config_dir = project_root / 'config'
+        config_dir.mkdir(parents=True, exist_ok=True)
+        servers_local = config_dir / 'servers.local.yaml'
+        servers_local.write_text('servers: {}\n', encoding='utf-8')
+>       self.config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104a9e250>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_____ TestUserVisibleInteraction.test_interactive_interface_accessibility ______
+
+self = <python.tests.tool_connect_server.test_fix_user_visible_interaction_20241222.TestUserVisibleInteraction testMethod=test_interactive_interface_accessibility>
+
+    def setUp(self):
+        """测试前准备"""
+        # 自动创建最小化配置文件
+        config_file = Path.home() / '.remote-terminal' / 'config.yaml'
+        config_file.parent.mkdir(parents=True, exist_ok=True)
+        if not config_file.exists():
+            config_file.write_text('servers: {}\n', encoding='utf-8')
+        # 同步创建项目根目录 config/servers.local.yaml
+        import os
+        project_root = Path(__file__).parent.parent.parent
+        config_dir = project_root / 'config'
+        config_dir.mkdir(parents=True, exist_ok=True)
+        servers_local = config_dir / 'servers.local.yaml'
+        servers_local.write_text('servers: {}\n', encoding='utf-8')
+>       self.config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104ab9cd0>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+__________ TestUserVisibleInteraction.test_process_output_visibility ___________
+
+self = <python.tests.tool_connect_server.test_fix_user_visible_interaction_20241222.TestUserVisibleInteraction testMethod=test_process_output_visibility>
+
+    def setUp(self):
+        """测试前准备"""
+        # 自动创建最小化配置文件
+        config_file = Path.home() / '.remote-terminal' / 'config.yaml'
+        config_file.parent.mkdir(parents=True, exist_ok=True)
+        if not config_file.exists():
+            config_file.write_text('servers: {}\n', encoding='utf-8')
+        # 同步创建项目根目录 config/servers.local.yaml
+        import os
+        project_root = Path(__file__).parent.parent.parent
+        config_dir = project_root / 'config'
+        config_dir.mkdir(parents=True, exist_ok=True)
+        servers_local = config_dir / 'servers.local.yaml'
+        servers_local.write_text('servers: {}\n', encoding='utf-8')
+>       self.config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x1047fb670>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+______ TestUserVisibleInteraction.test_terminal_window_creation_on_macos _______
+
+self = <python.tests.tool_connect_server.test_fix_user_visible_interaction_20241222.TestUserVisibleInteraction testMethod=test_terminal_window_creation_on_macos>
+
+    def setUp(self):
+        """测试前准备"""
+        # 自动创建最小化配置文件
+        config_file = Path.home() / '.remote-terminal' / 'config.yaml'
+        config_file.parent.mkdir(parents=True, exist_ok=True)
+        if not config_file.exists():
+            config_file.write_text('servers: {}\n', encoding='utf-8')
+        # 同步创建项目根目录 config/servers.local.yaml
+        import os
+        project_root = Path(__file__).parent.parent.parent
+        config_dir = project_root / 'config'
+        config_dir.mkdir(parents=True, exist_ok=True)
+        servers_local = config_dir / 'servers.local.yaml'
+        servers_local.write_text('servers: {}\n', encoding='utf-8')
+>       self.config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104f02eb0>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_ TestFullyAutomatedInteractive.test_guided_setup_docker_server_full_automation _
+
+self = <python.tests.tool_connect_server.test_fully_automated_interactive.TestFullyAutomatedInteractive testMethod=test_guided_setup_docker_server_full_automation>
+
+    def setUp(self):
+        """测试前准备"""
+        # 创建临时配置目录
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+        # 创建配置管理器实例
+>       self.config_manager = EnhancedConfigManager(str(self.config_file))
+
+python/tests/tool_connect_server/test_fully_automated_interactive.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104a9e100>
+config_path = PosixPath('/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpm9s_wpie/config.yaml')
+force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_ TestFullyAutomatedInteractive.test_guided_setup_relay_server_full_automation _
+
+self = <python.tests.tool_connect_server.test_fully_automated_interactive.TestFullyAutomatedInteractive testMethod=test_guided_setup_relay_server_full_automation>
+
+    def setUp(self):
+        """测试前准备"""
+        # 创建临时配置目录
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+        # 创建配置管理器实例
+>       self.config_manager = EnhancedConfigManager(str(self.config_file))
+
+python/tests/tool_connect_server/test_fully_automated_interactive.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104a7cd30>
+config_path = PosixPath('/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpx3w9leoa/config.yaml')
+force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+__ TestFullyAutomatedInteractive.test_guided_setup_ssh_server_full_automation __
+
+self = <python.tests.tool_connect_server.test_fully_automated_interactive.TestFullyAutomatedInteractive testMethod=test_guided_setup_ssh_server_full_automation>
+
+    def setUp(self):
+        """测试前准备"""
+        # 创建临时配置目录
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+        # 创建配置管理器实例
+>       self.config_manager = EnhancedConfigManager(str(self.config_file))
+
+python/tests/tool_connect_server/test_fully_automated_interactive.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104aff280>
+config_path = PosixPath('/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpwnta04xi/config.yaml')
+force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+___________ TestFullyAutomatedInteractive.test_main_menu_automation ____________
+
+self = <python.tests.tool_connect_server.test_fully_automated_interactive.TestFullyAutomatedInteractive testMethod=test_main_menu_automation>
+
+    def setUp(self):
+        """测试前准备"""
+        # 创建临时配置目录
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+        # 创建配置管理器实例
+>       self.config_manager = EnhancedConfigManager(str(self.config_file))
+
+python/tests/tool_connect_server/test_fully_automated_interactive.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104a22af0>
+config_path = PosixPath('/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmp0ur71it1/config.yaml')
+force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+___ TestFullyAutomatedInteractive.test_smart_input_error_recovery_automation ___
+
+self = <python.tests.tool_connect_server.test_fully_automated_interactive.TestFullyAutomatedInteractive testMethod=test_smart_input_error_recovery_automation>
+
+    def setUp(self):
+        """测试前准备"""
+        # 创建临时配置目录
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+        # 创建配置管理器实例
+>       self.config_manager = EnhancedConfigManager(str(self.config_file))
+
+python/tests/tool_connect_server/test_fully_automated_interactive.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104adbee0>
+config_path = PosixPath('/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmp24lmvfgq/config.yaml')
+force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+______ TestInputValidationAutomation.test_hostname_validation_automation _______
+
+self = <python.tests.tool_connect_server.test_fully_automated_interactive.TestInputValidationAutomation testMethod=test_hostname_validation_automation>
+
+    def setUp(self):
+        """测试前准备"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+>       self.config_manager = EnhancedConfigManager(str(self.config_file))
+
+python/tests/tool_connect_server/test_fully_automated_interactive.py:242: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104acc220>
+config_path = PosixPath('/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmph7ep_kie/config.yaml')
+force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+________ TestInputValidationAutomation.test_port_validation_automation _________
+
+self = <python.tests.tool_connect_server.test_fully_automated_interactive.TestInputValidationAutomation testMethod=test_port_validation_automation>
+
+    def setUp(self):
+        """测试前准备"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+>       self.config_manager = EnhancedConfigManager(str(self.config_file))
+
+python/tests/tool_connect_server/test_fully_automated_interactive.py:242: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104a0bc40>
+config_path = PosixPath('/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpgw3b91y4/config.yaml')
+force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+___________________ TestMCPTools.test_config_file_operations ___________________
+
+self = <python.tests.tool_connect_server.test_mcp_tools.TestMCPTools testMethod=test_config_file_operations>
+
+    def test_config_file_operations(self):
+        """测试配置文件操作"""
+        from config_manager.main import EnhancedConfigManager
+    
+>       config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_mcp_tools.py:102: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104ae9880>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+____________________ TestMCPTools.test_config_manager_tools ____________________
+
+self = <python.tests.tool_connect_server.test_mcp_tools.TestMCPTools testMethod=test_config_manager_tools>
+
+    def test_config_manager_tools(self):
+        """测试配置管理工具"""
+        from config_manager.main import EnhancedConfigManager
+    
+        # 使用临时配置目录
+>       config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_mcp_tools.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104f27880>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_________________ TestMCPTools.test_docker_command_generation __________________
+
+self = <python.tests.tool_connect_server.test_mcp_tools.TestMCPTools testMethod=test_docker_command_generation>
+
+    def test_docker_command_generation(self):
+        """测试Docker命令生成"""
+        from config_manager.main import EnhancedConfigManager
+    
+>       config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_mcp_tools.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104f35fd0>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+___________________ TestMCPTools.test_server_config_creation ___________________
+
+self = <python.tests.tool_connect_server.test_mcp_tools.TestMCPTools testMethod=test_server_config_creation>
+
+    def test_server_config_creation(self):
+        """测试服务器配置创建"""
+        from config_manager.main import EnhancedConfigManager
+    
+>       config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_mcp_tools.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104ad4ca0>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+________ TestConfigurationConsistency.test_config_directory_consistency ________
+
+self = <python.tests.tool_connect_server.test_mcp_tools.TestConfigurationConsistency testMethod=test_config_directory_consistency>
+
+    def test_config_directory_consistency(self):
+        """测试配置目录一致性"""
+        from config_manager.main import EnhancedConfigManager
+        from docker_config_manager import DockerConfigManager
+    
+>       enhanced_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_mcp_tools.py:145: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x1046a9be0>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_________________ TestNPMPackageIntegrity.test_main_entry_file _________________
+
+self = <python.tests.tool_connect_server.test_package_integrity.TestNPMPackageIntegrity testMethod=test_main_entry_file>
+
+    def test_main_entry_file(self):
+        """测试主入口文件"""
+        with open(self.package_json_path) as f:
+            package_data = json.load(f)
+    
+        main_file = self.project_root / package_data['main']
+>       self.assertTrue(main_file.exists(),
+                       f"主入口文件{package_data['main']}必须存在")
+E       AssertionError: False is not true : 主入口文件index.js必须存在
+
+python/tests/tool_connect_server/test_package_integrity.py:55: AssertionError
+______________ TestNPMPackageIntegrity.test_required_python_files ______________
+
+self = <python.tests.tool_connect_server.test_package_integrity.TestNPMPackageIntegrity testMethod=test_required_python_files>
+
+    def test_required_python_files(self):
+        """测试必要的Python文件"""
+        required_files = [
+            'enhanced_config_manager.py',
+            'docker_config_manager.py',
+            'python/mcp_server.py'
+        ]
+    
+        for file_path in required_files:
+            full_path = self.project_root / file_path
+>           self.assertTrue(full_path.exists(),
+                           f"必要文件{file_path}必须存在")
+E           AssertionError: False is not true : 必要文件enhanced_config_manager.py必须存在
+
+python/tests/tool_connect_server/test_package_integrity.py:74: AssertionError
+_______________ TestNPMPackageInstallation.test_npm_pack_success _______________
+
+self = <python.tests.tool_connect_server.test_package_integrity.TestNPMPackageInstallation testMethod=test_npm_pack_success>
+
+    def test_npm_pack_success(self):
+        """测试npm pack成功"""
+        try:
+            result = run_command(['npm', 'pack'],
+                                cwd=self.project_root, timeout=60)
+    
+>           self.assertEqual(result.returncode, 0,
+                           f"npm pack失败: {result.stderr}")
+E                          AssertionError: 1 != 0 : npm pack失败: npm error no files or directories specified
+E                          npm error A complete log of this run can be found in: /Users/xuyehua/.npm/_logs/2025-07-16T16_49_41_852Z-debug-0.log
+
+python/tests/tool_connect_server/test_package_integrity.py:117: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <python.tests.tool_connect_server.test_package_integrity.TestNPMPackageInstallation testMethod=test_npm_pack_success>
+
+    def test_npm_pack_success(self):
+        """测试npm pack成功"""
+        try:
+            result = run_command(['npm', 'pack'],
+                                cwd=self.project_root, timeout=60)
+    
+            self.assertEqual(result.returncode, 0,
+                           f"npm pack失败: {result.stderr}")
+    
+            # npm pack会生成.tgz文件，检查文件是否生成
+            output = result.stdout.strip()
+            self.assertTrue(output.endswith('.tgz'),
+                          f"npm pack应该生成.tgz文件，实际输出: {output}")
+    
+            # 检查生成的文件是否存在
+            tgz_file = self.project_root / output
+            self.assertTrue(tgz_file.exists(),
+                          f"生成的包文件{output}应该存在")
+    
+            # 清理生成的文件
+            if tgz_file.exists():
+                tgz_file.unlink()
+    
+        except subprocess.TimeoutExpired:
+            self.fail("npm pack命令超时")
+        except Exception as e:
+>           self.fail(f"npm pack测试失败: {e}")
+E           AssertionError: npm pack测试失败: 1 != 0 : npm pack失败: npm error no files or directories specified
+E           npm error A complete log of this run can be found in: /Users/xuyehua/.npm/_logs/2025-07-16T16_49_41_852Z-debug-0.log
+
+python/tests/tool_connect_server/test_package_integrity.py:137: AssertionError
+________ TestConfigurationRegression.test_config_directory_consistency _________
+
+self = <python.tests.tool_connect_server.test_regression_prevention.TestConfigurationRegression testMethod=test_config_directory_consistency>
+
+    def test_config_directory_consistency(self):
+        """测试配置目录的一致性 - 防止目录名称变更"""
+        from config_manager.main import EnhancedConfigManager
+        from docker_config_manager import DockerConfigManager
+    
+        # 测试EnhancedConfigManager
+>       config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_regression_prevention.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x10462f2b0>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+____________ TestConfigurationRegression.test_config_file_structure ____________
+
+self = <python.tests.tool_connect_server.test_regression_prevention.TestConfigurationRegression testMethod=test_config_file_structure>
+
+    def test_config_file_structure(self):
+        """测试配置文件结构的完整性"""
+        from config_manager.main import EnhancedConfigManager
+    
+>       config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_regression_prevention.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104f276d0>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_________ TestMCPToolsRegression.test_interactive_wizard_functionality _________
+
+self = <python.tests.tool_connect_server.test_regression_prevention.TestMCPToolsRegression testMethod=test_interactive_wizard_functionality>
+
+    def test_interactive_wizard_functionality(self):
+        """测试交互式向导功能是否正常"""
+        from python.mcp_server import EnhancedConfigManager
+    
+>       config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_regression_prevention.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <python.config_manager.main.EnhancedConfigManager object at 0x104a28d90>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_________ TestDockerConfigRegression.test_docker_command_completeness __________
+
+self = <python.tests.tool_connect_server.test_regression_prevention.TestDockerConfigRegression testMethod=test_docker_command_completeness>
+
+    def test_docker_command_completeness(self):
+        """测试Docker命令生成的完整性"""
+        from config_manager.main import EnhancedConfigManager
+    
+>       config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_regression_prevention.py:109: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104ae0c10>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_ TestConfigurationPersistenceRegression.test_ensure_config_exists_preserves_user_config _
+
+self = <python.tests.tool_connect_server.test_regression_prevention.TestConfigurationPersistenceRegression testMethod=test_ensure_config_exists_preserves_user_config>
+
+        def test_ensure_config_exists_preserves_user_config(self):
+            """测试ensure_config_exists不会覆盖用户配置"""
+            # 设置测试环境
+            os.environ['HOME'] = str(self.test_dir)
+            self.config_dir.mkdir(parents=True, exist_ok=True)
+    
+            # 创建用户配置
+            user_config = """# User Configuration
+    global_settings:
+      auto_recovery: true
+      default_shell: zsh
+      default_timeout: 90
+      log_level: DEBUG
+      default_server: "production"
+    
+    servers:
+      example-server:
+        description: "我的开发服务器"
+        host: dev.mycompany.com
+        port: 2222
+        username: developer
+        type: script_based
+    
+      production:
+        description: "生产服务器"
+        host: prod.mycompany.com
+        port: 22
+        username: admin
+        type: script_based
+    """
+    
+            with open(self.config_file, "w") as f:
+                f.write(user_config)
+    
+            # 记录原始状态
+            original_mtime = self.config_file.stat().st_mtime
+            original_content = self.config_file.read_text()
+    
+            # 多次调用ensure_config_exists
+            from config_manager.main import EnhancedConfigManager
+>           manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_regression_prevention.py:227: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104f02d90>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_ TestConfigurationPersistenceRegression.test_get_existing_servers_preserves_user_modifications _
+
+self = <python.tests.tool_connect_server.test_regression_prevention.TestConfigurationPersistenceRegression testMethod=test_get_existing_servers_preserves_user_modifications>
+
+        def test_get_existing_servers_preserves_user_modifications(self):
+            """测试get_existing_servers保留用户修改"""
+            # 设置测试环境
+            os.environ['HOME'] = str(self.test_dir)
+            self.config_dir.mkdir(parents=True, exist_ok=True)
+    
+            # 创建包含用户修改的配置
+            user_config = """servers:
+      example-server:
+        description: "我的测试服务器"
+        host: test.example.com
+        port: 2222
+        username: testuser
+        type: script_based
+      custom-server:
+        description: "自定义服务器"
+        host: custom.example.com
+        port: 22
+        username: admin
+        type: script_based
+    """
+    
+            with open(self.config_file, "w") as f:
+                f.write(user_config)
+    
+            # 多次调用get_existing_servers
+            from config_manager.main import EnhancedConfigManager
+>           manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_regression_prevention.py:268: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x1041bc8e0>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_ TestConfigurationPersistenceRegression.test_modified_example_server_detection _
+
+self = <python.tests.tool_connect_server.test_regression_prevention.TestConfigurationPersistenceRegression testMethod=test_modified_example_server_detection>
+
+        def test_modified_example_server_detection(self):
+            """测试修改过的示例服务器能被正确识别为用户配置"""
+            # 设置测试环境
+            os.environ['HOME'] = str(self.test_dir)
+            self.config_dir.mkdir(parents=True, exist_ok=True)
+    
+            # 创建修改过的示例服务器配置
+            modified_config = """servers:
+      example-server:
+        description: "我的开发服务器"
+        host: dev.mycompany.com
+        port: 2222
+        username: developer
+        type: script_based
+    """
+    
+            with open(self.config_file, "w") as f:
+                f.write(modified_config)
+    
+            # 在简化版本中，我们专注于配置文件的稳定性
+            # 而不是智能检测，所以这个测试需要适应新的设计理念
+            from config_manager.main import EnhancedConfigManager
+>           manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_regression_prevention.py:172: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104ab93d0>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+___ TestConfigurationPersistenceRegression.test_npm_installation_protection ____
+
+self = <python.tests.tool_connect_server.test_regression_prevention.TestConfigurationPersistenceRegression testMethod=test_npm_installation_protection>
+
+        def test_npm_installation_protection(self):
+            """测试NPM安装后的配置保护机制"""
+            # 设置测试环境
+            os.environ['HOME'] = str(self.test_dir)
+            self.config_dir.mkdir(parents=True, exist_ok=True)
+    
+            # 创建NPM标记文件（模拟新安装）
+            npm_marker = self.config_dir / ".npm_install_marker"
+            npm_marker.touch()
+    
+            # 创建基本配置
+            basic_config = """servers:
+      example-server:
+        description: "示例服务器配置"
+        host: example.com
+        port: 22
+        username: your-username
+        type: script_based
+    """
+    
+            with open(self.config_file, "w") as f:
+                f.write(basic_config)
+    
+            # 在简化版本中，我们专注于配置稳定性而不是复杂的NPM检测
+            from config_manager.main import EnhancedConfigManager
+>           manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_regression_prevention.py:310: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104f22a30>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+____________ TestUserExperienceRegression.test_configuration_backup ____________
+
+self = <python.tests.tool_connect_server.test_regression_prevention.TestUserExperienceRegression testMethod=test_configuration_backup>
+
+    def test_configuration_backup(self):
+        """测试配置备份功能"""
+        from config_manager.main import EnhancedConfigManager
+    
+>       config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_regression_prevention.py:341: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104ad4100>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+___________ TestUserExperienceRegression.test_error_messages_quality ___________
+
+self = <python.tests.tool_connect_server.test_regression_prevention.TestUserExperienceRegression testMethod=test_error_messages_quality>
+
+    def test_error_messages_quality(self):
+        """测试错误消息的质量"""
+        from config_manager.main import EnhancedConfigManager
+    
+        # 测试配置管理器在异常情况下的行为
+>       config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_regression_prevention.py:331: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x10483f850>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+______________ TestAPIConsistency.test_docker_config_manager_api _______________
+
+self = <python.tests.tool_connect_server.test_regression_prevention.TestAPIConsistency testMethod=test_docker_config_manager_api>
+
+    def test_docker_config_manager_api(self):
+        """测试DockerConfigManager的API稳定性"""
+        from docker_config_manager import DockerConfigManager
+        from config_manager.main import EnhancedConfigManager
+    
+        docker_manager = DockerConfigManager()
+>       config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_regression_prevention.py:377: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104ae7220>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_____________ TestAPIConsistency.test_enhanced_config_manager_api ______________
+
+self = <python.tests.tool_connect_server.test_regression_prevention.TestAPIConsistency testMethod=test_enhanced_config_manager_api>
+
+    def test_enhanced_config_manager_api(self):
+        """测试EnhancedConfigManager的API稳定性"""
+        from config_manager.main import EnhancedConfigManager
+    
+>       config_manager = EnhancedConfigManager()
+
+python/tests/tool_connect_server/test_regression_prevention.py:354: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104670160>
+config_path = None, force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+__________ TestSimpleAutomationDemo.test_mcp_guided_setup_automation ___________
+
+self = <python.tests.tool_connect_server.test_simple_automated_demo.TestSimpleAutomationDemo testMethod=test_mcp_guided_setup_automation>
+
+    def setUp(self):
+        """测试前准备"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+>       self.config_manager = EnhancedConfigManager(str(self.config_file))
+
+python/tests/tool_connect_server/test_simple_automated_demo.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104a7c8b0>
+config_path = PosixPath('/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmp5ljboatg/config.yaml')
+force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+___________ TestSimpleAutomationDemo.test_multiple_validation_types ____________
+
+self = <python.tests.tool_connect_server.test_simple_automated_demo.TestSimpleAutomationDemo testMethod=test_multiple_validation_types>
+
+    def setUp(self):
+        """测试前准备"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+>       self.config_manager = EnhancedConfigManager(str(self.config_file))
+
+python/tests/tool_connect_server/test_simple_automated_demo.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104756790>
+config_path = PosixPath('/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpk5ra24mv/config.yaml')
+force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+__________ TestSimpleAutomationDemo.test_smart_input_basic_automation __________
+
+self = <python.tests.tool_connect_server.test_simple_automated_demo.TestSimpleAutomationDemo testMethod=test_smart_input_basic_automation>
+
+    def setUp(self):
+        """测试前准备"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+>       self.config_manager = EnhancedConfigManager(str(self.config_file))
+
+python/tests/tool_connect_server/test_simple_automated_demo.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x1047fb5e0>
+config_path = PosixPath('/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpbbftw_vs/config.yaml')
+force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+_____ TestSimpleAutomationDemo.test_smart_input_error_recovery_automation ______
+
+self = <python.tests.tool_connect_server.test_simple_automated_demo.TestSimpleAutomationDemo testMethod=test_smart_input_error_recovery_automation>
+
+    def setUp(self):
+        """测试前准备"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+>       self.config_manager = EnhancedConfigManager(str(self.config_file))
+
+python/tests/tool_connect_server/test_simple_automated_demo.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104af9bb0>
+config_path = PosixPath('/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpmaevexzb/config.yaml')
+force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+______________ TestZeroInteractionDemo.test_batch_server_creation ______________
+
+self = <python.tests.tool_connect_server.test_zero_interaction_demo.TestZeroInteractionDemo testMethod=test_batch_server_creation>
+
+    def setUp(self):
+        """测试前准备"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+>       self.config_manager = EnhancedConfigManager(str(self.config_file))
+
+python/tests/tool_connect_server/test_zero_interaction_demo.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104a226a0>
+config_path = PosixPath('/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmp4ncj0g21/config.yaml')
+force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+__________ TestZeroInteractionDemo.test_completely_headless_operation __________
+
+self = <python.tests.tool_connect_server.test_zero_interaction_demo.TestZeroInteractionDemo testMethod=test_completely_headless_operation>
+
+    def setUp(self):
+        """测试前准备"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+>       self.config_manager = EnhancedConfigManager(str(self.config_file))
+
+python/tests/tool_connect_server/test_zero_interaction_demo.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104f00730>
+config_path = PosixPath('/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmp48l_j55p/config.yaml')
+force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+___________ TestZeroInteractionDemo.test_completely_silent_mcp_setup ___________
+
+self = <python.tests.tool_connect_server.test_zero_interaction_demo.TestZeroInteractionDemo testMethod=test_completely_silent_mcp_setup>
+
+    def setUp(self):
+        """测试前准备"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+>       self.config_manager = EnhancedConfigManager(str(self.config_file))
+
+python/tests/tool_connect_server/test_zero_interaction_demo.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104ad9b20>
+config_path = PosixPath('/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpgwdlpcrd/config.yaml')
+force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+________ TestZeroInteractionDemo.test_mock_all_interactions_completely _________
+
+self = <python.tests.tool_connect_server.test_zero_interaction_demo.TestZeroInteractionDemo testMethod=test_mock_all_interactions_completely>
+
+    def setUp(self):
+        """测试前准备"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+>       self.config_manager = EnhancedConfigManager(str(self.config_file))
+
+python/tests/tool_connect_server/test_zero_interaction_demo.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104ae76a0>
+config_path = PosixPath('/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpimy_x5z2/config.yaml')
+force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+____________ TestZeroInteractionDemo.test_smart_input_with_defaults ____________
+
+self = <python.tests.tool_connect_server.test_zero_interaction_demo.TestZeroInteractionDemo testMethod=test_smart_input_with_defaults>
+
+    def setUp(self):
+        """测试前准备"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+>       self.config_manager = EnhancedConfigManager(str(self.config_file))
+
+python/tests/tool_connect_server/test_zero_interaction_demo.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x104f27790>
+config_path = PosixPath('/var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmpltd4b487/config.yaml')
+force_interactive = False
+
+    def __init__(self, config_path: str = None, force_interactive: bool = False):
+        # 兼容str和Path
+        if config_path is not None and not isinstance(config_path, Path):
+            config_path = Path(config_path)
+        self.config_path = config_path if config_path else Path.home() / '.remote-terminal' / 'config.yaml'
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        if force_interactive:
+            self.is_mcp_mode = False
+        self.io = self  # 兼容老用法
+        self.ia = self  # 兼容老用法
+>       force_interactive = kwargs.get('force_interactive', None)
+E       NameError: name 'kwargs' is not defined
+
+python/config_manager/main.py:29: NameError
+=========================== short test summary info ============================
+FAILED python/tests/tool_connect_server/test_end_to_end.py::TestEndToEndWorkflow::test_complete_server_setup_workflow
+FAILED python/tests/tool_connect_server/test_end_to_end.py::TestEndToEndWorkflow::test_docker_setup_workflow
+FAILED python/tests/tool_connect_server/test_end_to_end.py::TestEndToEndWorkflow::test_mcp_integration_workflow
+FAILED python/tests/tool_connect_server/test_end_to_end.py::TestUserScenarios::test_configuration_migration_scenario
+FAILED python/tests/tool_connect_server/test_end_to_end.py::TestUserScenarios::test_multiple_servers_scenario
+FAILED python/tests/tool_connect_server/test_end_to_end.py::TestUserScenarios::test_new_user_setup_scenario
+FAILED python/tests/tool_connect_server/test_end_to_end.py::TestErrorHandling::test_invalid_config_handling
+FAILED python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py::TestInteractiveStartupRequirement::test_create_server_config_must_start_interactive_interface
+FAILED python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py::TestInteractiveStartupRequirement::test_interactive_startup_failure_diagnosis
+FAILED python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py::TestInteractiveStartupRequirement::test_interactive_startup_with_minimal_params
+FAILED python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py::TestUserVisibleInteraction::test_background_process_detection
+FAILED python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py::TestUserVisibleInteraction::test_interactive_interface_accessibility
+FAILED python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py::TestUserVisibleInteraction::test_process_output_visibility
+FAILED python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py::TestUserVisibleInteraction::test_terminal_window_creation_on_macos
+FAILED python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_guided_setup_docker_server_full_automation
+FAILED python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_guided_setup_relay_server_full_automation
+FAILED python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_guided_setup_ssh_server_full_automation
+FAILED python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_main_menu_automation
+FAILED python/tests/tool_connect_server/test_fully_automated_interactive.py::TestFullyAutomatedInteractive::test_smart_input_error_recovery_automation
+FAILED python/tests/tool_connect_server/test_fully_automated_interactive.py::TestInputValidationAutomation::test_hostname_validation_automation
+FAILED python/tests/tool_connect_server/test_fully_automated_interactive.py::TestInputValidationAutomation::test_port_validation_automation
+FAILED python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_config_file_operations
+FAILED python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_config_manager_tools
+FAILED python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_docker_command_generation
+FAILED python/tests/tool_connect_server/test_mcp_tools.py::TestMCPTools::test_server_config_creation
+FAILED python/tests/tool_connect_server/test_mcp_tools.py::TestConfigurationConsistency::test_config_directory_consistency
+FAILED python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageIntegrity::test_main_entry_file
+FAILED python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageIntegrity::test_required_python_files
+FAILED python/tests/tool_connect_server/test_package_integrity.py::TestNPMPackageInstallation::test_npm_pack_success
+FAILED python/tests/tool_connect_server/test_regression_prevention.py::TestConfigurationRegression::test_config_directory_consistency
+FAILED python/tests/tool_connect_server/test_regression_prevention.py::TestConfigurationRegression::test_config_file_structure
+FAILED python/tests/tool_connect_server/test_regression_prevention.py::TestMCPToolsRegression::test_interactive_wizard_functionality
+FAILED python/tests/tool_connect_server/test_regression_prevention.py::TestDockerConfigRegression::test_docker_command_completeness
+FAILED python/tests/tool_connect_server/test_regression_prevention.py::TestConfigurationPersistenceRegression::test_ensure_config_exists_preserves_user_config
+FAILED python/tests/tool_connect_server/test_regression_prevention.py::TestConfigurationPersistenceRegression::test_get_existing_servers_preserves_user_modifications
+FAILED python/tests/tool_connect_server/test_regression_prevention.py::TestConfigurationPersistenceRegression::test_modified_example_server_detection
+FAILED python/tests/tool_connect_server/test_regression_prevention.py::TestConfigurationPersistenceRegression::test_npm_installation_protection
+FAILED python/tests/tool_connect_server/test_regression_prevention.py::TestUserExperienceRegression::test_configuration_backup
+FAILED python/tests/tool_connect_server/test_regression_prevention.py::TestUserExperienceRegression::test_error_messages_quality
+FAILED python/tests/tool_connect_server/test_regression_prevention.py::TestAPIConsistency::test_docker_config_manager_api
+FAILED python/tests/tool_connect_server/test_regression_prevention.py::TestAPIConsistency::test_enhanced_config_manager_api
+FAILED python/tests/tool_connect_server/test_simple_automated_demo.py::TestSimpleAutomationDemo::test_mcp_guided_setup_automation
+FAILED python/tests/tool_connect_server/test_simple_automated_demo.py::TestSimpleAutomationDemo::test_multiple_validation_types
+FAILED python/tests/tool_connect_server/test_simple_automated_demo.py::TestSimpleAutomationDemo::test_smart_input_basic_automation
+FAILED python/tests/tool_connect_server/test_simple_automated_demo.py::TestSimpleAutomationDemo::test_smart_input_error_recovery_automation
+FAILED python/tests/tool_connect_server/test_zero_interaction_demo.py::TestZeroInteractionDemo::test_batch_server_creation
+FAILED python/tests/tool_connect_server/test_zero_interaction_demo.py::TestZeroInteractionDemo::test_completely_headless_operation
+FAILED python/tests/tool_connect_server/test_zero_interaction_demo.py::TestZeroInteractionDemo::test_completely_silent_mcp_setup
+FAILED python/tests/tool_connect_server/test_zero_interaction_demo.py::TestZeroInteractionDemo::test_mock_all_interactions_completely
+FAILED python/tests/tool_connect_server/test_zero_interaction_demo.py::TestZeroInteractionDemo::test_smart_input_with_defaults
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 50 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+================= 50 failed, 66 passed, 22 warnings in 16.20s ==================

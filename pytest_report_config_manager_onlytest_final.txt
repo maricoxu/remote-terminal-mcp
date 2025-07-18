@@ -3,24 +3,1329 @@ platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0
 rootdir: /Users/xuyehua/Code/remote-terminal-mcp
 plugins: anyio-4.9.0, cov-6.1.1, asyncio-1.0.0
 asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 9 items
+collected 85 items
 
-tests/config_manager/test_docker_config.py >>> configure_docker called
-[smart_input] prompt: 选择, default: 2
-选择 [2]: [smart_input] user input: 2
->>> 跳过docker详细配置，choice= 2
-.
-tests/config_manager/test_interaction.py .[smart_input] prompt: 提示, default: abc
-提示 [abc]: [smart_input] user input: abc
-.[smart_input] prompt: 请输入内容, default: default
-[smart_input] user input: mocked
-.
-tests/config_manager/test_io.py 
-✅ 配置已保存至 /var/folders/bf/5vrwxdk57qj_37075z07m3dc0000gn/T/tmps84nufax
-.
-tests/config_manager/test_server_info.py ...
-tests/config_manager/test_sync_config.py [smart_input] prompt: 选择, default: 2
-选择 [2]: [smart_input] user input: 2
-.
+tests/tool_add_server_config/test_docker_config.py .                     [  1%]
+tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py . [  2%]
+......                                                                   [  9%]
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py F [ 10%]
+FFF                                                                      [ 14%]
+tests/tool_add_server_config/test_interaction.py ...                     [ 17%]
+tests/tool_add_server_config/test_interactive_create_server_config.py F  [ 18%]
+tests/tool_add_server_config/test_interactive_create_server_config_prefill.py F [ 20%]
+                                                                         [ 20%]
+tests/tool_add_server_config/test_io.py .                                [ 21%]
+tests/tool_delete_server_config/test_fix_config_ux_and_prefill_bug.py FF [ 23%]
+                                                                         [ 23%]
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py . [ 24%]
+.......                                                                  [ 32%]
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py F..F [ 37%]
+....                                                                     [ 42%]
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py . [ 43%]
+.....F.                                                                  [ 51%]
+tests/tool_get_server_info/test_server_info.py ...                       [ 55%]
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py . [ 56%]
+.F.F.                                                                    [ 62%]
+tests/tool_list_servers/test_mcp_silent_config_regression.py FFFFFss     [ 70%]
+tests/tool_sync_config/test_auto_sync_manager_implementation.py ........ [ 80%]
+                                                                         [ 80%]
+tests/tool_sync_config/test_sync_config.py .                             [ 81%]
+tests/tool_sync_config/test_sync_config_ui_enhancement.py FFFFFFFF       [ 90%]
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py F [ 91%]
+FFFFF                                                                    [ 97%]
+tests/tool_update_server_config/test_interactive_update_server_config.py F [ 98%]
+                                                                         [ 98%]
+tests/tool_update_server_config/test_interactive_update_server_config_prefill.py F [100%]
 
-======================== 9 passed in 229.87s (0:03:49) =========================
+=================================== FAILURES ===================================
+_____ TestSaveConfigParameterFix.test_regression_server_deletion_scenario ______
+
+self = <test_fix_save_config_parameter_mismatch_20250615.TestSaveConfigParameterFix testMethod=test_regression_server_deletion_scenario>
+
+    def test_regression_server_deletion_scenario(self):
+        """测试服务器删除场景的回归测试"""
+        # 创建测试配置
+        initial_config = {
+            'servers': {
+                'test_server1': {
+                    'host': 'test1.example.com',
+                    'username': 'user1',
+                    'port': 22
+                },
+                'test_server2': {
+                    'host': 'test2.example.com',
+                    'username': 'user2',
+                    'port': 22
+                }
+            }
+        }
+    
+        # 保存初始配置
+>       self.config_manager.io.save_config(initial_config, merge=False)
+E       AttributeError: 'EnhancedConfigManager' object has no attribute 'io'
+
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py:130: AttributeError
+____ TestSaveConfigParameterFix.test_save_config_parameter_name_consistency ____
+
+self = <test_fix_save_config_parameter_mismatch_20250615.TestSaveConfigParameterFix testMethod=test_save_config_parameter_name_consistency>
+
+    def test_save_config_parameter_name_consistency(self):
+        """测试 save_config 方法参数名一致性"""
+        import inspect
+    
+        # 获取 save_config 方法的签名
+>       sig = inspect.signature(self.config_manager.io.save_config)
+E       AttributeError: 'EnhancedConfigManager' object has no attribute 'io'
+
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py:103: AttributeError
+_________ TestSaveConfigParameterFix.test_save_config_with_merge_false _________
+
+self = <test_fix_save_config_parameter_mismatch_20250615.TestSaveConfigParameterFix testMethod=test_save_config_with_merge_false>
+
+    def test_save_config_with_merge_false(self):
+        """测试 save_config 方法使用 merge=False 参数"""
+        test_config = {
+            'servers': {
+                'test_server': {
+                    'host': 'test.example.com',
+                    'username': 'testuser',
+                    'port': 22,
+                    'description': 'Test server'
+                }
+            }
+        }
+    
+        # 这应该成功工作，不抛出参数错误
+        try:
+>           self.config_manager.io.save_config(test_config, merge=False)
+E           AttributeError: 'EnhancedConfigManager' object has no attribute 'io'
+
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py:87: AttributeError
+_______ TestSaveConfigParameterFix.test_save_config_with_merge_parameter _______
+
+self = <test_fix_save_config_parameter_mismatch_20250615.TestSaveConfigParameterFix testMethod=test_save_config_with_merge_parameter>
+
+    def test_save_config_with_merge_parameter(self):
+        """测试 save_config 方法使用正确的 merge 参数"""
+        test_config = {
+            'servers': {
+                'test_server': {
+                    'host': 'test.example.com',
+                    'username': 'testuser',
+                    'port': 22,
+                    'description': 'Test server'
+                }
+            }
+        }
+    
+        # 这应该成功工作，不抛出参数错误
+        try:
+>           self.config_manager.io.save_config(test_config, merge=True)
+E           AttributeError: 'EnhancedConfigManager' object has no attribute 'io'
+
+tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py:54: AttributeError
+____________________ test_interactive_create_server_config _____________________
+
+    def test_interactive_create_server_config():
+        # 测试前清理
+        if os.path.exists(TEST_CONFIG_PATH):
+            os.remove(TEST_CONFIG_PATH)
+        # patch input 实现自动化交互
+        with patch("builtins.input", side_effect=MOCK_INPUTS):
+>           manager = EnhancedConfigManager(config_path=TEST_CONFIG_PATH, force_interactive=True)
+E           TypeError: __init__() got an unexpected keyword argument 'force_interactive'
+
+tests/tool_add_server_config/test_interactive_create_server_config.py:43: TypeError
+________________ test_interactive_create_server_config_prefill _________________
+
+    def test_interactive_create_server_config_prefill():
+        # 测试前清理
+        if os.path.exists(TEST_CONFIG_PATH):
+            os.remove(TEST_CONFIG_PATH)
+        # 预填参数
+        prefill = {
+            'name': 'hg225',
+            'host': '192.168.1.225',
+            'username': 'admin',
+        }
+        with patch("builtins.input", side_effect=MOCK_INPUTS):
+>           manager = EnhancedConfigManager(config_path=TEST_CONFIG_PATH, force_interactive=True)
+E           TypeError: __init__() got an unexpected keyword argument 'force_interactive'
+
+tests/tool_add_server_config/test_interactive_create_server_config_prefill.py:45: TypeError
+__________ TestConfigUXPrefillFix.test_guided_setup_for_relay_server ___________
+
+self = <test_fix_config_ux_and_prefill_bug.TestConfigUXPrefillFix testMethod=test_guided_setup_for_relay_server>
+
+    def test_guided_setup_for_relay_server(self):
+        """
+        新增测试：通过向导模式更新二级跳板服务器，确保调用_configure_server时不再出错。
+        """
+        # 模拟用户通过 guided_setup 更新 hg222
+        inputs = [
+            '1', # 1. Relay跳板机连接
+            'hg222-guided', # 服务器名称
+            '2', # 2. 二级跳板
+            # 3. 配置第一级跳板机
+            "relay@relay-host.com",
+            "22",
+            "relay_pass",
+            # 4. 配置最终目标服务器
+            "target@target-host.com",
+            "2222",
+            "target_pass",
+            # 5. 不配置Docker
+            "n",
+            # 6. 确认保存
+            "y"
+        ]
+    
+        # 使用自动化交互测试工具来运行
+        # 注意：这里我们不直接调用 --edit，而是模拟从主菜单进入向导
+>       tester = AutomatedInteractionTester(
+            target_script='enhanced_config_manager.py',
+            inputs=inputs,
+            script_args=['--config', str(self.config_path), '--mode', 'guided']
+        )
+E       TypeError: __init__() got an unexpected keyword argument 'target_script'
+
+tests/tool_delete_server_config/test_fix_config_ux_and_prefill_bug.py:146: TypeError
+_____ TestConfigUXPrefillFix.test_update_relay_server_with_prefill_issues ______
+
+self = <test_fix_config_ux_and_prefill_bug.TestConfigUXPrefillFix testMethod=test_update_relay_server_with_prefill_issues>
+
+    def test_update_relay_server_with_prefill_issues(self):
+        """
+        测试更新二级跳板服务器的流程，确保：
+        1. UX是简洁的 user@host -> password 模式。
+        2. 预填充不完整的参数不会导致崩溃。
+        """
+        # 模拟用户输入序列
+        inputs = [
+            "hg222",  # 1. 选择要编辑的服务器
+            "y",      # 2. 确认编辑
+            # 3. 配置第一级跳板机 (Relay Host)
+            "user1@relay-host.com",
+            "22",
+            "relay_password_123",
+            # 4. 配置最终目标服务器 (Jump Host)
+            "user2@final-dest.com",
+            "2222",
+            "final_dest_password_456",
+            "n" # 5.不配置DOCKER
+        ]
+    
+        # 使用自动化交互测试工具来运行
+>       tester = AutomatedInteractionTester(
+            target_script='enhanced_config_manager.py',
+            inputs=inputs,
+            script_args=['--config', str(self.config_path), '--edit', 'hg222']
+        )
+E       TypeError: __init__() got an unexpected keyword argument 'target_script'
+
+tests/tool_delete_server_config/test_fix_config_ux_and_prefill_bug.py:88: TypeError
+____________ TestMCPToolingFramework.test_reproduce_original_issue _____________
+
+self = <test_fix_example_mcp_testing_20240622.TestMCPToolingFramework object at 0x107c2f310>
+
+    @pytest.mark.asyncio
+    async def test_reproduce_original_issue(self):
+        """
+        复现原始问题的最小案例
+    
+        假设问题：MCP工具调用时无法正确处理错误响应
+        """
+        # 这里是问题复现逻辑的示例
+        # 在实际使用中，这里应该包含能够复现原始问题的最小代码
+    
+        client = create_mcp_test_client()
+    
+        # 尝试调用不存在的工具，应该得到明确的错误信息
+        with pytest.raises(MCPTestError) as exc_info:
+            await client.call_tool("non_existent_tool")
+    
+        # 验证错误信息是否包含期望的内容
+>       assert "non_existent_tool" in str(exc_info.value) or "不存在" in str(exc_info.value)
+E       assert ('non_existent_tool' in "MCP服务器错误: /Applications/Xcode.app/Contents/Developer/usr/bin/python3: can't open file '/Users/xuyehua/Code/remote-terminal-mcp/python/python/mcp_server.py': [Errno 2] No such file or directory\n" or '不存在' in "MCP服务器错误: /Applications/Xcode.app/Contents/Developer/usr/bin/python3: can't open file '/Users/xuyehua/Code/remote-terminal-mcp/python/python/mcp_server.py': [Errno 2] No such file or directory\n")
+E        +  where "MCP服务器错误: /Applications/Xcode.app/Contents/Developer/usr/bin/python3: can't open file '/Users/xuyehua/Code/remote-terminal-mcp/python/python/mcp_server.py': [Errno 2] No such file or directory\n" = str(MCPTestError("MCP服务器错误: /Applications/Xcode.app/Contents/Developer/usr/bin/python3: can't open file '/Users/xuyehua/Code/remote-terminal-mcp/python/python/mcp_server.py': [Errno 2] No such file or directory\n"))
+E        +    where MCPTestError("MCP服务器错误: /Applications/Xcode.app/Contents/Developer/usr/bin/python3: can't open file '/Users/xuyehua/Code/remote-terminal-mcp/python/python/mcp_server.py': [Errno 2] No such file or directory\n") = <ExceptionInfo MCPTestError("MCP服务器错误: /Applications/Xcode.app/Contents/Developer/usr/bin/python3: can't open file '/Users/xuyehua/Code/remote-terminal-mcp/python/python/mcp_server.py': [Errno 2] No such file or directory\n") tblen=2>.value
+E        +  and   "MCP服务器错误: /Applications/Xcode.app/Contents/Developer/usr/bin/python3: can't open file '/Users/xuyehua/Code/remote-terminal-mcp/python/python/mcp_server.py': [Errno 2] No such file or directory\n" = str(MCPTestError("MCP服务器错误: /Applications/Xcode.app/Contents/Developer/usr/bin/python3: can't open file '/Users/xuyehua/Code/remote-terminal-mcp/python/python/mcp_server.py': [Errno 2] No such file or directory\n"))
+E        +    where MCPTestError("MCP服务器错误: /Applications/Xcode.app/Contents/Developer/usr/bin/python3: can't open file '/Users/xuyehua/Code/remote-terminal-mcp/python/python/mcp_server.py': [Errno 2] No such file or directory\n") = <ExceptionInfo MCPTestError("MCP服务器错误: /Applications/Xcode.app/Contents/Developer/usr/bin/python3: can't open file '/Users/xuyehua/Code/remote-terminal-mcp/python/python/mcp_server.py': [Errno 2] No such file or directory\n") tblen=2>.value
+
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py:50: AssertionError
+________ TestMCPToolingFramework.test_integration_with_other_components ________
+
+self = <test_fix_example_mcp_testing_20240622.TestMCPToolingFramework object at 0x107c2f490>
+
+    @pytest.mark.asyncio
+    async def test_integration_with_other_components(self):
+        """
+        确保修复不影响其他功能
+    
+        测试MCP工具调用与其他组件的集成
+        """
+        async with create_test_environment() as test_env:
+            client = create_mcp_test_client()
+    
+            # 创建测试配置
+            test_config = {
+                "servers": {
+                    "test-server": {
+                        "type": "ssh",
+                        "host": "localhost",
+                        "user": "testuser",
+                        "port": 22
+                    }
+                }
+            }
+    
+            test_env.create_test_config("test-server", test_config)
+    
+            # 测试配置读取功能
+            try:
+                servers = await client.call_tool("list_servers", {}, timeout=3.0)
+                # 应该能够读取到配置（或给出合理的错误信息）
+                assert isinstance(servers, (list, str))
+    
+            except MCPTestError as e:
+                # 错误信息应该有意义
+                error_msg = str(e)
+                assert len(error_msg) > 0
+    
+            # 测试服务器信息获取
+            try:
+>               if isinstance(servers, list) and len(servers) > 0:
+E               UnboundLocalError: local variable 'servers' referenced before assignment
+
+tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py:138: UnboundLocalError
+_ TestMCPRestartAndNewCodeLoading.test_new_update_server_config_logic_loading __
+
+self = <test_fix_mcp_restart_and_new_code_loading_20241222.TestMCPRestartAndNewCodeLoading testMethod=test_new_update_server_config_logic_loading>
+
+    def test_new_update_server_config_logic_loading(self):
+        """测试新的update_server_config逻辑是否正确加载"""
+        print("🎯 测试新的update_server_config逻辑加载")
+    
+        # 检查代码中是否包含新的逻辑标记
+        with open(self.mcp_server_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+    
+        # 验证新逻辑标记存在
+>       self.assertIn("NEW UPDATE LOGIC", content,
+            "代码中应该包含新的update_server_config逻辑标记")
+E       AssertionError: 'NEW UPDATE LOGIC' not found in '#!/usr/bin/env python3\n"""\nRemote Terminal MCP Server\n\nMCP server focused on remote server connections, session management and command execution\n"""\n\nimport asyncio\nimport json\nimport sys\nimport os\nimport subprocess\nimport traceback\nfrom pathlib import Path\nfrom datetime import datetime\nimport yaml\n\n# 添加项目根目录到路径，以便导入enhanced_config_manager\nproject_root = Path(__file__).parent.parent\nsys.path.insert(0, str(project_root))\n\n# 替换原有导入\n#from config_manager.main import EnhancedConfigManager\nfrom python.config_manager.main import EnhancedConfigManager\n# 修复导入路径 - enhanced_ssh_manager在python目录下\nsys.path.insert(0, str(Path(__file__).parent))\nfrom enhanced_ssh_manager import EnhancedSSHManager, log_output, create_enhanced_manager\n\n# 导入colorama用于彩色输出支持\ntry:\n    from colorama import Fore, Style, init\n    init()  # 初始化colorama\nexcept ImportError:\n    # 如果colorama不可用，创建空的替代\n    class Fore:\n        CYAN = ""\n        GREEN = ""\n        RED = ""\n        YELLOW = ""\n        WHITE = ""\n    class Style:\n        RESET_ALL = ""\n\n# 服务器信息\nSERVER_NAME = "remote-terminal-mcp"\nSERVER_VERSION = "0.7.0-mcp-integrated-config"\n\n# 设置安静模式，防止SSH Manager显示启动摘要\nos.environ[\'MCP_QUIET\'] = \'1\'\n\n# 调试模式\nDEBUG = os.getenv(\'MCP_DEBUG\', \'0\') == \'1\'\n\ndef debug_log(msg):\n    """改进的调试日志函数，避免stderr输出被误标记为错误"""\n    if DEBUG:\n        # 只在明确启用调试模式时才输出\n        print(f"[DEBUG] {msg}", file=sys.stderr, flush=True)\n\ndef info_log(msg):\n    """信息级别日志，输出到stderr但不会被误标记"""\n    # 使用更温和的信息输出，避免在正常运行时产生错误级别日志\n    pass  # 在MCP环境中，我们尽量保持静默\n\ndef create_success_response(request_id, text_content):\n    """创建一个包含文本内容的成功JSON-RPC响应"""\n    return {\n        "jsonrpc": "2.0",\n        "id": request_id,\n        "result": {\n            "contentType": "text/plain",\n            "content": text_content\n        }\n    }\n\ndef create_error_response(request_id, code, message):\n    """创建一个标准的JSON-RPC错误响应"""\n    return {\n        "jsonrpc": "2.0",\n        "id": request_id,\n        "error": {\n            "code": code,\n            "message": message\n        }\n    }\n\ndef run_command(cmd, cwd=None, timeout=30):\n    """Execute command并返回结果"""\n    try:\n        debug_log(f"Running command: {cmd}")\n        result = subprocess.run(\n            cmd, \n            shell=True, \n            capture_output=True, \n            text=True, \n            timeout=timeout,\n            cwd=cwd\n        )\n        \n        output = ""\n        if result.stdout:\n            output += f"Output:\\n{result.stdout}\\n"\n        if result.stderr:\n            output += f"Error output:\\n{result.stderr}\\n"\n        \n        output += f"Exit code: {result.returncode}"\n        \n        return output, result.returncode == 0\n        \n    except subprocess.TimeoutExpired:\n        return f"Command execution timeout ({timeout}s)", False\n    except Exception as e:\n        return f"Command execution failed: {str(e)}", False\n\ndef create_tools_list():\n    """创建工具列表，基于SSH Manager的实际功能"""\n    return [\n        {\n            "name": "list_servers",\n            "description": "List all available remote servers configured in the system",\n            "inputSchema": {\n                "type": "object",\n                "properties": {},\n                "required": []\n            }\n        },\n        {\n            "name": "connect_server", \n            "description": "Connect to a remote server by name",\n            "inputSchema": {\n                "type": "object",\n                "properties": {\n                    "server_name": {\n                        "type": "string",\n                        "description": "Name of the server to connect to"\n                    }\n                },\n                "required": ["server_name"]\n            }\n        },\n        {\n            "name": "disconnect_server",\n            "description": "Disconnect from a remote server and clean up resources",\n            "inputSchema": {\n                "type": "object",\n                "properties": {\n                    "server_name": {\n                        "type": "string",\n                        "description": "Name of the server to disconnect from"\n                    },\n                    "force": {\n                        "type": "boolean",\n                        "description": "Force disconnect even if there are active sessions (default: false)",\n                        "default": False\n                    }\n                },\n                "required": ["server_name"]\n            }\n        },\n        {\n            "name": "execute_command",\n            "description": "Execute a command on a server",\n            "inputSchema": {\n                "type": "object", \n                "properties": {\n                    "command": {\n                        "type": "string",\n                        "description": "Command to execute"\n                    },\n                    "server": {\n                        "type": "string",\n                        "description": "Server name (optional, uses default if not specified)"\n                    }\n                },\n                "required": ["command"]\n            }\n        },\n        {\n            "name": "get_server_status",\n            "description": "Get connection status of servers",\n            "inputSchema": {\n                "type": "object",\n                "properties": {\n                    "server_name": {\n                        "type": "string", \n                        "description": "Server name (optional, gets all if not specified)"\n                    }\n                },\n                "required": []\n            }\n        },\n        {\n            "name": "get_server_info",\n            "description": "Get detailed configuration information for a specific server",\n            "inputSchema": {\n                "type": "object",\n                "properties": {\n                    "server_name": {\n                        "type": "string",\n                        "description": "Name of the server to get detailed information for"\n                    }\n                },\n                "required": ["server_name"]\n            }\n        },\n        {\n            "name": "run_local_command",\n            "description": "Execute a command on the local system",\n            "inputSchema": {\n                "type": "object",\n                "properties": {\n                    "cmd": {\n                        "type": "string",\n                        "description": "Command to execute locally"\n                    },\n                    "cwd": {\n                        "type": "string",\n                        "description": "Working directory (optional)"\n                    },\n                    "timeout": {\n                        "type": "number",\n                        "description": "Timeout in seconds (default: 30)"\n                    }\n                },\n                "required": ["cmd"]\n            }\n        },\n        # 配置管理工具 - interactive_config_wizard功能已内置到create/update工具中\n        {\n            "name": "diagnose_connection",\n            "description": "Diagnose connection issues and provide troubleshooting suggestions for a specific server",\n            "inputSchema": {\n                "type": "object",\n                "properties": {\n                    "server_name": {\n                        "type": "string",\n                        "description": "Name of the server to diagnose"\n                    },\n                    "include_network_test": {\n                        "type": "boolean",\n                        "description": "Include network connectivity tests (ping, SSH)",\n                        "default": True\n                    },\n                    "include_config_validation": {\n                        "type": "boolean",\n                        "description": "Include configuration validation",\n                        "default": True\n                    }\n                },\n                "required": ["server_name"]\n            }\n        },\n        {\n            "name": "create_server_config",\n            "description": "🚀 智能服务器配置创建工具 - 支持关键词识别和参数化配置。🌟 新策略：即使提供了参数，也默认进入交互界面（参数作为预填充默认值），确保用户对配置有完全的控制权和可见性。🔍 智能切换：自动检测服务器是否已存在，如存在则自动切换到更新模式。可以通过自然语言描述或直接提供配置参数来创建服务器。",\n            "inputSchema": {\n                "type": "object",\n                "properties": {\n                    "prompt": {\n                        "type": "string",\n                        "description": "用户的配置需求描述，支持自然语言。例如：\'创建一个新的服务器配置\'、\'我想添加一台服务器\'等"\n                    },\n                    "name": {\n                        "type": "string",\n                        "description": "服务器名称（唯一标识符）"\n                    },\n                    "host": {\n                        "type": "string",\n                        "description": "服务器主机名或IP地址"\n                    },\n                    "username": {\n                        "type": "string",\n                        "description": "SSH连接用户名"\n                    },\n                    "port": {\n                        "type": "integer",\n                        "description": "SSH端口号",\n                        "default": 22\n                    },\n                    "connection_type": {\n                        "type": "string",\n                        "description": "连接类型：ssh（直连）或relay（通过relay-cli）",\n                        "enum": ["ssh", "relay"],\n                        "default": "ssh"\n                    },\n                    "description": {\n                        "type": "string",\n                        "description": "服务器描述信息"\n                    },\n                    "relay_target_host": {\n                        "type": "string",\n                        "description": "当使用relay连接时的目标主机"\n                    },\n                    "docker_enabled": {\n                        "type": "boolean",\n                        "description": "是否启用Docker容器支持",\n                        "default": False\n                    },\n                    "docker_image": {\n                        "type": "string",\n                        "description": "Docker镜像名称（当docker_enabled=true时使用）",\n                        "default": "ubuntu:20.04"\n                    },\n                    "docker_container": {\n                        "type": "string",\n                        "description": "Docker容器名称（当docker_enabled=true时使用）"\n                    },\n                    "docker_ports": {\n                        "type": "array",\n                        "items": {"type": "string"},\n                        "description": "Docker端口映射列表，格式：[\\"host:container\\"]，例如：[\\"8080:8080\\", \\"5000:5000\\"]",\n                        "default": ["8080:8080", "8888:8888", "6006:6006"]\n                    },\n                    "docker_volumes": {\n                        "type": "array",\n                        "items": {"type": "string"},\n                        "description": "Docker卷挂载列表，格式：[\\"host:container\\"]，例如：[\\"/home:/home\\", \\"/data:/data\\"]",\n                        "default": ["/home:/home", "/data:/data"]\n                    },\n                    "docker_shell": {\n                        "type": "string",\n                        "description": "Docker容器内使用的shell，例如：bash, zsh, sh",\n                        "default": "bash"\n                    },\n                    "docker_auto_create": {\n                        "type": "boolean",\n                        "description": "是否自动创建Docker容器（如果不存在）",\n                        "default": True\n                    },\n                    # 自动同步配置参数\n                    "auto_sync_enabled": {\n                        "type": "boolean",\n                        "description": "是否启用自动同步功能（使用proftpd）",\n                        "default": False\n                    },\n                    "sync_remote_workspace": {\n                        "type": "string",\n                        "description": "远程工作目录路径",\n                        "default": "/home/Code"\n                    },\n                    "sync_ftp_port": {\n                        "type": "integer",\n                        "description": "FTP服务端口",\n                        "default": 8021\n                    },\n                    "sync_ftp_user": {\n                        "type": "string",\n                        "description": "FTP用户名",\n                        "default": "ftpuser"\n                    },\n                    "sync_ftp_password": {\n                        "type": "string",\n                        "description": "FTP密码",\n                        "default": "sync_password"\n                    },\n                    "sync_local_workspace": {\n                        "type": "string",\n                        "description": "本地工作目录路径（空表示当前目录）",\n                        "default": ""\n                    },\n                    "auto_detect": {\n                        "type": "boolean",\n                        "description": "自动检测用户意图",\n                        "default": True\n                    },\n                    "confirm_create": {\n                        "type": "boolean",\n                        "description": "确认创建配置（当配置完整时使用）",\n                        "default": False\n                    },\n                    "interactive": {\n                        "type": "boolean",\n                        "description": "是否启用交互式模式。默认true：即使提供了参数也进入交互界面（参数作为默认值）。设置false：跳过交互界面直接创建配置",\n                        "default": True\n                    },\n                    "cursor_interactive": {\n                        "type": "boolean",\n                        "description": "启用Cursor聊天界面内交互模式（推荐）- 直接在聊天界面显示彩色配置表单，无需切换窗口",\n                        "default": False\n                    }\n                },\n                "required": []\n            }\n        },\n        {\n            "name": "update_server_config",\n            "description": "Update an existing server configuration with new parameters. Includes built-in interactive wizard when no update fields are provided.",\n            "inputSchema": {\n                "type": "object",\n                "properties": {\n                    "server_name": {\n                        "type": "string",\n                        "description": "Name of the server to update"\n                    },\n                    "host": {\n                        "type": "string",\n                        "description": "Server hostname or IP address"\n                    },\n                    "username": {\n                        "type": "string",\n                        "description": "Username for SSH connection"\n                    },\n                    "port": {\n                        "type": "integer",\n                        "description": "SSH port"\n                    },\n                    "connection_type": {\n                        "type": "string",\n                        "description": "Connection type: ssh (direct) or relay (via relay-cli)",\n                        "enum": ["ssh", "relay"]\n                    },\n                    "description": {\n                        "type": "string",\n                        "description": "Server description"\n                    },\n                    "relay_target_host": {\n                        "type": "string",\n                        "description": "Target host when using relay connection"\n                    },\n                    "docker_enabled": {\n                        "type": "boolean",\n                        "description": "Enable Docker container support"\n                    },\n                    "docker_image": {\n                        "type": "string",\n                        "description": "Docker image for auto-creation"\n                    },\n                    "docker_container": {\n                        "type": "string",\n                        "description": "Docker container name"\n                    },\n                    "docker_ports": {\n                        "type": "array",\n                        "items": {"type": "string"},\n                        "description": "Docker端口映射列表，格式：[\\"host:container\\"]，例如：[\\"8080:8080\\", \\"5000:5000\\"]",\n                        "default": ["8080:8080", "8888:8888", "6006:6006"]\n                    },\n                    "docker_volumes": {\n                        "type": "array",\n                        "items": {"type": "string"},\n                        "description": "Docker卷挂载列表，格式：[\\"host:container\\"]，例如：[\\"/home:/home\\", \\"/data:/data\\"]",\n                        "default": ["/home:/home", "/data:/data"]\n                    },\n                    "docker_shell": {\n                        "type": "string",\n                        "description": "Docker容器内使用的shell，例如：bash, zsh, sh",\n                        "default": "bash"\n                    },\n                    "docker_auto_create": {\n                        "type": "boolean",\n                        "description": "是否自动创建Docker容器（如果不存在）",\n                        "default": True\n                    },\n                    # 自动同步配置参数\n                    "auto_sync_enabled": {\n                        "type": "boolean",\n                        "description": "是否启用自动同步功能（使用proftpd）"\n                    },\n                    "sync_remote_workspace": {\n                        "type": "string",\n                        "description": "远程工作目录路径"\n                    },\n                    "sync_ftp_port": {\n                        "type": "integer",\n                        "description": "FTP服务端口"\n                    },\n                    "sync_ftp_user": {\n                        "type": "string",\n                        "description": "FTP用户名"\n                    },\n                    "sync_ftp_password": {\n                        "type": "string",\n                        "description": "FTP密码"\n                    },\n                    "sync_local_workspace": {\n                        "type": "string",\n                        "description": "本地工作目录路径（空表示当前目录）"\n                    },\n                    "show_current_config": {\n                        "type": "boolean",\n                        "description": "Show current configuration and update guidance (for wizard mode)",\n                        "default": True\n                    }\n                },\n                "required": ["server_name"]\n            }\n        },\n        {\n            "name": "delete_server_config",\n            "description": "Delete a server configuration permanently. This action cannot be undone.",\n            "inputSchema": {\n                "type": "object",\n                "properties": {\n                    "server_name": {\n                        "type": "string",\n                        "description": "Name of the server to delete"\n                    },\n                    "confirm": {\n                        "type": "boolean",\n                        "description": "Confirmation flag to prevent accidental deletion (default: false)",\n                        "default": False\n                    }\n                },\n                "required": ["server_name"]\n            }\n        }\n    ]\n\ndef send_response(response_obj):\n    """发送纯JSON响应（兼容Cursor）"""\n    try:\n        message_str = json.dumps(response_obj)\n        # 直接输出JSON，不使用Content-Length头部\n        sys.stdout.write(message_str + \'\\n\')\n        sys.stdout.flush()\n        # 移除debug_log调用，避免stderr输出\n        if DEBUG:\n            print(f"[DEBUG] Sent JSON response for ID {response_obj.get(\'id\')}", file=sys.stderr, flush=True)\n    except BrokenPipeError:\n        # 静默处理BrokenPipeError，避免不必要的错误日志\n        if DEBUG:\n            print("[DEBUG] Failed to send response: Broken pipe. Parent process likely exited.", file=sys.stderr, flush=True)\n        pass\n\n\n\n\nasync def handle_request(request):\n    """处理MCP请求"""\n    method = request.get("method", "")\n    params = request.get("params")\n    request_id = request.get("id")\n    \n    # 只在调试模式下记录请求信息\n    if DEBUG:\n        print(f"[DEBUG] Received request: method=\'{method}\', id=\'{request_id}\'", file=sys.stderr, flush=True)\n    \n    # 处理通知（没有id的请求）\n    if request_id is None:\n        if method.lower() == "initialized":\n            if DEBUG:\n                print("[DEBUG] Received \'initialized\' notification - handshake complete", file=sys.stderr, flush=True)\n            return None\n        # 其他通知也直接返回None（不需要响应）\n        return None\n\n    try:\n        # Normalize method name to be case-insensitive\n        method_lower = method.lower()\n\n        if method_lower == "initialize":\n            if DEBUG:\n                print("[DEBUG] Handling \'initialize\' request.", file=sys.stderr, flush=True)\n            \n            # 完全符合LSP和MCP规范的capabilities\n            server_capabilities = {\n                "tools": {\n                    "listChanged": True\n                },\n                "resources": {\n                    "subscribe": True,\n                    "listChanged": True\n                },\n                "prompts": {\n                    "listChanged": True\n                },\n                "sampling": {}\n            }\n            \n            response = {\n                "jsonrpc": "2.0",\n                "id": request_id,\n                "result": {\n                    "protocolVersion": "2024-11-05",\n                    "capabilities": server_capabilities,\n                    "serverInfo": {\n                        "name": SERVER_NAME,\n                        "version": SERVER_VERSION\n                    }\n                }\n            }\n            return response\n        \n        elif method_lower == "shutdown":\n            if DEBUG:\n                print("[DEBUG] Handling \'shutdown\' request.", file=sys.stderr, flush=True)\n            response = { "jsonrpc": "2.0", "id": request_id, "result": {} }\n            return response\n        \n        elif method_lower == "tools/list":\n            if DEBUG:\n                print("[DEBUG] Handling \'tools/list\' request.", file=sys.stderr, flush=True)\n            tools = create_tools_list()\n            response = {\n                "jsonrpc": "2.0",\n                "id": request_id,\n                "result": { "tools": tools }\n            }\n            return response\n\n        elif method_lower == "listofferings":\n            if DEBUG:\n                print("[DEBUG] Handling \'ListOfferings\' request.", file=sys.stderr, flush=True)\n            response = {\n                "jsonrpc": "2.0",\n                "id": request_id,\n                "result": {\n                    "offerings": []\n                }\n            }\n            return response\n\n        elif method_lower == "tools/call":\n            tool_name = params.get("name")\n            tool_arguments = params.get("arguments", {})\n            # 只在调试模式下记录工具执行信息\n            if DEBUG:\n                print(f"[DEBUG] Executing tool \'{tool_name}\' with arguments: {tool_arguments}", file=sys.stderr, flush=True)\n            \n            try:\n                # 统一使用create_enhanced_manager工厂函数\n                manager = create_enhanced_manager()  # 使用增强版SSH管理器\n                config_manager = config_manager.main.EnhancedConfigManager()\n                content = ""\n                \n                # list_servers工具适配新实现\n                if tool_name == "list_servers":\n                    try:\n                        manager = config_manager.main.EnhancedConfigManager()\n                        servers = manager.list_servers()\n                        content = json.dumps({"servers": servers}, ensure_ascii=False, indent=2)\n                    except Exception as e:\n                        debug_log(f"list_servers error: {str(e)}")\n                        content = json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)\n                        \n                elif tool_name == "connect_server":\n                    server_name = tool_arguments.get("server_name")\n                    if server_name:\n                        # 🚀 使用新的connect.py连接管理器\n                        try:\n                            from python.connect import connect_server as new_connect_server\n                            result = new_connect_server(server_name)\n                            \n                            if result.success:\n                                content = f"✅ 连接成功！\\n📝 详情: {result.message}\\n\\n🎯 连接信息:\\n"\n                                if result.session_name:\n                                    content += f"• 会话名称: {result.session_name}\\n"\n                                    content += f"• 连接终端: tmux attach -t {result.session_name}\\n"\n                                    content += f"• 分离会话: Ctrl+B, 然后按 D\\n"\n                                if result.details:\n                                    content += f"• 连接类型: {result.details.get(\'connection_type\', \'未知\')}\\n"\n                                    content += f"• 目标主机: {result.details.get(\'host\', \'未知\')}\\n"\n                                    if result.details.get(\'docker_container\'):\n                                        content += f"• Docker容器: {result.details.get(\'docker_container\')}\\n"\n                                content += f"\\n🚀 新架构特性:\\n• 分离关注点设计\\n• 增强的relay认证处理\\n• 智能交互引导\\n• 健康状态检测"\n                            else:\n                                content = f"❌ 连接失败: {result.message}"\n                                if result.details and result.details.get(\'tmux_command\'):\n                                    content += f"\\n\\n💡 手动连接: {result.details[\'tmux_command\']}"\n                        except ImportError as e:\n                            # 降级到原有实现\n                            success, message = manager.smart_connect(server_name)\n                            if success:\n                                server = manager.get_server(server_name)\n                                session_name = server.session.get(\'name\', f"{server_name}_session") if server and server.session else f"{server_name}_session"\n                                content = f"✅ 连接成功（兼容模式）: {message}\\n🎯 连接: tmux attach -t {session_name}"\n                            else:\n                                content = f"❌ 连接失败: {message}"\n                        except Exception as e:\n                            content = f"❌ 连接异常: {str(e)}"\n                    else:\n                        content = "Error: server_name parameter is required"\n                        \n                elif tool_name == "disconnect_server":\n                    server_name = tool_arguments.get("server_name")\n                    force = tool_arguments.get("force", False)\n                    \n                    if server_name:\n                        try:\n                            from python.connect import disconnect_server as new_disconnect_server\n                            result = new_disconnect_server(server_name)\n                            \n                            if result.success:\n                                content = f"✅ 断开连接成功\\n📝 详情: {result.message}\\n🎯 服务器: {server_name}"\n                            else:\n                                content = f"❌ 断开连接失败: {result.message}"\n                        except ImportError:\n                            # 降级到原有实现\n                            try:\n                                server = manager.get_server(server_name)\n                                if not server:\n                                    content = f"❌ 服务器 \'{server_name}\' 不存在"\n                                else:\n                                    disconnect_result = manager.disconnect_server(server_name, force=force)\n                                    if disconnect_result.get(\'success\', False):\n                                        content = f"✅ 成功断开连接: {server_name}"\n                                    else:\n                                        content = f"❌ 断开连接失败: {disconnect_result.get(\'error\', \'未知错误\')}"\n                            except Exception as e:\n                                content = f"❌ 断开连接异常: {str(e)}"\n                        except Exception as e:\n                            content = f"❌ 断开连接异常: {str(e)}"\n                    else:\n                        content = "Error: server_name parameter is required"\n                        \n                elif tool_name == "execute_command":\n                    command = tool_arguments.get("command")\n                    server = tool_arguments.get("server")\n                    if command:\n                        try:\n                            from python.connect import execute_server_command\n                            result = execute_server_command(server or "default", command)\n                            \n                            if result.success:\n                                content = f"✅ 命令执行成功\\n\\n📋 命令: {command}\\n\\n📄 输出:\\n{result.details.get(\'output\', \'无输出\') if result.details else \'无输出\'}"\n                            else:\n                                content = f"❌ 命令执行失败: {result.message}"\n                        except ImportError:\n                            # 降级到原有实现\n                            result = manager.execute_command(server or "default", command)\n                            content = str(result)\n                        except Exception as e:\n                            content = f"❌ 命令执行异常: {str(e)}"\n                    else:\n                        content = "Error: command parameter is required"\n                        \n                elif tool_name == "get_server_status":\n                    server_name = tool_arguments.get("server_name")\n                    if server_name:\n                        try:\n                            from python.connect import get_server_status as new_get_server_status\n                            result = new_get_server_status(server_name)\n                            \n                            if result.success:\n                                content = f"📊 服务器状态: {server_name}\\n"\n                                content += f"🔗 状态: {result.status.value}\\n"\n                                content += f"📝 详情: {result.message}\\n"\n                                if result.session_name:\n                                    content += f"🎯 会话: {result.session_name}"\n                            else:\n                                content = f"❌ 获取状态失败: {result.message}"\n                        except ImportError:\n                            # 降级到原有实现\n                            status = manager.get_connection_status(server_name)\n                            content = json.dumps(status, ensure_ascii=False, indent=2)\n                        except Exception as e:\n                            content = f"❌ 获取状态异常: {str(e)}"\n                    else:\n                        # 获取所有服务器状态\n                        try:\n                            from python.connect import list_all_servers\n                            servers_info = list_all_servers()\n                            \n                            if servers_info:\n                                content = "📊 所有服务器状态:\\n\\n"\n                                for server in servers_info:\n                                    status_icon = {"connected": "🟢", "ready": "✅", "disconnected": "🔴", "error": "❌"}.get(server[\'status\'], "❓")\n                                    content += f"{status_icon} **{server[\'name\']}**\\n"\n                                    content += f"   📍 主机: {server[\'host\']}\\n"\n                                    content += f"   👤 用户: {server[\'username\']}\\n"\n                                    content += f"   🔗 状态: {server[\'status\']}\\n"\n                                    if server.get(\'docker_container\'):\n                                        content += f"   🐳 容器: {server[\'docker_container\']}\\n"\n                                    content += "\\n"\n                            else:\n                                content = "📋 暂无配置的服务器"\n                        except ImportError:\n                            # 降级到原有实现\n                            all_status = {}\n                            servers = manager.list_servers()\n                            for server in servers:\n                                server_name = server.get(\'name\')\n                                if server_name:\n                                    all_status[server_name] = manager.get_connection_status(server_name)\n                            content = json.dumps(all_status, ensure_ascii=False, indent=2)\n                        except Exception as e:\n                            content = f"❌ 获取服务器列表异常: {str(e)}"\n                    \n                elif tool_name == "get_server_info":\n                    server_name = tool_arguments.get("server_name")\n                    if server_name:\n                        try:\n                            # 获取服务器详细配置信息\n                            servers = config_manager.get_existing_servers()\n                            if server_name in servers:\n                                server_info = servers[server_name]\n                                # 添加连接状态信息\n                                connection_status = manager.get_connection_status(server_name)\n                                server_info[\'connection_status\'] = connection_status\n                                content = json.dumps(server_info, ensure_ascii=False, indent=2)\n                            else:\n                                content = json.dumps({\n                                    "error": f"Server \'{server_name}\' not found",\n                                    "available_servers": list(servers.keys())\n                                }, ensure_ascii=False, indent=2)\n                        except Exception as e:\n                            content = json.dumps({\n                                "error": f"Failed to get server info: {str(e)}"\n                            }, ensure_ascii=False, indent=2)\n                    else:\n                        content = json.dumps({\n                            "error": "server_name parameter is required"\n                        }, ensure_ascii=False, indent=2)\n                \n                elif tool_name == "run_local_command":\n                    cmd = tool_arguments.get("cmd")\n                    cwd = tool_arguments.get("cwd")\n                    timeout = tool_arguments.get("timeout", 30)\n                    if cmd:\n                        output, success = run_command(cmd, cwd, timeout)\n                        content = output\n                    else:\n                        content = "Error: cmd parameter is required"\n                \n                # interactive_config_wizard功能已内置到create_server_config和update_server_config中\n                elif tool_name == "diagnose_connection":\n                    server_name = tool_arguments.get("server_name")\n                    include_network_test = tool_arguments.get("include_network_test", True)\n                    include_config_validation = tool_arguments.get("include_config_validation", True)\n                    \n                    if server_name:\n                        try:\n                            # 使用增强版SSH管理器的诊断功能\n                            diagnosis = manager.diagnose_connection_problem(server_name)\n                            \n                            # 如果需要，添加额外的网络测试\n                            if include_network_test:\n                                diagnosis["network_tests"] = "Network connectivity tests included"\n                            \n                            if include_config_validation:\n                                diagnosis["config_validation"] = "Configuration validation included"\n                            \n                            content = json.dumps(diagnosis, ensure_ascii=False, indent=2)\n                            \n                        except Exception as e:\n                            content = json.dumps({\n                                "error": f"Diagnosis failed: {str(e)}",\n                                "server_name": server_name,\n                                "suggestions": [\n                                    "Verify server name is correct",\n                                    "Check if server configuration exists",\n                                    "Ensure network connectivity to the server"\n                                ]\n                            }, ensure_ascii=False, indent=2)\n                    else:\n                        content = json.dumps({\n                            "error": "server_name parameter is required"\n                        }, ensure_ascii=False, indent=2)\n                \n                # create_server_config工具适配新实现\n                elif tool_name == "create_server_config":\n                    try:\n                        manager = config_manager.main.EnhancedConfigManager()\n                        server_info = tool_arguments.copy()\n                        name, server_cfg = manager.create_server(server_info)\n                        content = f"✅ 服务器 {name} 已创建\\n配置: {json.dumps(server_cfg, ensure_ascii=False, indent=2)}"\n                    except Exception as e:\n                        debug_log(f"create_server_config error: {str(e)}")\n                        content = json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)\n                \n                # update_server_config工具适配新实现\n                elif tool_name == "update_server_config":\n                    try:\n                        manager = config_manager.main.EnhancedConfigManager()\n                        name = tool_arguments.get("name")\n                        update_info = tool_arguments.copy()\n                        update_info.pop("name", None)\n                        updated_cfg = manager.update_server(name, update_info)\n                        content = f"✅ 服务器 {name} 已更新\\n配置: {json.dumps(updated_cfg, ensure_ascii=False, indent=2)}"\n                    except Exception as e:\n                        debug_log(f"update_server_config error: {str(e)}")\n                        content = json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)\n                \n                elif tool_name == "delete_server_config":\n                    try:\n                        server_name = tool_arguments.get("server_name")\n                        confirm = tool_arguments.get("confirm", False)\n                        \n                        if not server_name:\n                            content = json.dumps({\n                                "error": "server_name parameter is required"\n                            }, ensure_ascii=False, indent=2)\n                        elif not confirm:\n                            content = json.dumps({\n                                "error": "Deletion requires confirmation. Set \'confirm\' parameter to true.",\n                                "warning": "This action cannot be undone. The server configuration will be permanently deleted."\n                            }, ensure_ascii=False, indent=2)\n                        else:\n                            # 删除服务器配置\n                            mcp_config_manager = config_manager.main.EnhancedConfigManager()\n                            servers = mcp_config_manager.get_existing_servers()\n                            \n                            if server_name not in servers:\n                                content = json.dumps({\n                                    "error": f"Server \'{server_name}\' not found",\n                                    "available_servers": list(servers.keys())\n                                }, ensure_ascii=False, indent=2)\n                            else:\n                                try:\n                                    # 读取当前配置\n                                    import yaml\n                                    with open(mcp_config_manager.config_path, \'r\', encoding=\'utf-8\') as f:\n                                        current_config = yaml.safe_load(f)\n                                    \n                                    if not current_config:\n                                        current_config = {"servers": {}}\n                                    \n                                    # 删除指定服务器\n                                    if "servers" in current_config and server_name in current_config["servers"]:\n                                        deleted_config = current_config["servers"][server_name]\n                                        del current_config["servers"][server_name]\n                                        \n                                        # 保存更新后的配置\n                                        mcp_config_manager.save_config(current_config, merge=False)\n                                        \n                                        content = json.dumps({\n                                            "success": True,\n                                            "message": f"Server \'{server_name}\' deleted successfully",\n                                            "deleted_config": deleted_config,\n                                            "remaining_servers": list(current_config.get("servers", {}).keys())\n                                        }, ensure_ascii=False, indent=2)\n                                    else:\n                                        content = json.dumps({\n                                            "error": f"Server \'{server_name}\' not found in configuration"\n                                        }, ensure_ascii=False, indent=2)\n                                        \n                                except Exception as delete_error:\n                                    content = json.dumps({\n                                        "error": f"Failed to delete server config: {str(delete_error)}"\n                                    }, ensure_ascii=False, indent=2)\n                                    \n                    except Exception as e:\n                        content = json.dumps({\n                            "error": f"Failed to delete server config: {str(e)}"\n                        }, ensure_ascii=False, indent=2)\n                \n                elif tool_name == "diagnose_connection":\n                    server_name = tool_arguments.get("server_name")\n                    \n                    if not server_name:\n                        content = "Error: server_name is required for diagnosis"\n                    else:\n                        try:\n                            # 使用配置管理器的测试连接功能\n                            result = config_manager.test_connection()\n                            content = f"🔍 连接诊断功能已启动，请在配置管理界面中选择服务器 \'{server_name}\' 进行测试"\n                        except Exception as e:\n                            content = f"❌ 启动连接诊断失败: {str(e)}"\n                \n                else:\n                    content = f"Unknown tool: {tool_name}"\n                \n                response = {\n                    "jsonrpc": "2.0",\n                    "id": request_id,\n                    "result": {\n                        "content": [\n                            {\n                                "type": "text",\n                                "text": content\n                            }\n                        ]\n                    }\n                }\n                \n            except Exception as e:\n                debug_log(f"Tool execution error: {e}\\n{traceback.format_exc()}")\n                response = create_error_response(request_id, -32603, f"Error executing tool \'{tool_name}\': {e}")\n            \n            return response\n\n        else:\n            response = create_error_response(request_id, -32601, f"Unknown method: {method}")\n            return response\n            \n    except Exception as e:\n        error_msg = f"An unexpected error occurred: {e}"\n        debug_log(f"{error_msg}\\n{traceback.format_exc()}")\n        response = create_error_response(request_id, -32603, error_msg)\n        return response\n\nasync def main():\n    """主事件循环"""\n    if DEBUG:\n        print(f"[DEBUG] Starting MCP Python Server v{SERVER_VERSION}", file=sys.stderr, flush=True)\n    \n    loop = asyncio.get_event_loop()\n\n    # 1. 设置异步读取器 (stdin)\n    reader = asyncio.StreamReader()\n    protocol = asyncio.StreamReaderProtocol(reader)\n    await loop.connect_read_pipe(lambda: protocol, sys.stdin)\n\n    if DEBUG:\n        print("[DEBUG] Entering main while-loop to process messages.", file=sys.stderr, flush=True)\n    while True:\n        try:\n            line_bytes = await reader.readline()\n            if not line_bytes:\n                await asyncio.sleep(1) # prevent busy-looping on closed stdin\n                continue\n\n            line = line_bytes.decode(\'utf-8\').strip()\n            \n            if not line:\n                continue\n\n            try:\n                request = json.loads(line)\n                response = await handle_request(request)\n                \n                if response:\n                    # 发送纯JSON响应\n                    send_response(response)\n\n            except json.JSONDecodeError as e:\n                debug_log(f"JSON Decode Error: {e}. Body was: \'{line}\'")\n            except Exception as e:\n                debug_log(f"Error processing line: {e}")\n                debug_log(traceback.format_exc())\n\n        except asyncio.CancelledError:\n            debug_log("Main loop cancelled.")\n            break\n        except Exception as e:\n            debug_log(f"Critical error in main loop: {e}")\n            debug_log(traceback.format_exc())\n            # In case of a critical error, sleep a bit to prevent a tight error loop\n            await asyncio.sleep(1)\n\nif __name__ == "__main__":\n    # 检查是否是测试模式\n    if len(sys.argv) > 1 and sys.argv[1] == "--test":\n        print("🧪 MCP服务器测试模式")\n        try:\n            # 测试导入\n            from config_manager.main import EnhancedConfigManager\n            from enhanced_ssh_manager import EnhancedSSHManager\n            print("✅ 所有模块导入成功")\n            \n            # 测试配置管理器\n            config_manager = config_manager.main.EnhancedConfigManager()\n            servers = config_manager.get_existing_servers()\n            print(f"✅ 配置管理器工作正常，发现 {len(servers)} 个服务器")\n            \n            # 测试SSH管理器\n            # 统一使用create_enhanced_manager工厂函数\n            ssh_manager = create_enhanced_manager()\n            print("✅ SSH管理器初始化成功")\n            \n            print("🎉 所有测试通过！MCP服务器可以正常启动")\n            sys.exit(0)\n            \n        except Exception as e:\n            print(f"❌ 测试失败: {e}")\n            import traceback\n            traceback.print_exc()\n            sys.exit(1)\n    \n    try:\n        asyncio.run(main())\n    except KeyboardInterrupt:\n        debug_log("Server shut down by KeyboardInterrupt.")\n    except Exception as e:\n        tb_str = traceback.format_exc()\n        debug_log(f"Unhandled exception in top-level: {e}\\n{tb_str}")' : 代码中应该包含新的update_server_config逻辑标记
+
+tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py:259: AssertionError
+----------------------------- Captured stdout call -----------------------------
+🎯 测试新的update_server_config逻辑加载
+________ QualityAssuranceRulesTest.test_regression_directory_structure _________
+
+self = <test_fix_quality_assurance_rules_20240622.QualityAssuranceRulesTest testMethod=test_regression_directory_structure>
+
+    def test_regression_directory_structure(self):
+        """测试1：验证回归测试目录结构完整性"""
+        print("🧪 测试回归测试目录结构...")
+    
+        # 验证回归测试目录存在
+>       self.assertTrue(
+            self.regression_dir.exists(),
+            "回归测试目录 tests/regression/ 必须存在"
+        )
+E       AssertionError: False is not true : 回归测试目录 tests/regression/ 必须存在
+
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py:42: AssertionError
+----------------------------- Captured stdout call -----------------------------
+🧪 测试回归测试目录结构...
+_______ QualityAssuranceRulesTest.test_regression_test_naming_convention _______
+
+self = <test_fix_quality_assurance_rules_20240622.QualityAssuranceRulesTest testMethod=test_regression_test_naming_convention>
+
+    def test_regression_test_naming_convention(self):
+        """测试2：验证测试文件命名规范"""
+        print("🧪 测试回归测试文件命名规范...")
+    
+        # 获取所有回归测试文件
+        test_files = list(self.regression_dir.glob("test_fix_*.py"))
+    
+        # 验证至少有一个回归测试文件
+>       self.assertGreater(
+            len(test_files), 0,
+            "必须至少有一个回归测试文件"
+        )
+E       AssertionError: 0 not greater than 0 : 必须至少有一个回归测试文件
+
+tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py:71: AssertionError
+----------------------------- Captured stdout call -----------------------------
+🧪 测试回归测试文件命名规范...
+___ TestMCPSilentConfigRegression.test_constructor_without_force_interactive ___
+
+self = <test_mcp_silent_config_regression.TestMCPSilentConfigRegression testMethod=test_constructor_without_force_interactive>
+
+    def setUp(self):
+        """测试前准备"""
+        # 创建临时配置目录
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+    
+        # 创建配置管理器实例（不需要force_interactive参数）
+>       self.config_manager = config_manager.main.EnhancedConfigManager(str(self.config_file))
+E       NameError: name 'config_manager' is not defined
+
+tests/tool_list_servers/test_mcp_silent_config_regression.py:36: NameError
+______ TestMCPSilentConfigRegression.test_mcp_silent_setup_auto_defaults _______
+
+self = <test_mcp_silent_config_regression.TestMCPSilentConfigRegression testMethod=test_mcp_silent_setup_auto_defaults>
+
+    def setUp(self):
+        """测试前准备"""
+        # 创建临时配置目录
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+    
+        # 创建配置管理器实例（不需要force_interactive参数）
+>       self.config_manager = config_manager.main.EnhancedConfigManager(str(self.config_file))
+E       NameError: name 'config_manager' is not defined
+
+tests/tool_list_servers/test_mcp_silent_config_regression.py:36: NameError
+__________ TestMCPSilentConfigRegression.test_mcp_silent_setup_basic ___________
+
+self = <test_mcp_silent_config_regression.TestMCPSilentConfigRegression testMethod=test_mcp_silent_setup_basic>
+
+    def setUp(self):
+        """测试前准备"""
+        # 创建临时配置目录
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+    
+        # 创建配置管理器实例（不需要force_interactive参数）
+>       self.config_manager = config_manager.main.EnhancedConfigManager(str(self.config_file))
+E       NameError: name 'config_manager' is not defined
+
+tests/tool_list_servers/test_mcp_silent_config_regression.py:36: NameError
+________ TestMCPSilentConfigRegression.test_mcp_silent_setup_validation ________
+
+self = <test_mcp_silent_config_regression.TestMCPSilentConfigRegression testMethod=test_mcp_silent_setup_validation>
+
+    def setUp(self):
+        """测试前准备"""
+        # 创建临时配置目录
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+    
+        # 创建配置管理器实例（不需要force_interactive参数）
+>       self.config_manager = config_manager.main.EnhancedConfigManager(str(self.config_file))
+E       NameError: name 'config_manager' is not defined
+
+tests/tool_list_servers/test_mcp_silent_config_regression.py:36: NameError
+____ TestMCPSilentConfigRegression.test_smart_input_detailed_error_messages ____
+
+self = <test_mcp_silent_config_regression.TestMCPSilentConfigRegression testMethod=test_smart_input_detailed_error_messages>
+
+    def setUp(self):
+        """测试前准备"""
+        # 创建临时配置目录
+        self.temp_dir = tempfile.mkdtemp()
+        self.config_file = Path(self.temp_dir) / 'config.yaml'
+    
+        # 创建配置管理器实例（不需要force_interactive参数）
+>       self.config_manager = config_manager.main.EnhancedConfigManager(str(self.config_file))
+E       NameError: name 'config_manager' is not defined
+
+tests/tool_list_servers/test_mcp_silent_config_regression.py:36: NameError
+________ TestSyncConfigUIEnhancement.test_collect_sync_patterns_add_new ________
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_collect_sync_patterns_add_new>
+mock_colored_print = <MagicMock name='colored_print' id='4425374112'>
+mock_smart_input = <MagicMock name='smart_input' id='4586115808'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    def test_collect_sync_patterns_add_new(self, mock_colored_print, mock_smart_input):
+        """测试7: _collect_sync_patterns方法添加新模式"""
+        log_test_output("测试7: _collect_sync_patterns添加新模式", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+>           config_manager = config_manager.main.EnhancedConfigManager()
+E           UnboundLocalError: local variable 'config_manager' referenced before assignment
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:274: UnboundLocalError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_collect_sync_patterns_add_new>
+mock_colored_print = <MagicMock name='colored_print' id='4425374112'>
+mock_smart_input = <MagicMock name='smart_input' id='4586115808'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    def test_collect_sync_patterns_add_new(self, mock_colored_print, mock_smart_input):
+        """测试7: _collect_sync_patterns方法添加新模式"""
+        log_test_output("测试7: _collect_sync_patterns添加新模式", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = config_manager.main.EnhancedConfigManager()
+    
+            # 模拟用户输入（保留默认值，添加新值）
+            mock_smart_input.side_effect = [
+                "*.py",     # 保留第一个默认值
+                "*.ts",     # 添加新的模式
+                "*.vue",    # 添加新的模式
+                ""          # 完成配置
+            ]
+    
+            # 调用_collect_sync_patterns方法
+            result = config_manager._collect_sync_patterns(
+                "包含模式",
+                defaults=['*.py']
+            )
+    
+            # 验证结果
+            self.assertIsInstance(result, list)
+            self.assertEqual(len(result), 3)
+            self.assertIn('*.py', result)
+            self.assertIn('*.ts', result)
+            self.assertIn('*.vue', result)
+    
+            log_test_output("✅ _collect_sync_patterns正确添加新模式", "SUCCESS")
+    
+        except Exception as e:
+>           self.fail(f"测试_collect_sync_patterns添加新模式失败: {str(e)}")
+E           AssertionError: 测试_collect_sync_patterns添加新模式失败: local variable 'config_manager' referenced before assignment
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:300: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ℹ️ 开始测试: TestSyncConfigUIEnhancement
+ℹ️ 测试7: _collect_sync_patterns添加新模式
+ℹ️ 完成测试: TestSyncConfigUIEnhancement
+_____ TestSyncConfigUIEnhancement.test_collect_sync_patterns_method_exists _____
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_collect_sync_patterns_method_exists>
+
+    def test_collect_sync_patterns_method_exists(self):
+        """测试2: _collect_sync_patterns方法存在且可调用"""
+        log_test_output("测试2: _collect_sync_patterns方法存在性", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+>           config_manager = config_manager.main.EnhancedConfigManager()
+E           UnboundLocalError: local variable 'config_manager' referenced before assignment
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:74: UnboundLocalError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_collect_sync_patterns_method_exists>
+
+    def test_collect_sync_patterns_method_exists(self):
+        """测试2: _collect_sync_patterns方法存在且可调用"""
+        log_test_output("测试2: _collect_sync_patterns方法存在性", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = config_manager.main.EnhancedConfigManager()
+    
+            # 验证方法存在
+            self.assertTrue(hasattr(config_manager, '_collect_sync_patterns'))
+            self.assertTrue(callable(getattr(config_manager, '_collect_sync_patterns')))
+    
+            log_test_output("✅ _collect_sync_patterns方法存在且可调用", "SUCCESS")
+    
+        except ImportError as e:
+            self.fail(f"无法导入EnhancedConfigManager: {str(e)}")
+        except Exception as e:
+>           self.fail(f"测试_collect_sync_patterns方法存在性失败: {str(e)}")
+E           AssertionError: 测试_collect_sync_patterns方法存在性失败: local variable 'config_manager' referenced before assignment
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:85: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ℹ️ 开始测试: TestSyncConfigUIEnhancement
+ℹ️ 测试2: _collect_sync_patterns方法存在性
+ℹ️ 完成测试: TestSyncConfigUIEnhancement
+_____ TestSyncConfigUIEnhancement.test_collect_sync_patterns_with_defaults _____
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_collect_sync_patterns_with_defaults>
+mock_colored_print = <MagicMock name='colored_print' id='4586318576'>
+mock_smart_input = <MagicMock name='smart_input' id='4586129824'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    def test_collect_sync_patterns_with_defaults(self, mock_colored_print, mock_smart_input):
+        """测试6: _collect_sync_patterns方法处理默认值"""
+        log_test_output("测试6: _collect_sync_patterns处理默认值", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+>           config_manager = config_manager.main.EnhancedConfigManager()
+E           UnboundLocalError: local variable 'config_manager' referenced before assignment
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:238: UnboundLocalError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_collect_sync_patterns_with_defaults>
+mock_colored_print = <MagicMock name='colored_print' id='4586318576'>
+mock_smart_input = <MagicMock name='smart_input' id='4586129824'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    def test_collect_sync_patterns_with_defaults(self, mock_colored_print, mock_smart_input):
+        """测试6: _collect_sync_patterns方法处理默认值"""
+        log_test_output("测试6: _collect_sync_patterns处理默认值", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = config_manager.main.EnhancedConfigManager()
+    
+            # 模拟用户输入（保留默认值，不添加新值）
+            mock_smart_input.side_effect = [
+                "*.py",  # 保留第一个默认值
+                "*.js",  # 保留第二个默认值
+                ""       # 完成配置
+            ]
+    
+            # 调用_collect_sync_patterns方法
+            result = config_manager._collect_sync_patterns(
+                "包含模式",
+                defaults=['*.py', '*.js']
+            )
+    
+            # 验证结果
+            self.assertIsInstance(result, list)
+            self.assertEqual(len(result), 2)
+            self.assertIn('*.py', result)
+            self.assertIn('*.js', result)
+    
+            log_test_output("✅ _collect_sync_patterns正确处理默认值", "SUCCESS")
+    
+        except Exception as e:
+>           self.fail(f"测试_collect_sync_patterns处理默认值失败: {str(e)}")
+E           AssertionError: 测试_collect_sync_patterns处理默认值失败: local variable 'config_manager' referenced before assignment
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:262: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ℹ️ 开始测试: TestSyncConfigUIEnhancement
+ℹ️ 测试6: _collect_sync_patterns处理默认值
+ℹ️ 完成测试: TestSyncConfigUIEnhancement
+___________ TestSyncConfigUIEnhancement.test_configure_sync_disabled ___________
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_configure_sync_disabled>
+mock_colored_print = <MagicMock name='colored_print' id='4425980320'>
+mock_smart_input = <MagicMock name='smart_input' id='4586226544'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    def test_configure_sync_disabled(self, mock_colored_print, mock_smart_input):
+        """测试3: 用户选择不启用自动同步"""
+        log_test_output("测试3: 用户选择不启用自动同步", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+>           config_manager = config_manager.main.EnhancedConfigManager()
+E           UnboundLocalError: local variable 'config_manager' referenced before assignment
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:97: UnboundLocalError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_configure_sync_disabled>
+mock_colored_print = <MagicMock name='colored_print' id='4425980320'>
+mock_smart_input = <MagicMock name='smart_input' id='4586226544'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    def test_configure_sync_disabled(self, mock_colored_print, mock_smart_input):
+        """测试3: 用户选择不启用自动同步"""
+        log_test_output("测试3: 用户选择不启用自动同步", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = config_manager.main.EnhancedConfigManager()
+    
+            # 模拟用户选择不启用同步
+            mock_smart_input.return_value = "2"
+    
+            # 调用_configure_sync方法
+            result = config_manager._configure_sync()
+    
+            # 验证结果
+            self.assertIsNone(result)
+    
+            # 验证smart_input被调用
+            mock_smart_input.assert_called_once()
+    
+            log_test_output("✅ 用户选择不启用同步时正确返回None", "SUCCESS")
+    
+        except Exception as e:
+>           self.fail(f"测试用户选择不启用同步失败: {str(e)}")
+E           AssertionError: 测试用户选择不启用同步失败: local variable 'config_manager' referenced before assignment
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:114: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ℹ️ 开始测试: TestSyncConfigUIEnhancement
+ℹ️ 测试3: 用户选择不启用自动同步
+ℹ️ 完成测试: TestSyncConfigUIEnhancement
+_____ TestSyncConfigUIEnhancement.test_configure_sync_enabled_full_config ______
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_configure_sync_enabled_full_config>
+mock_collect_patterns = <MagicMock name='_collect_sync_patterns' id='4586267360'>
+mock_colored_print = <MagicMock name='colored_print' id='4586387344'>
+mock_smart_input = <MagicMock name='smart_input' id='4586271984'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    @patch('enhanced_config_manager.EnhancedConfigManager._collect_sync_patterns')
+    def test_configure_sync_enabled_full_config(self, mock_collect_patterns, mock_colored_print, mock_smart_input):
+        """测试4: 用户启用自动同步并完整配置"""
+        log_test_output("测试4: 用户启用自动同步并完整配置", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+>           config_manager = config_manager.main.EnhancedConfigManager()
+E           UnboundLocalError: local variable 'config_manager' referenced before assignment
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:127: UnboundLocalError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_configure_sync_enabled_full_config>
+mock_collect_patterns = <MagicMock name='_collect_sync_patterns' id='4586267360'>
+mock_colored_print = <MagicMock name='colored_print' id='4586387344'>
+mock_smart_input = <MagicMock name='smart_input' id='4586271984'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    @patch('enhanced_config_manager.EnhancedConfigManager._collect_sync_patterns')
+    def test_configure_sync_enabled_full_config(self, mock_collect_patterns, mock_colored_print, mock_smart_input):
+        """测试4: 用户启用自动同步并完整配置"""
+        log_test_output("测试4: 用户启用自动同步并完整配置", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = config_manager.main.EnhancedConfigManager()
+    
+            # 模拟用户输入序列
+            mock_smart_input.side_effect = [
+                "1",  # 启用自动同步
+                "/home/Code",  # 远程工作目录
+                "8021",  # FTP端口
+                "ftpuser",  # FTP用户名
+                "mypassword",  # FTP密码
+                "/local/workspace"  # 本地工作目录
+            ]
+    
+            # 模拟collect_sync_patterns返回值
+            mock_collect_patterns.side_effect = [
+                ['*.py', '*.js', '*.md'],  # 包含模式
+                ['*.pyc', '__pycache__', '.git']  # 排除模式
+            ]
+    
+            # 调用_configure_sync方法
+            result = config_manager._configure_sync()
+    
+            # 验证结果
+            self.assertIsNotNone(result)
+            self.assertIsInstance(result, dict)
+            self.assertTrue(result.get('enabled'))
+            self.assertEqual(result.get('remote_workspace'), '/home/Code')
+            self.assertEqual(result.get('ftp_port'), '8021')
+            self.assertEqual(result.get('ftp_user'), 'ftpuser')
+            self.assertEqual(result.get('ftp_password'), 'mypassword')
+            self.assertEqual(result.get('local_workspace'), '/local/workspace')
+            self.assertEqual(result.get('include_patterns'), ['*.py', '*.js', '*.md'])
+            self.assertEqual(result.get('exclude_patterns'), ['*.pyc', '__pycache__', '.git'])
+    
+            # 验证smart_input被正确调用
+            self.assertEqual(mock_smart_input.call_count, 6)
+    
+            # 验证_collect_sync_patterns被调用两次
+            self.assertEqual(mock_collect_patterns.call_count, 2)
+    
+            log_test_output("✅ 用户启用同步时正确收集所有配置", "SUCCESS")
+    
+        except Exception as e:
+>           self.fail(f"测试用户启用同步配置失败: {str(e)}")
+E           AssertionError: 测试用户启用同步配置失败: local variable 'config_manager' referenced before assignment
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:169: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ℹ️ 开始测试: TestSyncConfigUIEnhancement
+ℹ️ 测试4: 用户启用自动同步并完整配置
+ℹ️ 完成测试: TestSyncConfigUIEnhancement
+________ TestSyncConfigUIEnhancement.test_configure_sync_method_exists _________
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_configure_sync_method_exists>
+
+    def test_configure_sync_method_exists(self):
+        """测试1: _configure_sync方法存在且可调用"""
+        log_test_output("测试1: _configure_sync方法存在性", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+>           config_manager = config_manager.main.EnhancedConfigManager()
+E           UnboundLocalError: local variable 'config_manager' referenced before assignment
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:53: UnboundLocalError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_configure_sync_method_exists>
+
+    def test_configure_sync_method_exists(self):
+        """测试1: _configure_sync方法存在且可调用"""
+        log_test_output("测试1: _configure_sync方法存在性", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = config_manager.main.EnhancedConfigManager()
+    
+            # 验证方法存在
+            self.assertTrue(hasattr(config_manager, '_configure_sync'))
+            self.assertTrue(callable(getattr(config_manager, '_configure_sync')))
+    
+            log_test_output("✅ _configure_sync方法存在且可调用", "SUCCESS")
+    
+        except ImportError as e:
+            self.fail(f"无法导入EnhancedConfigManager: {str(e)}")
+        except Exception as e:
+>           self.fail(f"测试_configure_sync方法存在性失败: {str(e)}")
+E           AssertionError: 测试_configure_sync方法存在性失败: local variable 'config_manager' referenced before assignment
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:64: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ℹ️ 开始测试: TestSyncConfigUIEnhancement
+ℹ️ 测试1: _configure_sync方法存在性
+ℹ️ 完成测试: TestSyncConfigUIEnhancement
+________ TestSyncConfigUIEnhancement.test_configure_sync_with_defaults _________
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_configure_sync_with_defaults>
+mock_collect_patterns = <MagicMock name='_collect_sync_patterns' id='4586268800'>
+mock_colored_print = <MagicMock name='colored_print' id='4586333712'>
+mock_smart_input = <MagicMock name='smart_input' id='4586199696'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    @patch('enhanced_config_manager.EnhancedConfigManager._collect_sync_patterns')
+    def test_configure_sync_with_defaults(self, mock_collect_patterns, mock_colored_print, mock_smart_input):
+        """测试5: 使用默认值配置自动同步"""
+        log_test_output("测试5: 使用默认值配置自动同步", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+>           config_manager = config_manager.main.EnhancedConfigManager()
+E           UnboundLocalError: local variable 'config_manager' referenced before assignment
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:182: UnboundLocalError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_configure_sync_with_defaults>
+mock_collect_patterns = <MagicMock name='_collect_sync_patterns' id='4586268800'>
+mock_colored_print = <MagicMock name='colored_print' id='4586333712'>
+mock_smart_input = <MagicMock name='smart_input' id='4586199696'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.smart_input')
+    @patch('enhanced_config_manager.EnhancedConfigManager.colored_print')
+    @patch('enhanced_config_manager.EnhancedConfigManager._collect_sync_patterns')
+    def test_configure_sync_with_defaults(self, mock_collect_patterns, mock_colored_print, mock_smart_input):
+        """测试5: 使用默认值配置自动同步"""
+        log_test_output("测试5: 使用默认值配置自动同步", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = config_manager.main.EnhancedConfigManager()
+    
+            # 准备默认配置
+            defaults = {
+                'enabled': True,
+                'remote_workspace': '/test/workspace',
+                'ftp_port': 9021,
+                'ftp_user': 'testuser',
+                'ftp_password': 'testpassword',
+                'local_workspace': '/test/local',
+                'include_patterns': ['*.test'],
+                'exclude_patterns': ['*.temp']
+            }
+    
+            # 模拟用户输入序列（使用默认值）
+            mock_smart_input.side_effect = [
+                "1",  # 启用自动同步
+                "/test/workspace",  # 远程工作目录（使用默认值）
+                "9021",  # FTP端口（使用默认值）
+                "testuser",  # FTP用户名（使用默认值）
+                "testpassword",  # FTP密码（使用默认值）
+                "/test/local"  # 本地工作目录（使用默认值）
+            ]
+    
+            # 模拟collect_sync_patterns返回默认值
+            mock_collect_patterns.side_effect = [
+                ['*.test'],  # 包含模式
+                ['*.temp']   # 排除模式
+            ]
+    
+            # 调用_configure_sync方法
+            result = config_manager._configure_sync(defaults)
+    
+            # 验证结果
+            self.assertIsNotNone(result)
+            self.assertEqual(result.get('remote_workspace'), '/test/workspace')
+            self.assertEqual(result.get('ftp_port'), '9021')
+            self.assertEqual(result.get('ftp_user'), 'testuser')
+            self.assertEqual(result.get('ftp_password'), 'testpassword')
+            self.assertEqual(result.get('local_workspace'), '/test/local')
+    
+            log_test_output("✅ 默认值配置正确应用", "SUCCESS")
+    
+        except Exception as e:
+>           self.fail(f"测试默认值配置失败: {str(e)}")
+E           AssertionError: 测试默认值配置失败: local variable 'config_manager' referenced before assignment
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:226: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ℹ️ 开始测试: TestSyncConfigUIEnhancement
+ℹ️ 测试5: 使用默认值配置自动同步
+ℹ️ 完成测试: TestSyncConfigUIEnhancement
+__________ TestSyncConfigUIEnhancement.test_guided_setup_integration ___________
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_guided_setup_integration>
+mock_guided_setup = <MagicMock name='guided_setup' id='4623276448'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.guided_setup')
+    def test_guided_setup_integration(self, mock_guided_setup):
+        """测试8: guided_setup集成自动同步配置"""
+        log_test_output("测试8: guided_setup集成自动同步配置", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+>           config_manager = config_manager.main.EnhancedConfigManager()
+E           UnboundLocalError: local variable 'config_manager' referenced before assignment
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:311: UnboundLocalError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_sync_config_ui_enhancement.TestSyncConfigUIEnhancement testMethod=test_guided_setup_integration>
+mock_guided_setup = <MagicMock name='guided_setup' id='4623276448'>
+
+    @patch('enhanced_config_manager.EnhancedConfigManager.guided_setup')
+    def test_guided_setup_integration(self, mock_guided_setup):
+        """测试8: guided_setup集成自动同步配置"""
+        log_test_output("测试8: guided_setup集成自动同步配置", "INFO")
+    
+        try:
+            from config_manager.main import EnhancedConfigManager
+    
+            # 创建配置管理器实例
+            config_manager = config_manager.main.EnhancedConfigManager()
+    
+            # 模拟guided_setup返回值
+            mock_guided_setup.return_value = ("test_server", {
+                'connection_type': 'ssh',
+                'host': 'test.example.com',
+                'username': 'testuser',
+                'docker_enabled': True,
+                'docker_config': {},
+                'auto_sync_enabled': True,
+                'sync_config': {
+                    'enabled': True,
+                    'remote_workspace': '/home/Code',
+                    'ftp_port': '8021',
+                    'ftp_user': 'ftpuser',
+                    'ftp_password': 'syncpassword'
+                }
+            })
+    
+            # 调用guided_setup方法
+            result = config_manager.guided_setup()
+    
+            # 验证结果
+            self.assertIsNotNone(result)
+            self.assertEqual(len(result), 2)
+    
+            server_name, config = result
+            self.assertEqual(server_name, "test_server")
+            self.assertIn('sync_config', config)
+            self.assertTrue(config.get('auto_sync_enabled'))
+    
+            log_test_output("✅ guided_setup正确集成自动同步配置", "SUCCESS")
+    
+        except Exception as e:
+>           self.fail(f"测试guided_setup集成失败: {str(e)}")
+E           AssertionError: 测试guided_setup集成失败: local variable 'config_manager' referenced before assignment
+
+tests/tool_sync_config/test_sync_config_ui_enhancement.py:345: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ℹ️ 开始测试: TestSyncConfigUIEnhancement
+ℹ️ 测试8: guided_setup集成自动同步配置
+ℹ️ 完成测试: TestSyncConfigUIEnhancement
+_ TestUpdateServerInteractiveBehavior.test_update_behavior_consistency_with_create _
+
+self = <test_fix_update_server_interactive_behavior_20241222.TestUpdateServerInteractiveBehavior testMethod=test_update_behavior_consistency_with_create>
+
+    def test_update_behavior_consistency_with_create(self):
+        """测试update行为与create的一致性"""
+        print("🎯 测试update行为与create的一致性")
+    
+>       with patch.object(self.config_manager, 'launch_cursor_terminal_config') as mock_launch:
+
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py:289: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/mock.py:1405: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x107cf19a0>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <config_manager.main.EnhancedConfigManager object at 0x107cf1b50> does not have the attribute 'launch_cursor_terminal_config'
+
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/mock.py:1378: AttributeError
+----------------------------- Captured stdout call -----------------------------
+🎯 测试update行为与create的一致性
+_ TestUpdateServerInteractiveBehavior.test_update_server_docker_config_handling _
+
+self = <test_fix_update_server_interactive_behavior_20241222.TestUpdateServerInteractiveBehavior testMethod=test_update_server_docker_config_handling>
+
+    def test_update_server_docker_config_handling(self):
+        """测试更新时Docker配置的处理"""
+        print("🎯 测试更新时Docker配置的处理")
+    
+>       with patch.object(self.config_manager, 'launch_cursor_terminal_config') as mock_launch:
+
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py:166: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/mock.py:1405: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x1115ca040>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <config_manager.main.EnhancedConfigManager object at 0x1115ca730> does not have the attribute 'launch_cursor_terminal_config'
+
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/mock.py:1378: AttributeError
+----------------------------- Captured stdout call -----------------------------
+🎯 测试更新时Docker配置的处理
+____ TestUpdateServerInteractiveBehavior.test_update_server_error_handling _____
+
+self = <test_fix_update_server_interactive_behavior_20241222.TestUpdateServerInteractiveBehavior testMethod=test_update_server_error_handling>
+
+    def test_update_server_error_handling(self):
+        """测试更新时的错误处理"""
+        print("🎯 测试更新时的错误处理")
+    
+        # 测试服务器不存在的情况
+>       servers = self.config_manager.get_existing_servers()
+
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py:273: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x11391e1c0>
+
+    def get_existing_servers(self) -> dict:
+>       if not self.config_path.exists(): return {}
+E       AttributeError: 'str' object has no attribute 'exists'
+
+python/config_manager/main.py:58: AttributeError
+----------------------------- Captured stdout call -----------------------------
+🎯 测试更新时的错误处理
+_ TestUpdateServerInteractiveBehavior.test_update_server_launches_interactive_interface _
+
+self = <test_fix_update_server_interactive_behavior_20241222.TestUpdateServerInteractiveBehavior testMethod=test_update_server_launches_interactive_interface>
+
+    def test_update_server_launches_interactive_interface(self):
+        """测试update_server_config默认启动交互界面"""
+        print("🎯 测试update_server_config默认启动交互界面")
+    
+        # 模拟launch_cursor_terminal_config方法
+>       with patch.object(self.config_manager, 'launch_cursor_terminal_config') as mock_launch:
+
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/mock.py:1405: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x107cf1b50>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <config_manager.main.EnhancedConfigManager object at 0x11159f370> does not have the attribute 'launch_cursor_terminal_config'
+
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/mock.py:1378: AttributeError
+----------------------------- Captured stdout call -----------------------------
+🎯 测试update_server_config默认启动交互界面
+_ TestUpdateServerInteractiveBehavior.test_update_server_preserves_existing_config _
+
+self = <test_fix_update_server_interactive_behavior_20241222.TestUpdateServerInteractiveBehavior testMethod=test_update_server_preserves_existing_config>
+
+    def test_update_server_preserves_existing_config(self):
+        """测试更新时正确保留现有配置"""
+        print("🎯 测试更新时正确保留现有配置")
+    
+>       servers = self.config_manager.get_existing_servers()
+
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py:146: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <config_manager.main.EnhancedConfigManager object at 0x106f90220>
+
+    def get_existing_servers(self) -> dict:
+>       if not self.config_path.exists(): return {}
+E       AttributeError: 'str' object has no attribute 'exists'
+
+python/config_manager/main.py:58: AttributeError
+----------------------------- Captured stdout call -----------------------------
+🎯 测试更新时正确保留现有配置
+_ TestUpdateServerInteractiveBehavior.test_update_server_relay_config_handling _
+
+self = <test_fix_update_server_interactive_behavior_20241222.TestUpdateServerInteractiveBehavior testMethod=test_update_server_relay_config_handling>
+
+    def test_update_server_relay_config_handling(self):
+        """测试更新时Relay配置的处理"""
+        print("🎯 测试更新时Relay配置的处理")
+    
+        # 创建带Relay配置的测试服务器
+        relay_config = {
+            'servers': {
+                'test_relay_server': {
+                    'description': '测试Relay服务器',
+                    'host': 'relay.test.com',
+                    'port': 22,
+                    'username': 'relayuser',
+                    'connection_type': 'relay',
+                    'type': 'script_based',
+                    'specs': {
+                        'connection': {
+                            'target': {
+                                'host': 'target.relay.com'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    
+        # 保存Relay配置
+        with open(self.temp_config.name, 'w', encoding='utf-8') as f:
+            yaml.dump(relay_config, f, default_flow_style=False, allow_unicode=True)
+    
+>       with patch.object(self.config_manager, 'launch_cursor_terminal_config') as mock_launch:
+
+tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py:241: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/mock.py:1405: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x1115bdac0>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <config_manager.main.EnhancedConfigManager object at 0x1115bddf0> does not have the attribute 'launch_cursor_terminal_config'
+
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/mock.py:1378: AttributeError
+----------------------------- Captured stdout call -----------------------------
+🎯 测试更新时Relay配置的处理
+____________________ test_interactive_update_server_config _____________________
+
+    def test_interactive_update_server_config():
+        # 写入初始配置
+        with open(TEST_CONFIG_PATH, 'w', encoding='utf-8') as f:
+            yaml.safe_dump(INIT_CONFIG, f, allow_unicode=True)
+        # 自动化交互
+        with patch("builtins.input", side_effect=MOCK_INPUTS):
+>           manager = EnhancedConfigManager(config_path=TEST_CONFIG_PATH, force_interactive=True)
+E           TypeError: __init__() got an unexpected keyword argument 'force_interactive'
+
+tests/tool_update_server_config/test_interactive_update_server_config.py:55: TypeError
+________________ test_interactive_update_server_config_prefill _________________
+
+    def test_interactive_update_server_config_prefill():
+        # 写入初始配置
+        with open(TEST_CONFIG_PATH, 'w', encoding='utf-8') as f:
+            yaml.safe_dump(INIT_CONFIG, f, allow_unicode=True)
+        # 预填参数
+        prefill = {
+            'name': 'hg225',
+            'host': '192.168.1.226',  # 修改后的host
+            'username': 'admin',
+        }
+        with patch("builtins.input", side_effect=MOCK_INPUTS):
+>           manager = EnhancedConfigManager(config_path=TEST_CONFIG_PATH, force_interactive=True)
+E           TypeError: __init__() got an unexpected keyword argument 'force_interactive'
+
+tests/tool_update_server_config/test_interactive_update_server_config_prefill.py:60: TypeError
+=============================== warnings summary ===============================
+tests/tool_diagnose_connection/test_fix_parameter_error_and_ux_20240622.py:32
+  /Users/xuyehua/Code/remote-terminal-mcp/tests/tool_diagnose_connection/test_fix_parameter_error_and_ux_20240622.py:32: PytestCollectionWarning: cannot collect test class 'TestParameterErrorAndUXFix' because it has a __init__ constructor (from: tests/tool_diagnose_connection/test_fix_parameter_error_and_ux_20240622.py)
+    class TestParameterErrorAndUXFix:
+
+tests/tool_execute_command/test_fix_smart_auto_switch_mode_20240622.py:33
+  /Users/xuyehua/Code/remote-terminal-mcp/tests/tool_execute_command/test_fix_smart_auto_switch_mode_20240622.py:33: PytestCollectionWarning: cannot collect test class 'TestSmartAutoSwitchMode' because it has a __init__ constructor (from: tests/tool_execute_command/test_fix_smart_auto_switch_mode_20240622.py)
+    class TestSmartAutoSwitchMode:
+
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_cleanup_disabled_behavior
+  /Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/case.py:550: RuntimeWarning: coroutine 'TestTerminalCleanupBugFix.test_cleanup_disabled_behavior' was never awaited
+    method()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_cleanup_terminals_method
+  /Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/case.py:550: RuntimeWarning: coroutine 'TestTerminalCleanupBugFix.test_cleanup_terminals_method' was never awaited
+    method()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py::TestTerminalCleanupBugFix::test_force_cleanup_terminals_method
+  /Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/case.py:550: RuntimeWarning: coroutine 'TestTerminalCleanupBugFix.test_force_cleanup_terminals_method' was never awaited
+    method()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py::TestSaveConfigParameterFix::test_regression_server_deletion_scenario
+FAILED tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py::TestSaveConfigParameterFix::test_save_config_parameter_name_consistency
+FAILED tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py::TestSaveConfigParameterFix::test_save_config_with_merge_false
+FAILED tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py::TestSaveConfigParameterFix::test_save_config_with_merge_parameter
+FAILED tests/tool_add_server_config/test_interactive_create_server_config.py::test_interactive_create_server_config
+FAILED tests/tool_add_server_config/test_interactive_create_server_config_prefill.py::test_interactive_create_server_config_prefill
+FAILED tests/tool_delete_server_config/test_fix_config_ux_and_prefill_bug.py::TestConfigUXPrefillFix::test_guided_setup_for_relay_server
+FAILED tests/tool_delete_server_config/test_fix_config_ux_and_prefill_bug.py::TestConfigUXPrefillFix::test_update_relay_server_with_prefill_issues
+FAILED tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_reproduce_original_issue
+FAILED tests/tool_execute_command/test_fix_example_mcp_testing_20240622.py::TestMCPToolingFramework::test_integration_with_other_components
+FAILED tests/tool_execute_command/test_fix_mcp_restart_and_new_code_loading_20241222.py::TestMCPRestartAndNewCodeLoading::test_new_update_server_config_logic_loading
+FAILED tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py::QualityAssuranceRulesTest::test_regression_directory_structure
+FAILED tests/tool_get_server_status/test_fix_quality_assurance_rules_20240622.py::QualityAssuranceRulesTest::test_regression_test_naming_convention
+FAILED tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_constructor_without_force_interactive
+FAILED tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_mcp_silent_setup_auto_defaults
+FAILED tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_mcp_silent_setup_basic
+FAILED tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_mcp_silent_setup_validation
+FAILED tests/tool_list_servers/test_mcp_silent_config_regression.py::TestMCPSilentConfigRegression::test_smart_input_detailed_error_messages
+FAILED tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_collect_sync_patterns_add_new
+FAILED tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_collect_sync_patterns_method_exists
+FAILED tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_collect_sync_patterns_with_defaults
+FAILED tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_configure_sync_disabled
+FAILED tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_configure_sync_enabled_full_config
+FAILED tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_configure_sync_method_exists
+FAILED tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_configure_sync_with_defaults
+FAILED tests/tool_sync_config/test_sync_config_ui_enhancement.py::TestSyncConfigUIEnhancement::test_guided_setup_integration
+FAILED tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_behavior_consistency_with_create
+FAILED tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_server_docker_config_handling
+FAILED tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_server_error_handling
+FAILED tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_server_launches_interactive_interface
+FAILED tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_server_preserves_existing_config
+FAILED tests/tool_update_server_config/test_fix_update_server_interactive_behavior_20241222.py::TestUpdateServerInteractiveBehavior::test_update_server_relay_config_handling
+FAILED tests/tool_update_server_config/test_interactive_update_server_config.py::test_interactive_update_server_config
+FAILED tests/tool_update_server_config/test_interactive_update_server_config_prefill.py::test_interactive_update_server_config_prefill
+============ 34 failed, 49 passed, 2 skipped, 5 warnings in 36.79s =============
