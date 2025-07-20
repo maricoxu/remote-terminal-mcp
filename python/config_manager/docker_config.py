@@ -74,13 +74,14 @@ class DockerConfigCollector:
     def __init__(self, interaction: UserInteraction):
         self.ia = interaction
         self.templates_dir = Path(__file__).resolve().parent.parent.parent / 'docker_templates'
-        self.configs_dir = Path(__file__).resolve().parent.parent.parent / 'docker_configs'
+        # 修改为用户目录下的配置目录
+        self.configs_dir = Path.home() / '.remote-terminal-mcp' / 'docker_configs'
 
     def _load_existing_configs(self) -> List[Tuple[str, Dict]]:
         """加载现有的Docker配置文件"""
         existing_configs = []
         
-        # 检查docker_configs目录
+        # 检查用户目录下的docker_configs目录
         if self.configs_dir.exists():
             for config_file in self.configs_dir.glob("*.yaml"):
                 try:
@@ -90,6 +91,18 @@ class DockerConfigCollector:
                         existing_configs.append((config_file.stem, config))
                 except Exception as e:
                     self.ia.colored_print(f"⚠️ 无法读取配置文件 {config_file.name}: {e}")
+        
+        # 检查项目目录下的docker_configs目录（向后兼容）
+        project_configs_dir = Path(__file__).resolve().parent.parent.parent / 'docker_configs'
+        if project_configs_dir.exists():
+            for config_file in project_configs_dir.glob("*.yaml"):
+                try:
+                    with open(config_file, 'r', encoding='utf-8') as f:
+                        config = yaml.safe_load(f)
+                    if config:
+                        existing_configs.append((f"project_{config_file.stem}", config))
+                except Exception as e:
+                    self.ia.colored_print(f"⚠️ 无法读取项目配置文件 {config_file.name}: {e}")
         
         # 检查docker_templates目录
         if self.templates_dir.exists():
