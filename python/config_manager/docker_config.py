@@ -1,6 +1,6 @@
 """
-Docker相关配置收集 - 增强版
-支持简单模式和完整模式，集成模板系统
+Docker相关配置收集 - 改进版
+支持读取现有配置、创建新配置、不使用docker三种模式
 """
 import os
 import re
@@ -74,67 +74,135 @@ class DockerConfigCollector:
     def __init__(self, interaction: UserInteraction):
         self.ia = interaction
         self.templates_dir = Path(__file__).resolve().parent.parent.parent / 'docker_templates'
+        self.configs_dir = Path(__file__).resolve().parent.parent.parent / 'docker_configs'
+
+    def _load_existing_configs(self) -> List[Tuple[str, Dict]]:
+        """加载现有的Docker配置文件"""
+        existing_configs = []
+        
+        # 检查docker_configs目录
+        if self.configs_dir.exists():
+            for config_file in self.configs_dir.glob("*.yaml"):
+                try:
+                    with open(config_file, 'r', encoding='utf-8') as f:
+                        config = yaml.safe_load(f)
+                    if config:
+                        existing_configs.append((config_file.stem, config))
+                except Exception as e:
+                    self.ia.colored_print(f"⚠️ 无法读取配置文件 {config_file.name}: {e}")
+        
+        # 检查docker_templates目录
+        if self.templates_dir.exists():
+            for template_file in self.templates_dir.glob("*.yaml"):
+                try:
+                    with open(template_file, 'r', encoding='utf-8') as f:
+                        config = yaml.safe_load(f)
+                    if config:
+                        existing_configs.append((f"template_{template_file.stem}", config))
+                except Exception as e:
+                    self.ia.colored_print(f"⚠️ 无法读取模板文件 {template_file.name}: {e}")
+        
+        return existing_configs
+
+    def _display_config(self, name: str, config: Dict):
+        """显示Docker配置信息"""
+        self.ia.colored_print(f"\n📋 配置: {name}")
+        self.ia.colored_print("=" * 40)
+        
+        # 显示关键信息
+        container_name = config.get('container_name', '未设置')
+        image = config.get('image', '未设置')
+        description = config.get('description', '无描述')
+        
+        self.ia.colored_print(f"容器名称: {container_name}")
+        self.ia.colored_print(f"Docker镜像: {image}")
+        self.ia.colored_print(f"描述: {description}")
+        
+        # 显示其他重要配置
+        if config.get('ports'):
+            self.ia.colored_print(f"端口映射: {', '.join(config['ports'])}")
+        if config.get('volumes'):
+            self.ia.colored_print(f"挂载目录: {', '.join(config['volumes'])}")
+        if config.get('gpus'):
+            self.ia.colored_print(f"GPU配置: {config['gpus']}")
+        if config.get('shell'):
+            self.ia.colored_print(f"默认Shell: {config['shell']}")
 
     def configure_docker(self, defaults: dict = None) -> dict:
-        """配置Docker设置 - 支持简单和完整模式"""
+        """配置Docker设置 - 改进版"""
         prefill = defaults or {}
         if prefill is None:
             prefill = {}
             
         self.ia.colored_print(f"\n🐳 配置Docker设置...", )
         
-        # 选择配置模式
-        self.ia.colored_print("选择配置模式:")
-        self.ia.colored_print("1. 简单模式 (基础配置)")
-        self.ia.colored_print("2. 完整模式 (高级配置)")
-        self.ia.colored_print("3. 使用模板")
-        self.ia.colored_print("4. 不使用Docker")
+        # 首先加载现有配置
+        existing_configs = self._load_existing_configs()
         
-        mode_choice = self.ia.smart_input("选择模式", default="1")
-        
-        if mode_choice == "4":
-            return {}
-        elif mode_choice == "3":
-            return self._configure_from_template(prefill)
-        elif mode_choice == "2":
-            return self._configure_full_mode(prefill)
-        else:
-            return self._configure_simple_mode(prefill)
-
-    def _configure_simple_mode(self, prefill: dict) -> dict:
-        """简单模式配置"""
-        self.ia.colored_print("\n📝 简单模式配置", )
-        
-        # 基础配置
-        docker_config = {}
-        docker_config['image'] = self.ia.smart_input("Docker镜像", default=prefill.get('image', 'ubuntu:20.04'))
-        docker_config['container_name'] = self.ia.smart_input("容器名称", default=prefill.get('container_name', ''))
-        
-        # 选择使用现有容器还是创建新容器
-        use_existing = prefill.get('use_existing', False)
-        default_existing_choice = "1" if use_existing else "2"
-        self.ia.colored_print("\n1. 使用已存在的Docker容器\n2. 创建并使用新容器")
-        existing_choice = self.ia.smart_input("选择", default=default_existing_choice)
-        
-        if existing_choice == "1":
-            docker_config['use_existing'] = True
-            container_name = self.ia.smart_input("请输入容器名称", default=prefill.get('container_name', ''))
-            if container_name:
-                docker_config['container_name'] = container_name
+        if existing_configs:
+            self.ia.colored_print(f"\n📁 发现 {len(existing_configs)} 个现有Docker配置:")
+            for i, (name, config) in enumerate(existing_configs, 1):
+                self._display_config(name, config)
+            
+            # 询问是否使用现有配置
+            self.ia.colored_print(f"\n选择配置方式:")
+            self.ia.colored_print("1. 使用现有配置")
+            self.ia.colored_print("2. 创建新的Docker配置")
+            self.ia.colored_print("3. 不使用Docker")
+            
+            choice = self.ia.smart_input("选择", default="3")  # 默认不使用Docker
+            
+            if choice == "1":
+                return self._use_existing_config(existing_configs)
+            elif choice == "2":
+                return self._create_new_config(prefill)
             else:
-                self.ia.colored_print("⚠️ 未输入容器名称，将创建新容器", )
-                docker_config['use_existing'] = False
-        
-        if not docker_config.get('use_existing', False):
-            docker_config['use_existing'] = False
-        
-        return docker_config
+                return {}
+        else:
+            # 没有现有配置，直接选择创建新配置或不使用
+            self.ia.colored_print(f"\n📁 未发现现有Docker配置")
+            self.ia.colored_print(f"\n选择配置方式:")
+            self.ia.colored_print("1. 创建新的Docker配置")
+            self.ia.colored_print("2. 不使用Docker")
+            
+            choice = self.ia.smart_input("选择", default="2")  # 默认不使用Docker
+            
+            if choice == "1":
+                return self._create_new_config(prefill)
+            else:
+                return {}
 
-    def _configure_full_mode(self, prefill: dict) -> dict:
-        """完整模式配置"""
-        self.ia.colored_print("\n🔧 完整模式配置", )
+    def _use_existing_config(self, existing_configs: List[Tuple[str, Dict]]) -> dict:
+        """使用现有配置"""
+        self.ia.colored_print(f"\n📋 选择要使用的配置:")
+        for i, (name, config) in enumerate(existing_configs, 1):
+            container_name = config.get('container_name', '未设置')
+            image = config.get('image', '未设置')
+            self.ia.colored_print(f"{i}. {name} ({container_name} - {image})")
         
-        # 基础配置
+        while True:
+            try:
+                choice = int(self.ia.smart_input(f"选择配置 (1-{len(existing_configs)})", default="1"))
+                if 1 <= choice <= len(existing_configs):
+                    selected_name, selected_config = existing_configs[choice - 1]
+                    self.ia.colored_print(f"✅ 已选择配置: {selected_name}")
+                    
+                    # 返回选中的配置
+                    return {
+                        'use_existing_config': True,
+                        'config_name': selected_name,
+                        **selected_config
+                    }
+                else:
+                    self.ia.colored_print("❌ 无效选择")
+            except ValueError:
+                self.ia.colored_print("❌ 请输入数字")
+
+    def _create_new_config(self, prefill: dict) -> dict:
+        """创建新的Docker配置（简化版）"""
+        self.ia.colored_print(f"\n🔧 创建新的Docker配置", )
+        
+        # 只需要输入容器名称和Docker镜像
         container_name = self.ia.smart_input(
             "容器名称",
             default=prefill.get('container_name', ''),
@@ -146,145 +214,65 @@ class DockerConfigCollector:
             default=prefill.get('image', 'ubuntu:20.04')
         )
         
-        # 端口映射
-        self.ia.colored_print("\n📡 端口映射 (格式: host:container，多个用逗号分隔)")
-        ports_input = self.ia.smart_input(
-            "端口映射",
-            default=prefill.get('ports', '')
-        )
-        ports = [p.strip() for p in ports_input.split(",") if p.strip()] if ports_input else []
-        
-        # 挂载目录
-        self.ia.colored_print("\n📁 挂载目录 (格式: host:container，多个用逗号分隔)")
-        volumes_input = self.ia.smart_input(
-            "挂载目录",
-            default=prefill.get('volumes', '/home:/home')
-        )
-        volumes = [v.strip() for v in volumes_input.split(",") if v.strip()] if volumes_input else []
-        
-        # Shell配置
-        shell = self.ia.smart_input(
-            "默认Shell",
-            default=prefill.get('shell', 'bash'),
-            validator=lambda x: x in ['bash', 'zsh', 'sh']
-        )
-        
-        # 硬件加速器
-        self.ia.colored_print("\n🚀 硬件加速器配置")
-        self.ia.colored_print("1. 无加速器\n2. NVIDIA GPU\n3. 跳过")
-        accelerator_choice = self.ia.smart_input("选择", default="1")
-        
-        gpus = ""
-        accelerator_type = "none"
-        if accelerator_choice == "2":
-            gpus = self.ia.smart_input("GPU设备 (all 或 0,1,2)", default="all")
-            accelerator_type = "nvidia"
-        
-        # 内存限制
-        memory_limit = self.ia.smart_input(
-            "内存限制 (如: 8g, 16g，直接回车跳过)",
-            default=prefill.get('memory_limit', '')
-        )
-        
-        # 安装包
-        packages_input = self.ia.smart_input(
-            "安装包 (用逗号分隔，直接回车跳过)",
-            default=prefill.get('install_packages', '')
-        )
-        install_packages = [p.strip() for p in packages_input.split(",") if p.strip()] if packages_input else []
-        
-        # 构建配置
+        # 使用hardcode的详细配置
         docker_config = {
             'container_name': container_name,
             'image': image,
-            'ports': ports,
-            'volumes': volumes,
-            'shell': shell,
-            'gpus': gpus,
-            'accelerator_type': accelerator_type,
-            'memory_limit': memory_limit,
-            'install_packages': install_packages,
-            'use_existing': False,
+            'auto_create': True,
+            'ports': ['8080:8080', '8888:8888', '6006:6006'],
+            'volumes': ['/home:/home', '/data:/data'],
+            'environment': {'PYTHONPATH': '/workspace'},
+            'working_directory': '/workspace',
+            'shell': 'bash',
+            'privileged': True,
+            'network_mode': 'host',
+            'restart_policy': 'always',
+            'gpus': '',
+            'accelerator_type': 'none',
+            'memory_limit': '',
+            'shm_size': '64g',
+            'install_packages': ['curl', 'wget', 'git', 'vim', 'tmux'],
+            'setup_commands': ['apt update && apt install -y curl wget git vim tmux'],
             'template_type': 'custom',
-            'description': f'完整配置: {container_name}'
+            'description': f'自定义配置: {container_name}',
+            'use_existing_config': False
         }
+        
+        # 询问是否保存到yaml文件
+        save_choice = self.ia.smart_input("是否保存配置到yaml文件？(y/n)", default="y")
+        if save_choice.lower() in ['y', 'yes', '是']:
+            self._save_config_to_yaml(container_name, docker_config)
         
         return docker_config
 
-    def _configure_from_template(self, prefill: dict) -> dict:
-        """从模板配置"""
-        self.ia.colored_print("\n📋 使用Docker模板", )
-        
-        # 检查模板目录
-        if not self.templates_dir.exists():
-            self.ia.colored_print(f"⚠️ 模板目录未找到: {self.templates_dir}", )
-            return self._configure_simple_mode(prefill)
-        
-        # 列出可用模板
-        templates = list(self.templates_dir.glob("*.yaml"))
-        if not templates:
-            self.ia.colored_print("⚠️ 没有找到Docker模板", )
-            return self._configure_simple_mode(prefill)
-        
-        self.ia.colored_print("📋 可用模板:")
-        for i, template in enumerate(templates, 1):
-            try:
-                with open(template, 'r', encoding='utf-8') as f:
-                    config = yaml.safe_load(f)
-                template_type = config.get('template_type', 'unknown')
-                description = config.get('description', '无描述')
-                self.ia.colored_print(f"  {i}. {template.stem} ({template_type}) - {description}")
-            except Exception:
-                self.ia.colored_print(f"  {i}. {template.stem} (读取失败)")
-        
-        # 选择模板
-        while True:
-            try:
-                choice = int(self.ia.smart_input(f"选择模板 (1-{len(templates)})", default="1"))
-                if 1 <= choice <= len(templates):
-                    selected_template = templates[choice - 1]
-                    break
-                else:
-                    self.ia.colored_print("❌ 无效选择")
-            except ValueError:
-                self.ia.colored_print("❌ 请输入数字")
-        
-        # 加载模板
+    def _save_config_to_yaml(self, container_name: str, config: Dict):
+        """保存配置到yaml文件"""
         try:
-            with open(selected_template, 'r', encoding='utf-8') as f:
-                template_config = yaml.safe_load(f)
+            # 确保目录存在
+            self.configs_dir.mkdir(exist_ok=True)
+            
+            # 生成文件名
+            filename = f"{container_name}_config.yaml"
+            filepath = self.configs_dir / filename
+            
+            # 保存配置
+            with open(filepath, 'w', encoding='utf-8') as f:
+                yaml.dump(config, f, allow_unicode=True, default_flow_style=False)
+            
+            self.ia.colored_print(f"✅ 配置已保存到: {filepath}")
+            
         except Exception as e:
-            self.ia.colored_print(f"❌ 加载模板失败: {e}")
-            return self._configure_simple_mode(prefill)
-        
-        # 自定义容器名称
-        default_name = template_config.get('container_name', selected_template.stem)
-        container_name = self.ia.smart_input(
-            "容器名称",
-            default=default_name,
-            validator=lambda x: bool(x and re.match(r'^[a-zA-Z0-9_-]+$', x))
-        )
-        
-        # 构建配置
-        docker_config = {
-            'container_name': container_name,
-            'image': template_config.get('image', 'ubuntu:20.04'),
-            'ports': template_config.get('ports', []),
-            'volumes': template_config.get('volumes', []),
-            'environment': template_config.get('environment', {}),
-            'working_directory': template_config.get('working_directory', '/workspace'),
-            'shell': template_config.get('shell', 'bash'),
-            'privileged': template_config.get('privileged', True),
-            'network_mode': template_config.get('network_mode', 'host'),
-            'restart_policy': template_config.get('restart_policy', 'always'),
-            'gpus': template_config.get('gpus', ''),
-            'memory_limit': template_config.get('memory_limit', ''),
-            'shm_size': template_config.get('shm_size', '64g'),
-            'install_packages': template_config.get('install_packages', []),
-            'setup_commands': template_config.get('setup_commands', []),
-            'use_existing': False,
-            'template_type': template_config.get('template_type', 'custom'),
-            'description': f"基于模板: {selected_template.stem}"
-        }
-        
-        return docker_config
+            self.ia.colored_print(f"⚠️ 保存配置失败: {e}")
+
+    # 保留原有的方法以保持兼容性
+    def _configure_simple_mode(self, prefill: dict) -> dict:
+        """简单模式配置（保留兼容性）"""
+        return self._create_new_config(prefill)
+
+    def _configure_full_mode(self, prefill: dict) -> dict:
+        """完整模式配置（保留兼容性）"""
+        return self._create_new_config(prefill)
+
+    def _configure_from_template(self, prefill: dict) -> dict:
+        """从模板配置（保留兼容性）"""
+        return self._create_new_config(prefill)
