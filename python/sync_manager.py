@@ -212,26 +212,36 @@ class SyncManager:
             logger.error(f"禁用自动同步失败: {e}")
             return {'success': False, 'error': str(e)}
     
-    def git_sync(self, server_name: str, commit_hash: Optional[str] = None, 
+    def git_sync(self, server_name: str, local_path: Optional[str] = None, 
+                remote_path: Optional[str] = None, commit_hash: Optional[str] = None, 
                 branch: Optional[str] = None, force: bool = False) -> Dict[str, Any]:
-        """Git代码同步 - 新实现逻辑"""
+        """Git代码同步 - 新实现逻辑，支持明确指定路径"""
         try:
             # 加载配置
             server_config = self.load_server_config(server_name)
             if not server_config:
                 return {'success': False, 'error': f'服务器 {server_name} 配置不存在'}
             
+            # 优先使用用户指定的路径，否则从配置中获取
             sync_config_data = server_config.get('sync_config', {})
-            local_path = sync_config_data.get('local_path', '')
-            remote_path = sync_config_data.get('remote_path', '')
+            local_path = local_path or sync_config_data.get('local_path', '')
+            remote_path = remote_path or sync_config_data.get('remote_path', '')
             
             if not local_path:
-                return {'success': False, 'error': '未配置本地路径'}
+                return {'success': False, 'error': '未指定本地路径，请在参数中明确指定local_path'}
             
             if not remote_path:
-                return {'success': False, 'error': '未配置远程路径'}
+                return {'success': False, 'error': '未指定远程路径，请在参数中明确指定remote_path'}
             
             local_path_obj = Path(local_path).expanduser()
+            
+            # 验证本地路径是否存在且是Git仓库
+            if not local_path_obj.exists():
+                return {'success': False, 'error': f'本地路径不存在: {local_path}'}
+            
+            git_dir = local_path_obj / '.git'
+            if not git_dir.exists():
+                return {'success': False, 'error': f'本地路径不是Git仓库: {local_path}'}
             
             # 1. 本地git stash
             logger.info(f"执行本地git stash: {local_path}")
@@ -249,7 +259,11 @@ class SyncManager:
                 'success': True,
                 'message': f'Git同步成功: {server_name}',
                 'stash': stash_result,
-                'sync': sync_result
+                'sync': sync_result,
+                'paths': {
+                    'local': str(local_path_obj),
+                    'remote': remote_path
+                }
             }
             
         except Exception as e:
@@ -690,10 +704,11 @@ def disable_auto_sync(server_name: str) -> Dict[str, Any]:
     return sync_manager.disable_auto_sync(server_name)
 
 
-def git_sync(server_name: str, commit_hash: Optional[str] = None, 
+def git_sync(server_name: str, local_path: Optional[str] = None, 
+            remote_path: Optional[str] = None, commit_hash: Optional[str] = None, 
             branch: Optional[str] = None, force: bool = False) -> Dict[str, Any]:
-    """Git同步 - MCP工具接口"""
-    return sync_manager.git_sync(server_name, commit_hash, branch, force)
+    """Git同步 - MCP工具接口，支持明确指定路径"""
+    return sync_manager.git_sync(server_name, local_path, remote_path, commit_hash, branch, force)
 
 
 def get_sync_status(server_name: str) -> Dict[str, Any]:
