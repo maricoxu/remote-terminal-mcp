@@ -1440,17 +1440,20 @@ class EnhancedSSHManager:
             return False
     
     def _setup_local_config_environment(self, session_name: str, docker_config: dict) -> bool:
-        """设置本地配置环境 - 只有zsh时才复制配置"""
+        """设置本地配置环境 - 根据enable_zsh_config选项决定是否复制zsh配置"""
         try:
             log_output("🔧 开始设置本地配置环境...", "INFO")
             
-            # 获取shell类型
+            # 获取shell类型和zsh配置选项
             shell_type = docker_config.get('shell', 'bash')
-            log_output(f"📋 配置Shell类型: {shell_type}", "INFO")
+            enable_zsh_config = docker_config.get('enable_zsh_config', False)
             
-            # 只有选择zsh时才进行配置复制
-            if shell_type == 'zsh':
-                log_output("🐚 检测到zsh，开始配置复制...", "INFO")
+            log_output(f"📋 配置Shell类型: {shell_type}", "INFO")
+            log_output(f"🐚 zsh配置启用状态: {enable_zsh_config}", "INFO")
+            
+            # 检查是否需要启用zsh配置
+            if shell_type == 'zsh' and enable_zsh_config:
+                log_output("🐚 检测到zsh且启用zsh配置，开始配置复制...", "INFO")
                 
                 # 检测配置文件来源
                 config_source = self._detect_config_source(shell_type)
@@ -1469,6 +1472,12 @@ class EnhancedSSHManager:
                 # 应用zsh配置
                 self._apply_shell_config(session_name, shell_type)
                 log_output("✅ zsh配置环境设置完成", "SUCCESS")
+                
+            elif shell_type == 'zsh' and not enable_zsh_config:
+                # zsh但未启用配置，使用默认配置
+                log_output("🐚 检测到zsh但未启用配置，使用默认zsh配置", "INFO")
+                self._setup_default_config(session_name, shell_type)
+                log_output("✅ zsh环境设置完成（使用默认配置）", "SUCCESS")
                 
             else:
                 # bash使用系统默认配置，不进行复制

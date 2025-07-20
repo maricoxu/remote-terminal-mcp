@@ -214,6 +214,18 @@ class DockerConfigCollector:
             default=prefill.get('image', 'ubuntu:20.04')
         )
         
+        # 询问是否需要启用zsh配置
+        self.ia.colored_print(f"\n🐚 zsh配置选项:")
+        self.ia.colored_print("启用zsh配置将自动拷贝.zshrc和.p10k.zsh文件到容器中")
+        self.ia.colored_print("这将在连接时自动完成，提供更好的终端体验")
+        
+        enable_zsh = self.ia.smart_input(
+            "是否启用zsh配置？(y/n)",
+            default=prefill.get('enable_zsh_config', 'n')
+        )
+        
+        enable_zsh_config = enable_zsh.lower() in ['y', 'yes', '是']
+        
         # 使用hardcode的详细配置
         docker_config = {
             'container_name': container_name,
@@ -223,7 +235,7 @@ class DockerConfigCollector:
             'volumes': ['/home:/home', '/data:/data'],
             'environment': {'PYTHONPATH': '/workspace'},
             'working_directory': '/workspace',
-            'shell': 'bash',
+            'shell': 'zsh' if enable_zsh_config else 'bash',  # 如果启用zsh配置，默认使用zsh
             'privileged': True,
             'network_mode': 'host',
             'restart_policy': 'always',
@@ -231,11 +243,14 @@ class DockerConfigCollector:
             'accelerator_type': 'none',
             'memory_limit': '',
             'shm_size': '64g',
-            'install_packages': ['curl', 'wget', 'git', 'vim', 'tmux'],
-            'setup_commands': ['apt update && apt install -y curl wget git vim tmux'],
+            'install_packages': ['curl', 'wget', 'git', 'vim', 'tmux', 'zsh'] if enable_zsh_config else ['curl', 'wget', 'git', 'vim', 'tmux'],
+            'setup_commands': [
+                'apt update && apt install -y curl wget git vim tmux' + (' zsh' if enable_zsh_config else '')
+            ],
             'template_type': 'custom',
-            'description': f'自定义配置: {container_name}',
-            'use_existing_config': False
+            'description': f'自定义配置: {container_name}' + (' (启用zsh配置)' if enable_zsh_config else ''),
+            'use_existing_config': False,
+            'enable_zsh_config': enable_zsh_config  # 新增的zsh配置选项
         }
         
         # 询问是否保存到yaml文件
