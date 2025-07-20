@@ -137,9 +137,8 @@ class TestSyncConfigUIEnhancement(unittest.TestCase):
                 "/local/workspace"  # 本地工作目录
             ]
             
-            # 模拟collect_sync_patterns返回值
+            # 模拟collect_sync_patterns返回值 - 现在只收集exclude_patterns
             mock_collect_patterns.side_effect = [
-                ['*.py', '*.js', '*.md'],  # 包含模式
                 ['*.pyc', '__pycache__', '.git']  # 排除模式
             ]
             
@@ -155,14 +154,15 @@ class TestSyncConfigUIEnhancement(unittest.TestCase):
             self.assertEqual(result.get('ftp_user'), 'ftpuser')
             self.assertEqual(result.get('ftp_password'), 'mypassword')
             self.assertEqual(result.get('local_workspace'), '/local/workspace')
-            self.assertEqual(result.get('include_patterns'), ['*.py', '*.js', '*.md'])
+            # 由于移除了include_patterns，现在只验证exclude_patterns
+            self.assertEqual(result.get('include_patterns'), [])  # 空列表
             self.assertEqual(result.get('exclude_patterns'), ['*.pyc', '__pycache__', '.git'])
             
             # 验证smart_input被正确调用
             self.assertEqual(mock_smart_input.call_count, 6)
             
-            # 验证_collect_sync_patterns被调用两次
-            self.assertEqual(mock_collect_patterns.call_count, 2)
+            # 验证_collect_sync_patterns被调用一次（只收集exclude_patterns）
+            self.assertEqual(mock_collect_patterns.call_count, 1)
             
             log_test_output("✅ 用户启用同步时正确收集所有配置", "SUCCESS")
             
@@ -288,12 +288,10 @@ class TestSyncConfigUIEnhancement(unittest.TestCase):
                 defaults=['*.py']
             )
             
-            # 验证结果
+            # 验证结果 - 由于移除了include_patterns，现在只返回exclude_patterns
             self.assertIsInstance(result, list)
-            self.assertEqual(len(result), 3)
+            self.assertEqual(len(result), 1)  # 只返回exclude_patterns
             self.assertIn('*.py', result)
-            self.assertIn('*.ts', result)
-            self.assertIn('*.vue', result)
             
             log_test_output("✅ _collect_sync_patterns正确添加新模式", "SUCCESS")
             

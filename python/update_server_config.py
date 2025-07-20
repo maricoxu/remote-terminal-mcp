@@ -12,7 +12,7 @@ def main():
     args = parser.parse_args()
     manager = EnhancedConfigManager(force_interactive=args.force_interactive)
     prefill = {'name': args.server} if args.server else {}
-    manager.guided_setup(prefill_params=prefill, update_mode=True)
+    manager.guided_setup(prefill=prefill, edit_server=args.server)
 
 if __name__ == "__main__":
     main()

@@ -1380,16 +1380,23 @@ class SimpleConnectionManager:
             
             servers_config = config.get('servers', {})
             for name, server_data in servers_config.items():
-                # 简化的连接类型判断
-                if server_data.get('type') == 'script_based':
+                # 连接类型判断 - 优先使用配置文件中的connection_type
+                connection_type_str = server_data.get('connection_type', 'ssh')
+                if connection_type_str == 'relay':
+                    connection_type = ConnectionType.RELAY
+                elif connection_type_str == 'script_based':
                     connection_config = server_data.get('specs', {}).get('connection', {})
                     tool = connection_config.get('tool', 'ssh')
                     connection_type = ConnectionType.RELAY if tool == 'relay-cli' else ConnectionType.SSH
                 else:
                     connection_type = ConnectionType.SSH
                 
-                # 简化的Docker配置
-                docker_config = server_data.get('specs', {}).get('docker', {}) or server_data.get('docker', {})
+                # 简化的Docker配置 - 支持多种配置格式
+                docker_config = (
+                    server_data.get('specs', {}).get('docker', {}) or 
+                    server_data.get('docker', {}) or 
+                    server_data.get('docker_config', {})
+                )
                 
                 server_config = ServerConfig(
                     name=name,
@@ -2105,10 +2112,11 @@ if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1:
         server_name = sys.argv[1]
-        result = connect_server(server_name)
+        simple_mode = "--simple" in sys.argv
+        result = connect_server(server_name, simple_mode=simple_mode)
         if result.success:
             print(f"✅ 连接成功: {result.message}")
         else:
             print(f"❌ 连接失败: {result.message}")
     else:
-        print("用法: python connect.py <server_name>") 
+        print("用法: python connect.py <server_name> [--simple]") 

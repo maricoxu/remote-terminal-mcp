@@ -542,33 +542,6 @@ def create_tools_list():
             }
         },
         {
-            "name": "git_sync",
-            "description": "Git代码同步工具，支持同步到指定commit或分支",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "server_name": {
-                        "type": "string",
-                        "description": "服务器名称"
-                    },
-                    "commit_hash": {
-                        "type": "string",
-                        "description": "Git commit哈希值（可选，与branch二选一）"
-                    },
-                    "branch": {
-                        "type": "string",
-                        "description": "Git分支名称（可选，与commit_hash二选一）"
-                    },
-                    "force": {
-                        "type": "boolean",
-                        "description": "是否强制同步（会丢失本地修改）",
-                        "default": False
-                    }
-                },
-                "required": ["server_name"]
-            }
-        },
-        {
             "name": "get_sync_status",
             "description": "获取同步状态和日志信息",
             "inputSchema": {
@@ -976,18 +949,64 @@ async def handle_request(request):
                 # update_server_config工具适配新实现
                 elif tool_name == "update_server_config":
                     try:
-                        manager = EnhancedConfigManager()
-                        name = tool_arguments.get("name")
-                        update_info = tool_arguments.copy()
-                        update_info.pop("name", None)
+                        # 使用正确的配置文件路径
+                        config_path = Path.home() / ".remote-terminal" / "config.yaml"
+                        manager = EnhancedConfigManager(config_path=str(config_path))
+                        server_name = tool_arguments.get("server_name")
+                        show_current_config = tool_arguments.get("show_current_config", True)
                         
-                        # 使用update_server_config方法更新服务器配置
-                        result = manager.update_server_config(name, **update_info)
+                        # 检查是否提供了更新参数
+                        update_params = {k: v for k, v in tool_arguments.items() 
+                                       if k not in ['server_name', 'show_current_config'] and v is not None}
                         
-                        if result:
-                            content = f"✅ 服务器 {name} 已更新\n配置: {json.dumps(result, ensure_ascii=False, indent=2)}"
+                        if update_params:
+                            # 有更新参数，直接更新
+                            result = manager.update_server_config(server_name, **update_params)
+                            if result:
+                                content = f"✅ 服务器 {server_name} 已更新\n配置: {json.dumps(result, ensure_ascii=False, indent=2)}"
+                            else:
+                                content = f"❌ 服务器 {server_name} 更新失败"
                         else:
-                            content = f"❌ 服务器 {name} 更新失败"
+                            # 没有更新参数，启动交互式界面
+                            if show_current_config:
+                                # 显示当前配置
+                                config = manager._load_config()
+                                servers = config.get('servers', {})
+                                if server_name in servers:
+                                    current_config = servers[server_name]
+                                    content = f"📋 **当前服务器配置**: {server_name}\n\n"
+                                    content += f"```json\n{json.dumps(current_config, ensure_ascii=False, indent=2)}\n```\n\n"
+                                    content += "🔄 **启动交互式更新界面...**\n\n"
+                                else:
+                                    content = f"❌ 服务器 '{server_name}' 不存在\n\n"
+                                    content += "🔄 **启动交互式创建界面...**\n\n"
+                            
+                            # 启动真正的交互配置界面
+                            interactive_result = manager.launch_cursor_terminal_config(
+                                prefill_params={'name': server_name}
+                            )
+                            
+                            if interactive_result and interactive_result.get('success'):
+                                content += f"""🚀 **Cursor内置终端配置向导已启动！**
+
+✨ **配置界面已在Cursor内置终端中打开**
+
+📋 **您提供的参数已作为默认值预填充**：
+  ✅ **server_name**: `{server_name}`
+
+🔧 **更新说明**：
+- 在终端界面中，您可以修改任何配置项
+- 所有更改将自动保存到配置文件
+- 完成后请关闭终端窗口
+
+💡 **提示**: 如果终端没有自动打开，请手动运行：
+```bash
+python python/update_server_config.py --server {server_name}
+```
+"""
+                            else:
+                                content = f"❌ 启动交互界面失败: {interactive_result.get('error', '未知错误')}"
+                                
                     except Exception as e:
                         debug_log(f"update_server_config error: {str(e)}")
                         content = json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
@@ -1119,34 +1138,7 @@ async def handle_request(request):
                         content = f"❌ 禁用自动同步异常: {str(e)}"
                 
                 elif tool_name == "git_sync":
-                    try:
-                        from python.sync_manager import git_sync
-                        server_name = tool_arguments.get("server_name")
-                        commit_hash = tool_arguments.get("commit_hash")
-                        branch = tool_arguments.get("branch")
-                        force = tool_arguments.get("force", False)
-                        
-                        if not server_name:
-                            content = "❌ 错误: server_name 参数是必需的"
-                        else:
-                            result = git_sync(server_name, commit_hash, branch, force)
-                            if result.get('success'):
-                                content = f"✅ {result['message']}\n\n📋 执行详情:\n"
-                                results = result.get('results', [])
-                                for i, cmd_result in enumerate(results, 1):
-                                    content += f"{i}. {cmd_result['command']}\n"
-                                    if cmd_result['stdout']:
-                                        content += f"   输出: {cmd_result['stdout'].strip()}\n"
-                                    if cmd_result['stderr']:
-                                        content += f"   错误: {cmd_result['stderr'].strip()}\n"
-                                    content += "\n"
-                            else:
-                                content = f"❌ Git同步失败: {result.get('error', '未知错误')}"
-                                details = result.get('details')
-                                if details:
-                                    content += f"\n📝 详细信息: {details}"
-                    except Exception as e:
-                        content = f"❌ Git同步异常: {str(e)}"
+                    content = "❌ Git同步工具已移除\n\n💡 建议：\n• 对于公司代码，建议只同步新增的代码和测试文件\n• 使用execute_command工具手动执行git操作\n• 或者使用其他专门的git同步工具"
                 
                 elif tool_name == "get_sync_status":
                     try:

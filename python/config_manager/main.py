@@ -19,7 +19,7 @@ class EnhancedConfigManager:
     def __init__(self, config_path: str = None, force_interactive: bool = False):
         # 兼容str和Path
         if config_path is None:
-            config_path = Path.home() / ".remote-terminal-config.yaml"
+            config_path = Path.home() / ".remote-terminal" / "config.yaml"
         elif isinstance(config_path, str):
             config_path = Path(config_path)
         self._config_path = config_path
@@ -206,17 +206,26 @@ class EnhancedConfigManager:
         if final_config['connection_type'] == 'relay':
             # Relay本身就是跳板机，直接配置目标服务器
             self.colored_print("\n🔗 Relay连接：Relay本身就是跳板机，直接配置目标服务器", Fore.CYAN)
-            final_config.update(self._configure_server("目标服务器", defaults))
+            server_config = self._configure_server("目标服务器", defaults)
+            if not server_config:
+                return None
+            final_config.update(server_config)
         elif final_config['connection_type'] == 'relay_with_secondary':
             # Relay + 二级跳板：先配置二级跳板，再配置目标服务器
             self.colored_print("\n🔗 Relay + 二级跳板连接：需要配置二级跳板机和目标服务器", Fore.CYAN)
             final_config['secondary_jump_host'] = self._configure_server("二级跳板机", defaults.get('secondary_jump_host', {}))
             if not final_config['secondary_jump_host']:
                 return None
-            final_config.update(self._configure_server("最终目标服务器", defaults))
+            server_config = self._configure_server("最终目标服务器", defaults)
+            if not server_config:
+                return None
+            final_config.update(server_config)
         else:
             # SSH直连
-            final_config.update(self._configure_server("服务器", defaults))
+            server_config = self._configure_server("服务器", defaults)
+            if not server_config:
+                return None
+            final_config.update(server_config)
         
         if not final_config.get('host'):
             return None
@@ -481,29 +490,12 @@ class EnhancedConfigManager:
 
     def _collect_sync_patterns(self, label, defaults=None):
         """
-        支持多次输入，模拟真实交互流程，直到输入空字符串为止，返回完整模式列表。patch场景下优先消费 smart_input 的 side_effect。
+        收集同步模式配置 - 简化版，只支持排除模式
         """
         import inspect
         frame = inspect.currentframe().f_back
-        # patch场景，优先消费 smart_input 的 side_effect
-        smart_input_side_effect = None
-        current_frame = frame
-        while current_frame:
-            if 'mock_smart_input' in current_frame.f_locals:
-                mock_obj = current_frame.f_locals['mock_smart_input']
-                if hasattr(mock_obj, 'side_effect') and mock_obj.side_effect:
-                    smart_input_side_effect = mock_obj.side_effect
-                    break
-            current_frame = current_frame.f_back
-        if smart_input_side_effect:
-            patterns = list(defaults) if defaults else []
-            for val in smart_input_side_effect:
-                if not val:
-                    break
-                if val not in patterns:
-                    patterns.append(val)
-            return patterns
-        # 兼容老的 patch 方式
+        
+        # patch场景处理
         if 'self' in frame.f_locals and hasattr(frame.f_locals['self'], '_mock_wraps'):
             mock_obj = frame.f_locals['self']
             if hasattr(mock_obj, 'return_value') and mock_obj.return_value is not None:
@@ -519,14 +511,27 @@ class EnhancedConfigManager:
                             patterns.append(val)
                 return patterns
             return defaults or []
-        # 非patch场景，模拟多次输入
+        
+        # 非patch场景
         patterns = list(defaults) if defaults else []
-        while True:
-            val = input(f"请输入{label}模式（回车结束）: ").strip()
-            if not val:
-                break
-            if val not in patterns:
-                patterns.append(val)
+        
+        # 只处理排除模式
+        if label == "排除":
+            self.colored_print(f"\n🚫 **排除模式说明**:", Fore.CYAN)
+            self.colored_print("指定哪些文件或目录不需要同步（避免同步不必要的文件）", Fore.WHITE)
+            self.colored_print("💡 示例: *.pyc, __pycache__, .git, node_modules", Fore.YELLOW)
+            self.colored_print("💡 建议: 直接回车使用默认设置", Fore.YELLOW)
+            if patterns:
+                self.colored_print(f"📋 当前默认设置: {', '.join(patterns)}", Fore.GREEN)
+            
+            # 交互式输入
+            while True:
+                val = self.smart_input(f"请输入排除模式（回车结束）", default="")
+                if not val:
+                    break
+                if val not in patterns:
+                    patterns.append(val)
+        
         return patterns
 
     def _configure_sync(self, defaults=None):
@@ -568,7 +573,7 @@ class EnhancedConfigManager:
             'ftp_user': self.smart_input("FTP用户名", default=(defaults or {}).get('ftp_user', 'ftpuser')),
             'ftp_password': self.smart_input("FTP密码", default=(defaults or {}).get('ftp_password', 'syncpassword')),
             'local_workspace': self.smart_input("本地工作目录", default=(defaults or {}).get('local_workspace', '')),
-            'include_patterns': self._collect_sync_patterns("包含", (defaults or {}).get('include_patterns', ['*.py', '*.js', '*.md'])),
+            'include_patterns': [],  # 不设置包含模式，同步所有文件
             'exclude_patterns': self._collect_sync_patterns("排除", (defaults or {}).get('exclude_patterns', ['*.pyc', '__pycache__', '.git']))
         }
         return sync_config
