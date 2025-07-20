@@ -1,0 +1,34 @@
+accelerator_type: none
+auto_create: true
+container_name: xyh_pytorch
+description: '自定义配置: xyh_pytorch (启用zsh配置)'
+enable_zsh_config: true
+environment:
+  PYTHONPATH: /workspace
+gpus: ''
+image: iregistry.baidu-int.com/xmlir/xmlir_ubuntu_2004_x86_64:v0.32
+install_packages:
+- curl
+- wget
+- git
+- vim
+- tmux
+- zsh
+memory_limit: ''
+network_mode: host
+ports:
+- 8080:8080
+- 8888:8888
+- 6006:6006
+privileged: true
+restart_policy: always
+setup_commands:
+- apt update && apt install -y curl wget git vim tmux zsh
+shell: zsh
+shm_size: 64g
+template_type: custom
+use_existing_config: false
+volumes:
+- /home:/home
+- /data:/data
+working_directory: /workspace

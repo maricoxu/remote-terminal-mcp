@@ -503,6 +503,84 @@ def create_tools_list():
                 },
                 "required": ["server_name"]
             }
+        },
+        # 同步功能工具
+        {
+            "name": "autosync_enable",
+            "description": "启用自动同步功能，支持自定义本地和远程目录路径",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "server_name": {
+                        "type": "string",
+                        "description": "服务器名称"
+                    },
+                    "local_path": {
+                        "type": "string",
+                        "description": "本地目录路径（可选，不指定则使用配置中的默认路径）"
+                    },
+                    "remote_path": {
+                        "type": "string",
+                        "description": "远程目录路径（可选，不指定则使用配置中的默认路径）"
+                    }
+                },
+                "required": ["server_name"]
+            }
+        },
+        {
+            "name": "autosync_disable",
+            "description": "禁用自动同步功能",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "server_name": {
+                        "type": "string",
+                        "description": "服务器名称"
+                    }
+                },
+                "required": ["server_name"]
+            }
+        },
+        {
+            "name": "git_sync",
+            "description": "Git代码同步工具，支持同步到指定commit或分支",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "server_name": {
+                        "type": "string",
+                        "description": "服务器名称"
+                    },
+                    "commit_hash": {
+                        "type": "string",
+                        "description": "Git commit哈希值（可选，与branch二选一）"
+                    },
+                    "branch": {
+                        "type": "string",
+                        "description": "Git分支名称（可选，与commit_hash二选一）"
+                    },
+                    "force": {
+                        "type": "boolean",
+                        "description": "是否强制同步（会丢失本地修改）",
+                        "default": False
+                    }
+                },
+                "required": ["server_name"]
+            }
+        },
+        {
+            "name": "get_sync_status",
+            "description": "获取同步状态和日志信息",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "server_name": {
+                        "type": "string",
+                        "description": "服务器名称"
+                    }
+                },
+                "required": ["server_name"]
+            }
         }
     ]
 
@@ -991,6 +1069,118 @@ async def handle_request(request):
                             content = f"🔍 连接诊断功能已启动，请在配置管理界面中选择服务器 '{server_name}' 进行测试"
                         except Exception as e:
                             content = f"❌ 启动连接诊断失败: {str(e)}"
+                
+                # 同步功能工具处理
+                elif tool_name == "autosync_enable":
+                    try:
+                        from python.sync_manager import enable_auto_sync
+                        server_name = tool_arguments.get("server_name")
+                        local_path = tool_arguments.get("local_path")
+                        remote_path = tool_arguments.get("remote_path")
+                        
+                        if not server_name:
+                            content = "❌ 错误: server_name 参数是必需的"
+                        else:
+                            result = enable_auto_sync(server_name, local_path, remote_path)
+                            if result.get('success'):
+                                content = f"✅ {result['message']}\n\n📋 配置信息:\n"
+                                config = result.get('config', {})
+                                if config.get('local_path'):
+                                    content += f"• 本地路径: {config['local_path']}\n"
+                                if config.get('remote_path'):
+                                    content += f"• 远程路径: {config['remote_path']}\n"
+                                content += f"• 同步类型: {config.get('sync_type', 'rsync')}\n"
+                                content += f"• 同步间隔: {config.get('interval', 30)}秒\n"
+                                
+                                warnings = result.get('warnings', [])
+                                if warnings:
+                                    content += f"\n⚠️ 警告:\n"
+                                    for warning in warnings:
+                                        content += f"• {warning}\n"
+                            else:
+                                content = f"❌ 启用自动同步失败: {result.get('error', '未知错误')}"
+                    except Exception as e:
+                        content = f"❌ 启用自动同步异常: {str(e)}"
+                
+                elif tool_name == "autosync_disable":
+                    try:
+                        from python.sync_manager import disable_auto_sync
+                        server_name = tool_arguments.get("server_name")
+                        
+                        if not server_name:
+                            content = "❌ 错误: server_name 参数是必需的"
+                        else:
+                            result = disable_auto_sync(server_name)
+                            if result.get('success'):
+                                content = f"✅ {result['message']}"
+                            else:
+                                content = f"❌ 禁用自动同步失败: {result.get('error', '未知错误')}"
+                    except Exception as e:
+                        content = f"❌ 禁用自动同步异常: {str(e)}"
+                
+                elif tool_name == "git_sync":
+                    try:
+                        from python.sync_manager import git_sync
+                        server_name = tool_arguments.get("server_name")
+                        commit_hash = tool_arguments.get("commit_hash")
+                        branch = tool_arguments.get("branch")
+                        force = tool_arguments.get("force", False)
+                        
+                        if not server_name:
+                            content = "❌ 错误: server_name 参数是必需的"
+                        else:
+                            result = git_sync(server_name, commit_hash, branch, force)
+                            if result.get('success'):
+                                content = f"✅ {result['message']}\n\n📋 执行详情:\n"
+                                results = result.get('results', [])
+                                for i, cmd_result in enumerate(results, 1):
+                                    content += f"{i}. {cmd_result['command']}\n"
+                                    if cmd_result['stdout']:
+                                        content += f"   输出: {cmd_result['stdout'].strip()}\n"
+                                    if cmd_result['stderr']:
+                                        content += f"   错误: {cmd_result['stderr'].strip()}\n"
+                                    content += "\n"
+                            else:
+                                content = f"❌ Git同步失败: {result.get('error', '未知错误')}"
+                                details = result.get('details')
+                                if details:
+                                    content += f"\n📝 详细信息: {details}"
+                    except Exception as e:
+                        content = f"❌ Git同步异常: {str(e)}"
+                
+                elif tool_name == "get_sync_status":
+                    try:
+                        from python.sync_manager import get_sync_status
+                        server_name = tool_arguments.get("server_name")
+                        
+                        if not server_name:
+                            content = "❌ 错误: server_name 参数是必需的"
+                        else:
+                            result = get_sync_status(server_name)
+                            if result.get('success'):
+                                content = f"📊 同步状态: {server_name}\n\n"
+                                content += f"🔗 启用状态: {'✅ 已启用' if result.get('enabled') else '❌ 未启用'}\n"
+                                content += f"🔄 运行状态: {'✅ 运行中' if result.get('running') else '❌ 已停止'}\n"
+                                
+                                config = result.get('config', {})
+                                if config:
+                                    content += f"\n📋 配置信息:\n"
+                                    if config.get('local_path'):
+                                        content += f"• 本地路径: {config['local_path']}\n"
+                                    if config.get('remote_path'):
+                                        content += f"• 远程路径: {config['remote_path']}\n"
+                                    content += f"• 同步类型: {config.get('sync_type', 'rsync')}\n"
+                                    content += f"• 同步间隔: {config.get('auto_sync_interval', 30)}秒\n"
+                                
+                                logs = result.get('logs', [])
+                                if logs:
+                                    content += f"\n📝 最近日志:\n"
+                                    for log in logs[-5:]:  # 显示最近5条日志
+                                        content += f"• {log}\n"
+                            else:
+                                content = f"❌ 获取同步状态失败: {result.get('error', '未知错误')}"
+                    except Exception as e:
+                        content = f"❌ 获取同步状态异常: {str(e)}"
                 
                 else:
                     content = f"Unknown tool: {tool_name}"

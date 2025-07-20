@@ -65,8 +65,8 @@ class RegressionProtector:
         core_tests = [
             ("Shell配置测试", "python3 test_shell_config.py"),
             # ("Zsh连接测试", "python3 test_zsh_connection.py"),  # 暂时禁用，需要实际网络连接
-            ("配置文件语法检查", f"python3 -c 'import sys; sys.path.insert(0, \"{self.project_root}/python\"); import config_manager.main; print(\"配置管理器导入成功\")'"),
-            ("MCP服务器语法检查", f"python3 -c 'import sys; sys.path.insert(0, \"{self.project_root}/python\"); import mcp_server; print(\"MCP服务器导入成功\")'"),
+            ("配置文件语法检查", f"python3 -c 'import sys; sys.path.insert(0, \"{self.project_root}/../python\"); import config_manager.main; print(\"配置管理器导入成功\")'"),
+            ("MCP服务器语法检查", f"python3 -c 'import sys; sys.path.insert(0, \"{self.project_root}/../python\"); import mcp_server; print(\"MCP服务器导入成功\")'"),
         ]
         
         # 运行所有测试
