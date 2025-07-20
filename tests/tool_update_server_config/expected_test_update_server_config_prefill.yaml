@@ -1,5 +1,6 @@
 servers:
   hg225:
+    connection_type: ssh
     host: 192.168.1.226
     username: admin
     port: 22

@@ -1,9 +1,0 @@
-============================= test session starts ==============================
-platform darwin -- Python 3.9.6, pytest-8.3.5, pluggy-1.5.0
-rootdir: /Users/xuyehua/Code/remote-terminal-mcp
-plugins: anyio-4.9.0, cov-6.1.1, asyncio-1.0.0
-asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 3 items
-
-tests/config_manager/test_interaction.py .[smart_input] prompt: 提示, default: abc
-提示 [abc]: 

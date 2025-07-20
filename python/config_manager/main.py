@@ -27,6 +27,9 @@ class EnhancedConfigManager:
         # 移除 force_interactive 参数支持，始终启用交互模式
         self.interactive_mode_enabled = True
         
+        # 初始化MCP模式检测
+        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        
         # 兼容性属性
         self.io = self  # 兼容老用法
         self.ia = self  # 兼容老用法
@@ -50,9 +53,11 @@ class EnhancedConfigManager:
             os.environ.get('CI') == 'true',
             'pytest' in sys.argv[0] if sys.argv else False
         ])
-        self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
+        # 更新MCP模式状态
         if in_test:
             self.is_mcp_mode = False
+        else:
+            self.is_mcp_mode = (os.environ.get('MCP_MODE') == '1' or not sys.stdout.isatty())
         
         if self.is_mcp_mode:
             # MCP模式下返回默认值
@@ -86,7 +91,7 @@ class EnhancedConfigManager:
                             print("   - 正确格式示例: 22")
                             print("   - 常用端口示例: 22, 2222, 3389, 3306, 5432")
                         print("   - 请重新输入")
-                        continue
+                    continue
                 else:
                     return user_input
                     
@@ -140,18 +145,10 @@ class EnhancedConfigManager:
         return {}
 
     def guided_setup(self, prefill=None, edit_server=None):
-        """引导式配置，支持预填充和编辑现有服务器"""
-        def parse_bool(val):
-            if isinstance(val, bool):
-                return val
-            if val is None:
-                return False
-            v = str(val).strip().lower()
-            if v in ('1', 'y', 'yes', 'true'):
-                return True
-            if v in ('0', 'n', 'no', 'false', '2', ''):
-                return False
-            return False
+        """增强的引导式配置，支持完整的Docker和同步配置"""
+        self.colored_print("\n" + "="*50, Fore.GREEN, style=Style.BRIGHT)
+        self.colored_print("欢迎使用远程终端配置向导", Fore.GREEN, style=Style.BRIGHT)
+        self.colored_print("="*50, Fore.GREEN)
         
         # 1. 获取服务器名称
         server_name = None
@@ -178,158 +175,90 @@ class EnhancedConfigManager:
         elif prefill and 'name' in prefill:
             server_name = prefill['name']
         else:
-            server_name = self.smart_input("服务器名称", default="test_server")
+            # 让用户填写服务器名字
+            default_name = prefill.get('name', '') if prefill else ''
+            server_name = self.smart_input("为这个连接设置一个唯一的名称", default=default_name)
+            if not server_name:
+                server_name = self.smart_input("请输入服务器名称（必填）", default="")
         
-        # 2. relay/普通场景分支
-        is_relay = False
-        if prefill and prefill.get('type') == 'relay':
-            is_relay = True
-        elif 'relay' in server_name:
-            is_relay = True
-        elif prefill and 'host' in prefill and 'relay' in prefill['host']:
-            is_relay = True
-        elif server_name in ['hg222', 'hg222-guided']:  # 特定测试用例的 relay 场景
-            is_relay = True
+        if not server_name:
+            return None
         
-        import inspect
-        frame = inspect.currentframe().f_back
-        patch_mode = hasattr(self, '_mock_wraps') or ('self' in frame.f_locals and hasattr(frame.f_locals['self'], '_mock_wraps'))
-        
-        # 更准确的 patch 模式检测
-        if not patch_mode:
-            # 检查调用栈中是否有 mock 相关
-            current_frame = frame
-            while current_frame:
-                if 'self' in current_frame.f_locals:
-                    obj = current_frame.f_locals['self']
-                    if hasattr(obj, '_mock_wraps') or hasattr(obj, 'side_effect'):
-                        patch_mode = True
-                        break
-                current_frame = current_frame.f_back
-        
-        # patch场景下，严格按字段顺序消费 smart_input 的 side_effect
-        def get_input(prompt, default=None, validator=None):
-            if patch_mode:
-                # patch场景下，优先使用 prefill 值，如果没有则返回默认值
-                if prefill:
-                    # 根据 prompt 判断应该使用哪个 prefill 字段
-                    if "主机名" in prompt or "服务器地址" in prompt:
-                        if 'host' in prefill:
-                            return prefill['host']
-                    elif "用户名" in prompt:
-                        if 'username' in prefill:
-                            return prefill['username']
-                    elif "端口" in prompt:
-                        if 'port' in prefill:
-                            return str(prefill['port'])
-                return default or ""
-            else:
-                # 非patch场景，正常交互
-                return self.smart_input(prompt, default=default, validator=validator)
-        
-        # 4. 收集配置信息
-        server_config = {}
-        
-        if is_relay:
-            # relay 分支配置
-            host = prefill['host'] if prefill and 'host' in prefill else get_input("主机名", default="127.0.0.1", validator=self.validate_hostname)
-            username = prefill['username'] if prefill and 'username' in prefill else get_input("用户名", default="user", validator=self.validate_username)
-            port_raw = prefill['port'] if prefill and 'port' in prefill else get_input("端口", default="22", validator=self.validate_port)
-            try:
-                port = int(port_raw)
-            except Exception:
-                port = 22
-            docker_enabled = prefill['docker_enabled'] if prefill and 'docker_enabled' in prefill else parse_bool(get_input("是否启用docker (1=启用, 2=不使用, n=否, y=是)", default="2"))
-            auto_sync_enabled = prefill['auto_sync_enabled'] if prefill and 'auto_sync_enabled' in prefill else parse_bool(get_input("是否启用自动同步 (1=启用, 2=不使用, n=否, y=是)", default="2"))
-            sync_config = prefill['sync_config'] if prefill and 'sync_config' in prefill else {}
-            
-            server_config.update({
-                'host': host,
-                'username': username,
-                'port': port,
-                'docker_enabled': docker_enabled,
-                'docker_config': {},
-                'auto_sync_enabled': auto_sync_enabled,
-                'sync_config': sync_config
-            })
-            
-            # 补全 relay 相关字段
-            server_config['type'] = 'relay'
-            server_config['password'] = 'relay_password_123'
-            
-            # 根据不同的 server_name 生成不同的 jump_host 配置
-            if server_name == 'hg222':
-                jump_host_config = {
-                    'host': 'final-dest.com',
-                    'username': 'user2',
-                    'port': 2222,
-                    'password': 'final_dest_password_456'
-                }
-            else:
-                # 默认配置
-                jump_host_config = {
-                    'host': 'target-host.com',
-                    'username': 'target',
-                    'port': 2222,
-                    'password': 'target_pass'
-                }
-            
-            server_config['specs'] = {
-                'connection': {
-                    'jump_host': jump_host_config
-                }
-            }
+        # 检查服务器是否已存在
+        existing_servers = self.get_existing_servers()
+        if server_name in existing_servers and not edit_server:
+            self.colored_print(f"\n🔄 检测到服务器 '{server_name}' 已存在，进入更新模式。", Fore.YELLOW)
+            defaults = existing_servers[server_name]
         else:
-            # 普通分支配置
-            host = prefill['host'] if prefill and 'host' in prefill else get_input("主机名", default="127.0.0.1", validator=self.validate_hostname)
-            username = prefill['username'] if prefill and 'username' in prefill else get_input("用户名", default="user", validator=self.validate_username)
-            port_raw = prefill['port'] if prefill and 'port' in prefill else get_input("端口", default="22", validator=self.validate_port)
-            try:
-                port = int(port_raw)
-            except Exception:
-                port = 22
-            docker_enabled = prefill['docker_enabled'] if prefill and 'docker_enabled' in prefill else parse_bool(get_input("是否启用docker (1=启用, 2=不使用, n=否, y=是)", default="2"))
-            auto_sync_enabled = prefill['auto_sync_enabled'] if prefill and 'auto_sync_enabled' in prefill else parse_bool(get_input("是否启用自动同步 (1=启用, 2=不使用, n=否, y=是)", default="2"))
-            sync_config = prefill['sync_config'] if prefill and 'sync_config' in prefill else {}
-            
-            server_config.update({
-                'host': host,
-                'username': username,
-                'port': port,
-                'docker_enabled': docker_enabled,
-                'docker_config': {},
-                'auto_sync_enabled': auto_sync_enabled,
-                'sync_config': sync_config
-            })
+            self.colored_print(f"\n✨ 正在创建新服务器: {server_name}", Fore.CYAN)
+            defaults = prefill or {}
+        
+        final_config = {}
+        
+        # 2. 连接类型选择
+        self.show_progress(1, 6, "连接类型")
+        final_config['connection_type'] = self._get_connection_type(defaults)
+        if not final_config['connection_type']:
+            return None
+        
+        # 3. 服务器配置
+        self.show_progress(2, 6, "服务器配置")
+        if final_config['connection_type'] == 'relay':
+            # Relay本身就是跳板机，直接配置目标服务器
+            self.colored_print("\n🔗 Relay连接：Relay本身就是跳板机，直接配置目标服务器", Fore.CYAN)
+            final_config.update(self._configure_server("目标服务器", defaults))
+        elif final_config['connection_type'] == 'relay_with_secondary':
+            # Relay + 二级跳板：先配置二级跳板，再配置目标服务器
+            self.colored_print("\n🔗 Relay + 二级跳板连接：需要配置二级跳板机和目标服务器", Fore.CYAN)
+            final_config['secondary_jump_host'] = self._configure_server("二级跳板机", defaults.get('secondary_jump_host', {}))
+            if not final_config['secondary_jump_host']:
+                return None
+            final_config.update(self._configure_server("最终目标服务器", defaults))
+        else:
+            # SSH直连
+            final_config.update(self._configure_server("服务器", defaults))
+        
+        if not final_config.get('host'):
+            return None
+        
+        # 4. Docker配置
+        self.show_progress(3, 5, "Docker配置")
+        docker_defaults = defaults.get('docker_config', {})
+        docker_host_info = final_config.get('jump_host', final_config)
+        
+        docker_config = self._configure_docker(defaults=docker_defaults, server_info=docker_host_info)
+        final_config['docker_enabled'] = bool(docker_config)
+        final_config['docker_config'] = docker_config if docker_config else {}
+        
+        # 4.5. 同步配置（简化版，默认禁用）
+        final_config['auto_sync_enabled'] = False
+        final_config['sync_config'] = {}
         
         # 5. 保存配置
+        self.show_progress(4, 5, "保存配置")
+        self.colored_print("\n🎉 配置完成!", Fore.GREEN, style=Style.BRIGHT)
+        
+        # 保存配置
         config = self._load_config()
         if 'servers' not in config:
             config['servers'] = {}
         
-        # 如果是编辑模式，直接更新现有服务器
         if edit_server and edit_server in config['servers']:
-            config['servers'][edit_server] = server_config
+            config['servers'][edit_server] = final_config
             self._save_config(config)
-            return (edit_server, server_config)
+            return (edit_server, final_config)
         
-        # 否则检查服务器名称是否已存在，如果存在则添加后缀
+        # 检查服务器名称是否已存在，如果存在则添加后缀
         original_name = server_name
         counter = 1
         while server_name in config['servers']:
             server_name = f"{original_name}_{counter:03d}"
             counter += 1
         
-        config['servers'][server_name] = server_config
+        config['servers'][server_name] = final_config
         self._save_config(config)
         
-        # patch场景下返回原始名称
-        import inspect
-        frame = inspect.currentframe().f_back
-        if 'self' in frame.f_locals and hasattr(frame.f_locals['self'], '_mock_wraps'):
-            return (original_name, server_config)
-        
-        return (server_name, server_config)
+        return (server_name, final_config)
 
     def preview_docker_wizard_command(self, *args, **kwargs):
         self.colored_print("[preview_docker_wizard_command] Docker命令预览（占位实现）", Fore.YELLOW)
@@ -353,11 +282,16 @@ class EnhancedConfigManager:
     # 补全launch_cursor_terminal_config等常用占位方法
     def launch_cursor_terminal_config(self, *args, **kwargs):
         """
-        兼容所有自动化/可见性/交互界面相关测试用例，始终返回 success=True，包含 message、platform、terminal_type、prefill_file 字段。
+        启动真正的交互配置界面，在Cursor内置终端中显示配置向导
         """
         import platform
         import tempfile
+        import subprocess
+        import sys
+        import os
+        
         prefill_params = kwargs.get('prefill_params', {})
+        
         # 生成预填充文件
         prefill_file = None
         if prefill_params:
@@ -365,6 +299,7 @@ class EnhancedConfigManager:
                 import json
                 json.dump(prefill_params, f, ensure_ascii=False)
                 prefill_file = f.name
+        
         # 平台类型
         plat = platform.system()
         if plat == 'Darwin':
@@ -376,13 +311,58 @@ class EnhancedConfigManager:
         else:
             platform_type = plat
             terminal_type = 'unknown'
-        return {
-            'success': True,
-            'message': '交互配置界面已成功启动',
-            'platform': platform_type,
-            'terminal_type': terminal_type,
-            'prefill_file': prefill_file
-        }
+        
+        try:
+            # 启动交互配置界面
+            # 使用当前Python解释器运行配置向导
+            script_path = os.path.join(os.path.dirname(__file__), '..', 'create_server_config.py')
+            
+            # 构建命令
+            cmd = [sys.executable, script_path, '--force-interactive']
+            if prefill_file:
+                cmd.extend(['--prefill-file', prefill_file])
+            
+            # 在后台启动交互界面
+            if plat == 'Darwin':
+                # macOS: 使用osascript启动新终端窗口
+                apple_script = f'''
+                tell application "Terminal"
+                    do script "{' '.join(cmd)}"
+                    activate
+                end tell
+                '''
+                subprocess.run(['osascript', '-e', apple_script], check=True)
+            elif plat == 'Linux':
+                # Linux: 使用gnome-terminal或其他终端
+                try:
+                    subprocess.run(['gnome-terminal', '--', 'bash', '-c', f"{' '.join(cmd)}; exec bash"], check=True)
+                except FileNotFoundError:
+                    try:
+                        subprocess.run(['xterm', '-e', f"{' '.join(cmd)}"], check=True)
+                    except FileNotFoundError:
+                        # 降级到当前终端
+                        subprocess.Popen(cmd)
+            else:
+                # 其他平台：直接启动
+                subprocess.Popen(cmd)
+            
+            return {
+                'success': True,
+                'message': '交互配置界面已成功启动',
+                'platform': platform_type,
+                'terminal_type': terminal_type,
+                'prefill_file': prefill_file
+            }
+            
+        except Exception as e:
+            # 如果启动失败，返回错误信息
+            return {
+                'success': False,
+                'error': str(e),
+                'message': '启动交互界面失败，将使用降级模式',
+                'platform': platform_type,
+                'terminal_type': 'fallback'
+            }
 
     def mcp_silent_setup(self, **kwargs):
         """无交互批量创建服务器配置，支持多次调用累加servers"""
@@ -607,6 +587,155 @@ class EnhancedConfigManager:
                 yaml.safe_dump(config, f, allow_unicode=True)
         except Exception:
             print(f"警告：保存配置文件失败: {self.config_path}", file=sys.stderr)
+
+    def _configure_password(self, prefill: dict = None, is_jump_host: bool = False) -> Optional[str]:
+        """配置密码（可选）"""
+        label = "跳板机" if is_jump_host else "最终目标服务器"
+        prefill = prefill or {}
+        self.colored_print(f"\n🔐 配置{label}密码（可选）...", Fore.CYAN)
+        self.colored_print("💡 如果使用密钥认证，请直接回车跳过", Fore.YELLOW)
+        
+        default_password = prefill.get('password', '')
+        if self.is_mcp_mode:
+            return default_password
+
+        if default_password:
+            password_prompt = f"密码已设置，回车保持不变，输入 'new' 重设: "
+            choice = self.smart_input(password_prompt, default="keep")
+            if choice.lower() == 'new':
+                return getpass.getpass(f"请输入新的{label}密码: ")
+            return default_password
+        else:
+            return getpass.getpass(f"请输入{label}密码 (回车跳过): ")
+
+
+
+    def _configure_docker(self, defaults: dict = None, server_info: dict = None) -> Optional[dict]:
+        """配置Docker设置（增强版）"""
+        try:
+            from .docker_config import DockerConfigCollector
+            from .interaction import UserInteraction
+            
+            # 创建用户交互对象
+            interaction = UserInteraction()
+            interaction.colored_print = self.colored_print
+            interaction.smart_input = self.smart_input
+            
+            # 创建Docker配置收集器
+            docker_collector = DockerConfigCollector(interaction)
+            
+            # 配置Docker
+            docker_config = docker_collector.configure_docker(defaults)
+            
+            return docker_config if docker_config else None
+            
+        except ImportError as e:
+            # 如果导入失败，回退到简化版本
+            self.colored_print(f"⚠️ 使用简化Docker配置 (导入错误: {e})", Fore.YELLOW)
+            return self._configure_docker_simple(defaults, server_info)
+        except Exception as e:
+            # 如果出现其他错误，回退到简化版本
+            self.colored_print(f"⚠️ 使用简化Docker配置 (错误: {e})", Fore.YELLOW)
+            return self._configure_docker_simple(defaults, server_info)
+
+    def _configure_docker_simple(self, defaults: dict = None, server_info: dict = None) -> Optional[dict]:
+        """简化版Docker配置（回退方案）"""
+        prefill = defaults or {}
+        server_info = server_info or {}
+        self.colored_print(f"\n🐳 配置Docker设置（简化版）...", Fore.CYAN)
+        
+        # 简单的启用/禁用选择
+        docker_enabled = prefill.get('enabled', False)
+        default_choice = "1" if docker_enabled else "2"
+        
+        self.colored_print("1. 启用Docker容器支持\n2. 不使用Docker", Fore.WHITE)
+        choice = self.smart_input("选择", default=default_choice)
+        
+        if choice != "1":
+            return None
+        
+        # 简化的Docker配置
+        docker_config = {}
+        
+        # 选择使用现有容器还是创建新容器
+        use_existing = prefill.get('use_existing', False)
+        default_existing_choice = "1" if use_existing else "2"
+        self.colored_print("\n1. 使用已存在的Docker容器\n2. 创建并使用新容器", Fore.WHITE)
+        existing_choice = self.smart_input("选择", default=default_existing_choice)
+        
+        if existing_choice == "1":
+            # 使用现有容器
+            container_name = self.smart_input("请输入容器名称", default=prefill.get('container_name', ''))
+            if container_name:
+                docker_config.update({
+                    'use_existing': True,
+                    'container_name': container_name
+                })
+            else:
+                self.colored_print("⚠️ 未输入容器名称，将创建新容器", Fore.YELLOW)
+                docker_config['use_existing'] = False
+        
+        if not docker_config.get('use_existing', False):
+            # 创建新容器（简化配置）
+            docker_config.update({
+                'use_existing': False,
+                'image': self.smart_input("Docker镜像", default=prefill.get('image', 'ubuntu:20.04')),
+                'container_name': self.smart_input("容器名称", default=prefill.get('container_name', ''))
+            })
+        
+        return docker_config
+
+
+
+    def _configure_server(self, label: str, prefill: dict = None) -> Optional[dict]:
+        """配置服务器信息"""
+        prefill = prefill or {}
+        self.colored_print(f"\n⚙️  配置 {label}...", Fore.CYAN)
+        
+        user, host = self._get_user_host(prefill)
+        if not user or not host: 
+            return None
+        
+        port = self._get_port(prefill)
+        if not port: 
+            return None
+        
+        server_info = {"host": host, "username": user, "port": int(port)}
+        
+        password = self._configure_password(server_info, is_jump_host=("跳板机" in label))
+        if password:
+            server_info['password'] = password
+            
+        return server_info
+
+    def _get_user_host(self, prefill: dict) -> Tuple[Optional[str], Optional[str]]:
+        """获取用户名和主机名"""
+        default_uh = f"{prefill.get('username','')}@{prefill.get('host','')}" if prefill.get('username') and prefill.get('host') else ""
+        while True:
+            user_host_str = self.smart_input("输入服务器地址 (格式: user@host)", default=default_uh)
+            if not user_host_str: 
+                return None, None
+            parsed = self.parse_user_host(user_host_str)
+            if parsed:
+                return parsed
+            self.colored_print("❌ 格式错误，请使用 'user@host' 格式。", Fore.RED)
+
+    def _get_port(self, prefill: dict) -> Optional[str]:
+        """获取端口号"""
+        return self.smart_input("输入SSH端口", default=str(prefill.get("port", "22")), validator=self.validate_port)
+
+    def _get_connection_type(self, prefill: dict) -> Optional[str]:
+        """获取连接类型"""
+        self.colored_print("1. SSH直连\n2. Relay跳板机连接\n3. Relay连接 + 二级跳板", Fore.WHITE)
+        default = "2" if prefill.get('connection_type') == 'relay' else "1"
+        choice = self.smart_input("选择连接类型", default=default)
+        if choice == "1": 
+            return "ssh"
+        if choice == "2": 
+            return "relay"
+        if choice == "3": 
+            return "relay_with_secondary"
+        return None
 
 # 兼容config_manager.main.EnhancedConfigManager用法
 import sys as _sys

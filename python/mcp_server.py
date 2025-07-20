@@ -850,10 +850,47 @@ async def handle_request(request):
                 # create_server_config工具适配新实现
                 elif tool_name == "create_server_config":
                     try:
-                        manager = config_manager.main.EnhancedConfigManager()
+                        manager = EnhancedConfigManager()
                         server_info = tool_arguments.copy()
-                        name, server_cfg = manager.create_server(server_info)
-                        content = f"✅ 服务器 {name} 已创建\n配置: {json.dumps(server_cfg, ensure_ascii=False, indent=2)}"
+                        
+                        # 启动真正的交互配置界面
+                        interactive_result = manager.launch_cursor_terminal_config(prefill_params=server_info)
+                        
+                        if interactive_result and interactive_result.get('success'):
+                            content = f"""🚀 **Cursor内置终端配置向导已启动！**
+
+✨ **配置界面已在Cursor内置终端中打开**
+
+📋 **您提供的参数已作为默认值预填充**：
+"""
+                            # 显示预填充的参数
+                            if server_info.get('name'):
+                                content += f"  ✅ **name**: `{server_info['name']}`\n"
+                            if server_info.get('host'):
+                                content += f"  ✅ **host**: `{server_info['host']}`\n"
+                            if server_info.get('username'):
+                                content += f"  ✅ **username**: `{server_info['username']}`\n"
+                            if server_info.get('port'):
+                                content += f"  ✅ **port**: `{server_info['port']}`\n"
+                            if server_info.get('description'):
+                                content += f"  ✅ **description**: `{server_info['description']}`\n"
+                            
+                            content += f"""
+🎯 **操作步骤**：
+  1️⃣ **查看内置终端** - 配置界面已在Cursor内置终端中显示
+  2️⃣ **按提示填写** - 跟随彩色界面的引导逐步配置
+  3️⃣ **确认配置** - 系统会显示完整配置供您确认
+  4️⃣ **自动保存** - 确认后配置立即生效，可直接使用
+
+🔥 **版本标识**: 2024-12-22 交互界面增强版
+"""
+                        else:
+                            # 降级到非交互模式
+                            result = manager.guided_setup(prefill=server_info)
+                            if result:
+                                content = f"✅ 服务器配置创建成功\n配置: {json.dumps(result, ensure_ascii=False, indent=2)}"
+                            else:
+                                content = "❌ 服务器配置创建失败"
                     except Exception as e:
                         debug_log(f"create_server_config error: {str(e)}")
                         content = json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
@@ -861,12 +898,18 @@ async def handle_request(request):
                 # update_server_config工具适配新实现
                 elif tool_name == "update_server_config":
                     try:
-                        manager = config_manager.main.EnhancedConfigManager()
+                        manager = EnhancedConfigManager()
                         name = tool_arguments.get("name")
                         update_info = tool_arguments.copy()
                         update_info.pop("name", None)
-                        updated_cfg = manager.update_server(name, update_info)
-                        content = f"✅ 服务器 {name} 已更新\n配置: {json.dumps(updated_cfg, ensure_ascii=False, indent=2)}"
+                        
+                        # 使用update_server_config方法更新服务器配置
+                        result = manager.update_server_config(name, **update_info)
+                        
+                        if result:
+                            content = f"✅ 服务器 {name} 已更新\n配置: {json.dumps(result, ensure_ascii=False, indent=2)}"
+                        else:
+                            content = f"❌ 服务器 {name} 更新失败"
                     except Exception as e:
                         debug_log(f"update_server_config error: {str(e)}")
                         content = json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
@@ -1041,7 +1084,7 @@ if __name__ == "__main__":
             print("✅ 所有模块导入成功")
             
             # 测试配置管理器
-            config_manager = config_manager.main.EnhancedConfigManager()
+            config_manager = EnhancedConfigManager()
             servers = config_manager.get_existing_servers()
             print(f"✅ 配置管理器工作正常，发现 {len(servers)} 个服务器")
             
@@ -1054,9 +1097,9 @@ if __name__ == "__main__":
             # 此调用仅在测试模式下进行，以确保Cursor客户端能够正确加载配置
             # 在实际生产环境中，此调用应由Cursor客户端发起
             if DEBUG:
-                print("[DEBUG] Launching Cursor terminal configuration interface for testing.", file=sys.stderr, flush=True)
-                from python.cursor_terminal_config import launch_cursor_terminal_config
-                launch_cursor_terminal_config()
+                print("[DEBUG] Testing launch_cursor_terminal_config function.", file=sys.stderr, flush=True)
+                result = config_manager.launch_cursor_terminal_config(prefill_params={'name': 'test_server'})
+                print(f"✅ launch_cursor_terminal_config测试结果: {result}")
             
             print("🎉 所有测试通过！MCP服务器可以正常启动")
             sys.exit(0)

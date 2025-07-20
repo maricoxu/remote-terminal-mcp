@@ -39,14 +39,14 @@ def test_interactive_create_server_config():
     if os.path.exists(TEST_CONFIG_PATH):
         os.remove(TEST_CONFIG_PATH)
     # patch smart_input，严格按guided_setup字段顺序消费
-    # 普通场景字段顺序：服务器名称, 主机名, 用户名, 端口, docker_enabled, auto_sync_enabled
+    # 新的交互流程：服务器名称, 连接类型, user@host, 端口, Docker模式选择, 密码
     PATCH_INPUTS = [
         "test_server_001",        # 服务器名称
-        "test-host-001",          # 主机名
-        "testuser",               # 用户名
+        "1",                      # 连接类型：1=SSH直连
+        "testuser@test-host-001", # user@host格式
         "22",                     # 端口
-        "2",                      # docker_enabled
-        "2",                      # auto_sync_enabled
+        "4",                      # Docker模式选择：4=不使用Docker
+        "",                       # 密码（跳过）
     ]
     with patch.object(EnhancedConfigManager, 'smart_input', side_effect=PATCH_INPUTS):
         manager = EnhancedConfigManager(config_path=TEST_CONFIG_PATH, force_interactive=True)

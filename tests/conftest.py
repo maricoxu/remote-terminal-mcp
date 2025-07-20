@@ -24,6 +24,12 @@ def patch_all_inputs(monkeypatch):
         monkeypatch.setattr(UserInteraction, "smart_input", smart_input_patch)
     except ImportError:
         pass
+    # patch getpass.getpass，防止密码输入卡住
+    import getpass
+    def fake_getpass(prompt=""):
+        return ""  # 返回空字符串，跳过密码输入
+    monkeypatch.setattr(getpass, "getpass", fake_getpass)
+    
     # patch subprocess.run，mock osascript/终端相关
     import subprocess
     def fake_run(*args, **kwargs):

@@ -1,5 +1,6 @@
 servers:
   test_server_001:
+    connection_type: ssh
     host: test-host-001
     username: testuser
     port: 22

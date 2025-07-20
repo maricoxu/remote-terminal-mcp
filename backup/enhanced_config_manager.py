@@ -538,7 +538,7 @@ class EnhancedConfigManager:
 def main():
     parser = argparse.ArgumentParser(description='Enhanced Configuration Manager for Remote Terminal MCP')
     args = parser.parse_args()
-    manager = config_manager.main.EnhancedConfigManager()
+    manager = EnhancedConfigManager()
     manager.guided_setup()
 
 if __name__ == "__main__":

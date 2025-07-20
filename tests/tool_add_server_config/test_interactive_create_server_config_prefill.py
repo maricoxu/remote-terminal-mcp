@@ -23,12 +23,11 @@ TEST_CONFIG_PATH = os.path.join(tempfile.gettempdir(), "test_config_create_serve
 EXPECTED_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "expected_test_create_server_config_prefill.yaml")
 
 MOCK_INPUTS = [
-    "",  # 服务器名称（已预填）
-    "",  # 服务器地址（已预填）
-    "22",  # 端口（明确输入22，避免空字符串）
-    "2", # 是否启用docker
-    "2", # 是否启用自动同步
-    "", "", "", "", "",  # 预留给后续所有可选/确认输入
+    "1",  # 连接类型：1=SSH直连
+    "admin@192.168.1.225",  # user@host格式（预填）
+    "22",  # 端口
+    "4",  # Docker模式选择：4=不使用Docker
+    "",  # 密码（跳过）
 ]
 
 def test_interactive_create_server_config_prefill():
@@ -41,10 +40,9 @@ def test_interactive_create_server_config_prefill():
         'host': '192.168.1.225',
         'username': 'admin',
     }
-    with patch("builtins.input", side_effect=MOCK_INPUTS):
+    with patch.object(EnhancedConfigManager, 'smart_input', side_effect=MOCK_INPUTS):
         manager = EnhancedConfigManager(config_path=TEST_CONFIG_PATH, force_interactive=True)
-        with patch.object(manager.ia, 'smart_input', side_effect=lambda prompt, **kwargs: "22" if "端口" in prompt else (MOCK_INPUTS.pop(0) if MOCK_INPUTS else "test")):
-            manager.guided_setup(prefill=prefill)
+        manager.guided_setup(prefill=prefill)
     # 校验配置内容
     actual = load_yaml(TEST_CONFIG_PATH)
     expected = load_yaml(EXPECTED_CONFIG_PATH)

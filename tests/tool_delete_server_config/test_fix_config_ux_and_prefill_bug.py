@@ -34,21 +34,18 @@ class TestConfigUXPrefillFix(unittest.TestCase):
         self.config_dir.mkdir(parents=True, exist_ok=True)
         
         # 创建一个有问题的初始配置文件，模拟BUG场景
-        # - hg222 的 'host' 和 'username' 在顶层，但 jump_host 缺少这些
-        # - port 字段完全缺失
+        # 使用新的配置格式
         problematic_config = {
             'servers': {
                 'hg222': {
-                    'type': 'relay',
+                    'connection_type': 'relay',
                     'host': 'szzj-isa-ai-peking-poc06.szzj',
                     'username': 'yh',
-                    'password': 'old_password',
-                    'specs': {
-                        'connection': {
-                            # 故意让 jump_host 为空，以触发预填充BUG
-                            'jump_host': {} 
-                        }
-                    }
+                    'port': 22,
+                    'docker_enabled': False,
+                    'docker_config': {},
+                    'auto_sync_enabled': False,
+                    'sync_config': {}
                 }
             }
         }
@@ -74,14 +71,13 @@ class TestConfigUXPrefillFix(unittest.TestCase):
         # 测试前清理配置文件，确保环境隔离
         if self.config_path.exists():
             self.config_path.unlink()
-        # patch smart_input，relay字段顺序：host, username, port, docker_enabled, auto_sync_enabled, sync_config
+        # patch smart_input，新的交互流程：连接类型, user@host, 端口, Docker模式, 密码
         PATCH_INPUTS = [
-            'relay-host.com',  # host
-            'user1',          # username
-            '22',             # port
-            'n',              # docker_enabled
-            'n',              # auto_sync_enabled
-            '',                # sync_config（补全，防止StopIteration）
+            '2',                      # 连接类型：2=Relay跳板机连接
+            'user1@relay-host.com',   # user@host格式
+            '22',                     # 端口
+            '4',                      # Docker模式：4=不使用Docker
+            '',                       # 密码（跳过）
         ]
         with patch.object(EnhancedConfigManager, 'smart_input', side_effect=PATCH_INPUTS):
             manager = EnhancedConfigManager(config_path=self.config_path, force_interactive=True)
@@ -92,18 +88,13 @@ class TestConfigUXPrefillFix(unittest.TestCase):
         print(f"[调试] update_relay_server_with_prefill_issues 最终配置内容: {final_config}")
         updated_server = final_config['servers']['hg222']
         
-        # 验证第一级跳板机信息
+        # 验证服务器信息
+        self.assertEqual(updated_server['connection_type'], 'relay')
         self.assertEqual(updated_server['host'], 'relay-host.com')
         self.assertEqual(updated_server['username'], 'user1')
         self.assertEqual(updated_server['port'], 22)
-        self.assertEqual(updated_server['password'], 'relay_password_123')
-        
-        # 验证最终目标服务器信息
-        jump_host = updated_server['specs']['connection']['jump_host']
-        self.assertEqual(jump_host['host'], 'final-dest.com')
-        self.assertEqual(jump_host['username'], 'user2')
-        self.assertEqual(jump_host['port'], 2222)
-        self.assertEqual(jump_host['password'], 'final_dest_password_456')
+        self.assertEqual(updated_server['docker_enabled'], False)
+        self.assertEqual(updated_server['auto_sync_enabled'], False)
 
         print("\n✅ 回归测试成功：配置向导UX和预填充BUG已修复。")
 
@@ -114,14 +105,13 @@ class TestConfigUXPrefillFix(unittest.TestCase):
         # 测试前清理配置文件，确保环境隔离
         if self.config_path.exists():
             self.config_path.unlink()
-        # patch smart_input，relay字段顺序：host, username, port, docker_enabled, auto_sync_enabled, sync_config
+        # patch smart_input，新的交互流程：连接类型, user@host, 端口, Docker模式, 密码
         PATCH_INPUTS = [
-            'relay-host.com',  # host
-            'relay',          # username
-            '22',             # port
-            'n',              # docker_enabled
-            'n',              # auto_sync_enabled
-            '',                # sync_config（补全，防止StopIteration）
+            '2',                      # 连接类型：2=Relay跳板机连接
+            'relay@relay-host.com',   # user@host格式
+            '22',                     # 端口
+            '4',                      # Docker模式：4=不使用Docker
+            '',                       # 密码（跳过）
         ]
         with patch.object(EnhancedConfigManager, 'smart_input', side_effect=PATCH_INPUTS):
             manager = EnhancedConfigManager(config_path=self.config_path, force_interactive=True)
@@ -131,12 +121,12 @@ class TestConfigUXPrefillFix(unittest.TestCase):
             final_config = yaml.safe_load(f)
         print(f"[调试] guided_setup_for_relay_server 最终配置内容: {final_config}")
         new_server = final_config['servers']['hg222-guided']
+        self.assertEqual(new_server['connection_type'], 'relay')
         self.assertEqual(new_server['host'], 'relay-host.com')
         self.assertEqual(new_server['username'], 'relay')
         self.assertEqual(new_server['port'], 22)
-        jump_host = new_server['specs']['connection']['jump_host']
-        self.assertEqual(jump_host['host'], 'target-host.com')
-        self.assertEqual(jump_host['username'], 'target')
+        self.assertEqual(new_server['docker_enabled'], False)
+        self.assertEqual(new_server['auto_sync_enabled'], False)
 
         print("\n✅ 回归测试成功：guided_setup 调用流程已修复。")
 

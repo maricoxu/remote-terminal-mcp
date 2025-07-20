@@ -20,12 +20,13 @@ def load_yaml(path):
         return yaml.safe_load(f)
 
 TEST_CONFIG_PATH = os.path.join(tempfile.gettempdir(), "test_config_update_server_prefill.yaml")
-EXPECTED_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "../expected/test_update_server_config_prefill.yaml")
+EXPECTED_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "expected_test_update_server_config_prefill.yaml")
 
 # 先准备初始配置
 INIT_CONFIG = {
     'servers': {
         'hg225': {
+            'connection_type': 'ssh',
             'host': '192.168.1.225',
             'username': 'admin',
             'port': 22,
@@ -38,12 +39,11 @@ INIT_CONFIG = {
 }
 
 MOCK_INPUTS = [
-    "",  # 服务器名称（已预填）
-    "",  # 服务器地址（已预填）
-    "",  # 端口（直接回车用默认22）
-    "2", # 是否启用docker
-    "2", # 是否启用自动同步
-    "", "", "", "", "",  # 预留给后续所有可选/确认输入
+    "1",                      # 连接类型：1=SSH直连
+    "admin@192.168.1.226",    # user@host格式（预填修改后的地址）
+    "22",                     # 端口
+    "4",                      # Docker模式：4=不使用Docker
+    "",                       # 密码（跳过）
 ]
 
 def test_interactive_update_server_config_prefill():
@@ -56,7 +56,7 @@ def test_interactive_update_server_config_prefill():
         'host': '192.168.1.226',  # 修改后的host
         'username': 'admin',
     }
-    with patch("builtins.input", side_effect=MOCK_INPUTS):
+    with patch.object(EnhancedConfigManager, 'smart_input', side_effect=MOCK_INPUTS):
         manager = EnhancedConfigManager(config_path=TEST_CONFIG_PATH, force_interactive=True)
         manager.guided_setup(edit_server='hg225', prefill=prefill)
     # 校验配置内容
