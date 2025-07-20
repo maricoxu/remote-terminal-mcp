@@ -40,7 +40,7 @@
     "version:minor": "node scripts/publish.js minor",
     "version:major": "node scripts/publish.js major",
     "build": "npm pack",
-    "prepublishOnly": "npm run test:pre-publish"
+    "prepublishOnly": "python3 -m pytest tests/ -q"
   },
   "keywords": [
     "mcp",
