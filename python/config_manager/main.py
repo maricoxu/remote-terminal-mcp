@@ -230,12 +230,15 @@ class EnhancedConfigManager:
         final_config['docker_enabled'] = bool(docker_config)
         final_config['docker_config'] = docker_config if docker_config else {}
         
-        # 4.5. 同步配置（简化版，默认禁用）
-        final_config['auto_sync_enabled'] = False
-        final_config['sync_config'] = {}
+        # 4.5. 同步配置
+        self.show_progress(4, 6, "同步配置")
+        sync_defaults = defaults.get('sync_config', {})
+        sync_config = self._configure_sync(defaults=sync_defaults)
+        final_config['auto_sync_enabled'] = bool(sync_config)
+        final_config['sync_config'] = sync_config if sync_config else {}
         
         # 5. 保存配置
-        self.show_progress(4, 5, "保存配置")
+        self.show_progress(5, 6, "保存配置")
         self.colored_print("\n🎉 配置完成!", Fore.GREEN, style=Style.BRIGHT)
         
         # 保存配置
