@@ -20,8 +20,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 # 替换原有导入
-#from config_manager.main import EnhancedConfigManager
-from python.config_manager.main import EnhancedConfigManager
+from config_manager.main import EnhancedConfigManager
 # 修复导入路径 - enhanced_ssh_manager在python目录下
 sys.path.insert(0, str(Path(__file__).parent))
 from enhanced_ssh_manager import EnhancedSSHManager, log_output, create_enhanced_manager
@@ -689,7 +688,7 @@ async def handle_request(request):
                     if server_name:
                         # 🚀 使用新的connect.py连接管理器
                         try:
-                            from python.connect import connect_server as new_connect_server
+                            from connect import connect_server as new_connect_server
                             result = new_connect_server(server_name)
                             
                             if result.success:
@@ -728,7 +727,7 @@ async def handle_request(request):
                     
                     if server_name:
                         try:
-                            from python.connect import disconnect_server as new_disconnect_server
+                            from connect import disconnect_server as new_disconnect_server
                             result = new_disconnect_server(server_name)
                             
                             if result.success:
@@ -759,7 +758,7 @@ async def handle_request(request):
                     server = tool_arguments.get("server")
                     if command:
                         try:
-                            from python.connect import execute_server_command
+                            from connect import execute_server_command
                             result = execute_server_command(server or "default", command)
                             
                             if result.success:
@@ -779,7 +778,7 @@ async def handle_request(request):
                     server_name = tool_arguments.get("server_name")
                     if server_name:
                         try:
-                            from python.connect import get_server_status as new_get_server_status
+                            from connect import get_server_status as new_get_server_status
                             result = new_get_server_status(server_name)
                             
                             if result.success:
@@ -799,7 +798,7 @@ async def handle_request(request):
                     else:
                         # 获取所有服务器状态
                         try:
-                            from python.connect import list_all_servers
+                            from connect import list_all_servers
                             servers_info = list_all_servers()
                             
                             if servers_info:
@@ -1092,7 +1091,7 @@ python python/update_server_config.py --server {server_name}
                 # 同步功能工具处理
                 elif tool_name == "autosync_enable":
                     try:
-                        from python.sync_manager import enable_auto_sync
+                        from sync_manager import enable_auto_sync
                         server_name = tool_arguments.get("server_name")
                         local_path = tool_arguments.get("local_path")
                         remote_path = tool_arguments.get("remote_path")
@@ -1123,7 +1122,7 @@ python python/update_server_config.py --server {server_name}
                 
                 elif tool_name == "autosync_disable":
                     try:
-                        from python.sync_manager import disable_auto_sync
+                        from sync_manager import disable_auto_sync
                         server_name = tool_arguments.get("server_name")
                         
                         if not server_name:
@@ -1142,7 +1141,7 @@ python python/update_server_config.py --server {server_name}
                 
                 elif tool_name == "get_sync_status":
                     try:
-                        from python.sync_manager import get_sync_status
+                        from sync_manager import get_sync_status
                         server_name = tool_arguments.get("server_name")
                         
                         if not server_name:
