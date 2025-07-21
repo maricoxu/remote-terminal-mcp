@@ -72,56 +72,68 @@ echo ""
 # 1. 预填充参数功能测试
 run_test \
     "预填充参数功能" \
-    "tests/regression/test_fix_prefill_parameters_20241222.py" \
+    "tests/tool_add_server_config/test_fix_save_config_parameter_mismatch_20250615.py" \
     "测试MCP工具的预填充参数功能，确保参数正确传递和显示"
 
 # 2. 交互界面启动机制测试
 run_test \
     "交互界面启动机制" \
-    "tests/regression/test_fix_interactive_interface_startup_20241222.py" \
+    "python/tests/tool_connect_server/test_fix_interactive_interface_startup_20241222.py" \
     "测试交互界面启动机制，确保不启动后台进程而是提供用户指导"
 
 # 2.1. 🔧 新增：交互启动要求测试
 run_test \
     "交互启动要求" \
-    "tests/regression/test_fix_interactive_startup_requirement_20241222.py" \
+    "python/tests/tool_connect_server/test_fix_interactive_startup_requirement_20241222.py" \
     "测试create_server_config工具必须启动交互配置界面，验证强制交互模式修复"
 
 # 2.2. 🔧 新增：用户可见交互界面测试
 run_test \
     "用户可见交互界面" \
-    "tests/regression/test_fix_user_visible_interaction_20241222.py" \
+    "python/tests/tool_connect_server/test_fix_user_visible_interaction_20241222.py" \
     "测试用户是否真的能看到交互配置界面，验证用户体验修复"
 
 # 3. 🔧 新增：完整交互序列和进程管理测试
 run_test \
     "完整交互序列和进程管理" \
-    "tests/regression/test_fix_complete_interaction_and_process_management_20241222.py" \
+    "python/tests/tool_connect_server/test_fix_complete_interaction_and_process_management_20241222.py" \
     "测试完整的交互序列包括文件同步设置，以及进程生命周期管理"
 
 # 4. 🔧 新增：终端清理Bug修复测试
 run_test \
     "终端清理Bug修复" \
-    "tests/regression/test_fix_terminal_cleanup_bug_20241222.py" \
+    "tests/tool_disconnect_server/test_fix_terminal_cleanup_bug_20241222.py" \
     "测试修复后的终端清理逻辑，确保AppleScript不再使用有问题的pwd命令"
 
 # 5. 🔧 新增：Docker配置保存和显示功能测试
 run_test \
     "Docker配置保存和显示功能" \
-    "tests/regression/test_fix_docker_config_save_20241222.py" \
+    "tests/tool_add_server_config/test_fix_config_auto_creation_removal_20241222.py" \
     "测试Docker配置的保存、显示和格式兼容性，确保预填充参数正确应用"
 
 # 6. 🔧 新增：Docker配置自动化功能测试
 run_test \
     "Docker配置自动化功能" \
-    "tests/regression/test_fix_docker_config_automation_20241222.py" \
+    "tests/tool_add_server_config/test_docker_config_enhanced.py" \
     "测试Docker配置的完整自动化保存流程，包括端到端测试和边界情况验证"
 
 # 7. 🔧 新增：MCP服务器重启和新代码加载测试
 run_test \
     "MCP服务器重启和新代码加载" \
-    "tests/regression/test_fix_mcp_restart_and_new_code_loading_20241222.py" \
+    "python/tests/tool_connect_server/test_fix_mcp_timeout_issue_20240622.py" \
     "测试MCP服务器重启后新代码能正确加载，修复语法错误并验证update_server_config新逻辑"
+
+# 8. 🔧 新增：连接功能回归测试
+run_test \
+    "连接功能回归测试" \
+    "python/tests/tool_connect_server/test_regression_prevention.py" \
+    "测试连接功能的回归预防，确保新功能不影响现有功能"
+
+# 9. 🔧 新增：端到端连接测试
+run_test \
+    "端到端连接测试" \
+    "python/tests/tool_connect_server/test_end_to_end.py" \
+    "测试完整的端到端连接流程，包括Docker环境配置"
 
 # JavaScript语法回归测试
 echo "🔍 运行JavaScript语法回归测试..."

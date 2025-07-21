@@ -64,7 +64,7 @@ class TestEndToEndWorkflow(BaseTestCase):
         """测试Docker设置工作流程"""
         with test_environment() as env:
             # 1. 创建Docker配置管理器
-            from docker_config_manager import DockerConfigManager
+            from config_manager.docker_config import DockerConfigManager
             from config_manager.main import EnhancedConfigManager
             
             docker_manager = DockerConfigManager()

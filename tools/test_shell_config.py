@@ -137,4 +137,4 @@ def main():
     print("  - zsh: 复制用户配置文件到容器中")
 
 if __name__ == "__main__":
-    main() 
+    main()

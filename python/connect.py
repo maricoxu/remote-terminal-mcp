@@ -41,6 +41,7 @@ class ConnectionType(Enum):
     """连接类型枚举"""
     SSH = "ssh"
     RELAY = "relay"
+    RELAY_WITH_SECONDARY = "relay_with_secondary"
     SCRIPT_BASED = "script_based"
 
 
@@ -1101,7 +1102,19 @@ class EnvironmentManager:
                 if not self._install_zsh():
                     return False
             
-            # 2. 检查配置文件是否存在
+            # 2. 检查oh-my-zsh是否安装
+            if not self._check_oh_my_zsh_installed():
+                log_output("📦 oh-my-zsh未安装，正在安装...", "INFO")
+                if not self._install_oh_my_zsh():
+                    return False
+            
+            # 3. 检查P10k主题是否安装
+            if not self._check_p10k_installed():
+                log_output("📦 P10k主题未安装，正在安装...", "INFO")
+                if not self._install_p10k():
+                    return False
+            
+            # 4. 检查配置文件是否存在
             config_files = [".zshrc", ".p10k.zsh"]
             missing_files = []
             
@@ -1109,7 +1122,7 @@ class EnvironmentManager:
                 if not self._check_config_exists(config_file):
                     missing_files.append(config_file)
             
-            # 3. 拷贝缺失的配置文件
+            # 5. 拷贝缺失的配置文件
             if missing_files:
                 log_output(f"📋 发现缺失配置文件: {missing_files}", "INFO")
                 if not self._copy_zsh_config_files(missing_files):
@@ -1117,7 +1130,7 @@ class EnvironmentManager:
             else:
                 log_output("✅ zsh配置文件已存在", "SUCCESS")
             
-            # 4. 切换到zsh环境
+            # 6. 切换到zsh环境
             return self._switch_to_zsh()
             
         except Exception as e:
@@ -1169,6 +1182,82 @@ class EnvironmentManager:
             log_output(f"❌ 安装zsh失败: {e}", "ERROR")
             return False
     
+    def _check_oh_my_zsh_installed(self) -> bool:
+        """检查oh-my-zsh是否安装"""
+        try:
+            subprocess.run(
+                ['tmux', 'send-keys', '-t', self.session_name, 'test -d ~/.oh-my-zsh && echo "EXISTS_OH_MY_ZSH" || echo "MISSING_OH_MY_ZSH"', 'Enter'],
+                capture_output=True
+            )
+            time.sleep(1)
+            
+            # 获取输出检查
+            output = subprocess.run(
+                ['tmux', 'capture-pane', '-t', self.session_name, '-p'],
+                capture_output=True, text=True
+            ).stdout
+            
+            return "EXISTS_OH_MY_ZSH" in output
+            
+        except Exception as e:
+            log_output(f"❌ 检查oh-my-zsh安装状态失败: {e}", "ERROR")
+            return False
+    
+    def _install_oh_my_zsh(self) -> bool:
+        """安装oh-my-zsh"""
+        try:
+            log_output("📦 正在安装oh-my-zsh...", "INFO")
+            subprocess.run(
+                ['tmux', 'send-keys', '-t', self.session_name, 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended', 'Enter'],
+                capture_output=True
+            )
+            time.sleep(15)  # 等待安装完成
+            
+            # 检查是否安装成功
+            return self._check_oh_my_zsh_installed()
+            
+        except Exception as e:
+            log_output(f"❌ 安装oh-my-zsh失败: {e}", "ERROR")
+            return False
+    
+    def _check_p10k_installed(self) -> bool:
+        """检查P10k主题是否安装"""
+        try:
+            subprocess.run(
+                ['tmux', 'send-keys', '-t', self.session_name, 'test -d ~/.oh-my-zsh/themes/powerlevel10k && echo "EXISTS_P10K" || echo "MISSING_P10K"', 'Enter'],
+                capture_output=True
+            )
+            time.sleep(1)
+            
+            # 获取输出检查
+            output = subprocess.run(
+                ['tmux', 'capture-pane', '-t', self.session_name, '-p'],
+                capture_output=True, text=True
+            ).stdout
+            
+            return "EXISTS_P10K" in output
+            
+        except Exception as e:
+            log_output(f"❌ 检查P10k安装状态失败: {e}", "ERROR")
+            return False
+    
+    def _install_p10k(self) -> bool:
+        """安装P10k主题"""
+        try:
+            log_output("📦 正在安装P10k主题...", "INFO")
+            subprocess.run(
+                ['tmux', 'send-keys', '-t', self.session_name, 'git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/.oh-my-zsh/themes/powerlevel10k', 'Enter'],
+                capture_output=True
+            )
+            time.sleep(10)  # 等待安装完成
+            
+            # 检查是否安装成功
+            return self._check_p10k_installed()
+            
+        except Exception as e:
+            log_output(f"❌ 安装P10k失败: {e}", "ERROR")
+            return False
+    
     def _check_config_exists(self, config_file: str) -> bool:
         """检查配置文件是否存在"""
         try:
@@ -1193,25 +1282,24 @@ class EnvironmentManager:
     def _copy_zsh_config_files(self, missing_files: list) -> bool:
         """拷贝zsh配置文件到docker环境"""
         try:
-            zsh_config_dir = self.template_base / "zsh"
-            if not zsh_config_dir.exists():
-                log_output(f"❌ 配置文件目录不存在: {zsh_config_dir}", "ERROR")
-                return False
+            # 从模板目录拷贝预配置的zsh配置文件
+            template_zsh_dir = Path(__file__).parent.parent / "templates" / "configs" / "zsh"
             
             success_count = 0
             for config_file in missing_files:
-                source_file = zsh_config_dir / config_file
+                source_file = template_zsh_dir / config_file
                 if source_file.exists():
-                    log_output(f"📁 正在拷贝 {config_file}...", "INFO")
+                    log_output(f"📁 正在拷贝预配置的 {config_file} 到容器...", "INFO")
                     
                     # 步骤1: 先删除容器内的同名文件（如果存在）避免重命名问题
                     log_output(f"🗑️ 清理容器内现有的 {config_file}...", "DEBUG")
                     subprocess.run(
-                        ['docker', 'exec', self.container_name, 'rm', '-f', f'/root/{config_file}'],
+                        ['tmux', 'send-keys', '-t', self.session_name, f'rm -f ~/{config_file}', 'Enter'],
                         capture_output=True
                     )
+                    time.sleep(1)
                     
-                    # 步骤2: 拷贝文件到容器
+                    # 步骤2: 使用docker cp拷贝文件到容器
                     result = subprocess.run(
                         ['docker', 'cp', str(source_file), f'{self.container_name}:/root/{config_file}'],
                         capture_output=True, text=True
@@ -1221,12 +1309,19 @@ class EnvironmentManager:
                         log_output(f"✅ {config_file} 拷贝成功", "SUCCESS")
                         
                         # 步骤3: 验证文件确实存在且名称正确
-                        verify_result = subprocess.run(
-                            ['docker', 'exec', self.container_name, 'ls', '-la', f'/root/{config_file}'],
-                            capture_output=True, text=True
+                        subprocess.run(
+                            ['tmux', 'send-keys', '-t', self.session_name, f'ls -la ~/{config_file}', 'Enter'],
+                            capture_output=True
                         )
+                        time.sleep(1)
                         
-                        if verify_result.returncode == 0:
+                        # 获取验证结果
+                        verify_output = subprocess.run(
+                            ['tmux', 'capture-pane', '-t', self.session_name, '-p'],
+                            capture_output=True, text=True
+                        ).stdout
+                        
+                        if config_file in verify_output and 'No such file' not in verify_output:
                             log_output(f"✅ {config_file} 验证存在", "SUCCESS")
                             success_count += 1
                         else:
@@ -1236,7 +1331,13 @@ class EnvironmentManager:
                         error_msg = result.stderr.strip() if result.stderr else "未知错误"
                         log_output(f"❌ {config_file} 拷贝失败: {error_msg}", "ERROR")
                 else:
-                    log_output(f"⚠️ 源文件不存在: {source_file}", "WARNING")
+                    log_output(f"⚠️ 模板配置文件不存在: {source_file}", "WARNING")
+                    if config_file == ".p10k.zsh":
+                        log_output(f"💡 P10k配置文件不存在，将使用默认配置", "INFO")
+                        # 对于P10k配置文件，我们可以跳过，因为zsh会使用默认配置
+                        success_count += 1
+                    else:
+                        log_output(f"💡 请确保模板目录中有 {config_file} 文件", "INFO")
             
             return success_count == len(missing_files)
             
@@ -1384,6 +1485,8 @@ class SimpleConnectionManager:
                 connection_type_str = server_data.get('connection_type', 'ssh')
                 if connection_type_str == 'relay':
                     connection_type = ConnectionType.RELAY
+                elif connection_type_str == 'relay_with_secondary':
+                    connection_type = ConnectionType.RELAY_WITH_SECONDARY
                 elif connection_type_str == 'script_based':
                     connection_config = server_data.get('specs', {}).get('connection', {})
                     tool = connection_config.get('tool', 'ssh')
@@ -1553,6 +1656,8 @@ class SimpleConnectionManager:
         try:
             if server_config.connection_type == ConnectionType.RELAY:
                 connect_result = self._execute_relay_connection(server_config)
+            elif server_config.connection_type == ConnectionType.RELAY_WITH_SECONDARY:
+                connect_result = self._execute_relay_with_secondary_connection(server_config)
             else:
                 connect_result = self._execute_ssh_connection(server_config)
             
@@ -1677,6 +1782,143 @@ class SimpleConnectionManager:
                 status=ConnectionStatus.ERROR
             )
     
+    def _execute_relay_with_secondary_connection(self, server_config: ServerConfig) -> ConnectionResult:
+        """执行双重跳板机连接（relay -> secondary -> target）"""
+        session_name = server_config.session_name
+        
+        try:
+            # 创建简化版交互引导器
+            guide = SimpleInteractionGuide(session_name)
+            
+            # 获取二级跳板机配置
+            with open(self.config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            
+            servers_config = config.get('servers', {})
+            server_data = servers_config.get(server_config.name, {})
+            secondary_config = server_data.get('secondary_jump_host', {})
+            
+            if not secondary_config:
+                return ConnectionResult(
+                    success=False,
+                    message="缺少二级跳板机配置",
+                    status=ConnectionStatus.ERROR
+                )
+            
+            secondary_host = secondary_config.get('host')
+            secondary_username = secondary_config.get('username')
+            secondary_port = secondary_config.get('port', 22)
+            
+            log_output("📡 启动relay-cli（无参数）", "INFO")
+            
+            # 第一步：启动relay-cli
+            subprocess.run(
+                ['tmux', 'send-keys', '-t', session_name, 'relay-cli', 'Enter'],
+                capture_output=True
+            )
+            
+            log_output("⏳ 等待relay认证完成", "WARNING")
+            guide.simple_guidance("需要手动完成relay认证")
+            
+            # 等待relay认证完成
+            max_wait = 120
+            check_interval = 5
+            
+            for i in range(0, max_wait, check_interval):
+                time.sleep(check_interval)
+                
+                result = subprocess.run(
+                    ['tmux', 'capture-pane', '-t', session_name, '-p'],
+                    capture_output=True, text=True
+                )
+                
+                if result.returncode == 0:
+                    output = result.stdout
+                    
+                    error = guide.check_common_errors(output)
+                    if error:
+                        return ConnectionResult(
+                            success=False,
+                            message=f"Relay认证失败: {error}",
+                            status=ConnectionStatus.ERROR
+                        )
+                    
+                    if guide.check_relay_ready(output):
+                        log_output("✅ 检测到relay环境准备就绪", "SUCCESS")
+                        break
+                        
+                    log_output(f"⏳ 等待relay认证... ({i+check_interval}s)", "INFO")
+                else:
+                    return ConnectionResult(
+                        success=False,
+                        message="无法监控relay认证状态",
+                        status=ConnectionStatus.ERROR
+                    )
+            else:
+                return ConnectionResult(
+                    success=False,
+                    message="relay认证超时",
+                    status=ConnectionStatus.ERROR
+                )
+            
+            # 第二步：SSH到二级跳板机
+            log_output(f"🔗 SSH到二级跳板机: {secondary_host}", "INFO")
+            ssh_cmd = f'ssh {secondary_username}@{secondary_host}'
+            subprocess.run(
+                ['tmux', 'send-keys', '-t', session_name, ssh_cmd, 'Enter'],
+                capture_output=True
+            )
+            
+            # 等待密码提示并输入密码
+            time.sleep(3)
+            secondary_password = secondary_config.get('password')
+            if secondary_password:
+                log_output("🔐 输入二级跳板机密码", "INFO")
+                subprocess.run(
+                    ['tmux', 'send-keys', '-t', session_name, secondary_password, 'Enter'],
+                    capture_output=True
+                )
+                time.sleep(3)  # 等待密码验证
+            else:
+                log_output("⚠️ 二级跳板机密码未配置，需要手动输入", "WARNING")
+                guide.simple_guidance("请在tmux会话中手动输入二级跳板机密码")
+                time.sleep(10)  # 给用户更多时间输入密码
+            
+            # 第三步：从二级跳板机SSH到目标服务器
+            log_output(f"🔗 从二级跳板机SSH到目标服务器: {server_config.host}", "INFO")
+            target_ssh_cmd = f'ssh {server_config.username}@{server_config.host}'
+            subprocess.run(
+                ['tmux', 'send-keys', '-t', session_name, target_ssh_cmd, 'Enter'],
+                capture_output=True
+            )
+            
+            # 等待目标服务器密码提示
+            time.sleep(3)
+            # 检查是否需要输入目标服务器密码
+            # 由于配置中没有目标服务器密码，这里需要用户手动处理
+            log_output("⚠️ 目标服务器可能需要密码或SSH密钥认证", "WARNING")
+            guide.simple_guidance("请在tmux会话中手动处理目标服务器认证")
+            time.sleep(8)  # 给用户时间处理认证
+            
+            # 如果有Docker容器，进入容器并配置环境
+            if server_config.docker_container:
+                docker_result = self._handle_docker_environment(server_config)
+                if not docker_result.success:
+                    return docker_result
+            
+            return ConnectionResult(
+                success=True,
+                message="双重跳板机连接流程完成",
+                status=ConnectionStatus.CONNECTED
+            )
+            
+        except Exception as e:
+            return ConnectionResult(
+                success=False,
+                message=f"双重跳板机连接异常: {str(e)}",
+                status=ConnectionStatus.ERROR
+            )
+    
     def _execute_ssh_connection(self, server_config: ServerConfig) -> ConnectionResult:
         """执行SSH连接"""
         session_name = server_config.session_name
@@ -1715,18 +1957,148 @@ class SimpleConnectionManager:
         """
         处理Docker环境配置
         用户建议的逻辑：
-        1. 先用bash进入docker环境
-        2. 如果配置了zsh，用EnvironmentManager检查和配置
-        3. 在EnvironmentManager之后加AutoSyncManager
-        4. 最后切换到用户偏好的shell
+        1. 检查Docker容器是否存在，如果不存在则创建
+        2. 用bash进入docker环境
+        3. 如果配置了zsh，用EnvironmentManager检查和配置
+        4. 在EnvironmentManager之后加AutoSyncManager
+        5. 最后切换到用户偏好的shell
         """
         session_name = server_config.session_name
         container_name = server_config.docker_container
         
         try:
-            log_output(f"🐳 进入Docker容器: {container_name}", "INFO")
+            log_output(f"🐳 检查Docker容器: {container_name}", "INFO")
             
-            # 步骤1: 用bash进入docker环境（默认）
+            # 步骤1: 检查容器是否存在
+            check_cmd = f'docker ps -a --format "table {{.Names}}" | grep -w {container_name}'
+            subprocess.run(
+                ['tmux', 'send-keys', '-t', session_name, check_cmd, 'Enter'],
+                capture_output=True
+            )
+            time.sleep(2)
+            
+            # 获取检查结果
+            result = subprocess.run(
+                ['tmux', 'capture-pane', '-t', session_name, '-p'],
+                capture_output=True, text=True
+            )
+            
+            container_exists = container_name in result.stdout
+            
+            if not container_exists:
+                log_output(f"🔨 容器 {container_name} 不存在，正在创建...", "INFO")
+                
+                # 获取Docker配置
+                with open(self.config_path, 'r', encoding='utf-8') as f:
+                    config = yaml.safe_load(f)
+                
+                servers_config = config.get('servers', {})
+                server_data = servers_config.get(server_config.name, {})
+                docker_config = server_data.get('docker_config', {})
+                
+                # 构建docker run命令
+                image = docker_config.get('image', 'ubuntu:20.04')
+                ports = docker_config.get('ports', [])
+                volumes = docker_config.get('volumes', [])
+                environment = docker_config.get('environment', {})
+                working_dir = docker_config.get('working_directory', '/workspace')
+                network_mode = docker_config.get('network_mode', 'host')
+                privileged = docker_config.get('privileged', False)
+                restart_policy = docker_config.get('restart_policy', 'always')
+                shm_size = docker_config.get('shm_size', '64g')
+                
+                # 构建端口映射参数
+                port_args = []
+                for port_mapping in ports:
+                    port_args.extend(['-p', port_mapping])
+                
+                # 构建卷挂载参数
+                volume_args = []
+                for volume_mapping in volumes:
+                    volume_args.extend(['-v', volume_mapping])
+                
+                # 构建环境变量参数
+                env_args = []
+                for key, value in environment.items():
+                    env_args.extend(['-e', f'{key}={value}'])
+                
+                # 构建docker run命令
+                docker_run_cmd = [
+                    'docker', 'run', '-d',
+                    '--name', container_name,
+                    '--restart', restart_policy,
+                    '--network', network_mode,
+                    '--shm-size', shm_size,
+                    '-w', working_dir
+                ]
+                
+                if privileged:
+                    docker_run_cmd.append('--privileged')
+                
+                docker_run_cmd.extend(port_args)
+                docker_run_cmd.extend(volume_args)
+                docker_run_cmd.extend(env_args)
+                docker_run_cmd.extend([image, 'tail', '-f', '/dev/null'])
+                
+                # 执行docker run命令
+                docker_run_str = ' '.join(docker_run_cmd)
+                log_output(f"🚀 创建容器命令: {docker_run_str}", "INFO")
+                
+                subprocess.run(
+                    ['tmux', 'send-keys', '-t', session_name, docker_run_str, 'Enter'],
+                    capture_output=True
+                )
+                
+                # 等待容器创建完成并处理交互式提示
+                max_wait = 60  # 最多等待60秒
+                check_interval = 3  # 每3秒检查一次
+                
+                for i in range(0, max_wait, check_interval):
+                    time.sleep(check_interval)
+                    
+                    # 获取当前输出
+                    result = subprocess.run(
+                        ['tmux', 'capture-pane', '-t', session_name, '-p'],
+                        capture_output=True, text=True
+                    )
+                    
+                    output = result.stdout
+                    
+                    # 检查是否有交互式提示
+                    if 'Choice [ynrq]:' in output or 'Choice [ynq]:' in output:
+                        log_output("🔍 检测到Docker交互式提示，自动选择 'y'", "INFO")
+                        subprocess.run(
+                            ['tmux', 'send-keys', '-t', session_name, 'y', 'Enter'],
+                            capture_output=True
+                        )
+                        time.sleep(2)
+                        continue
+                    
+                    # 检查容器是否创建成功
+                    if container_name in output:
+                        log_output(f"✅ Docker容器 {container_name} 创建成功", "SUCCESS")
+                        break
+                    
+                    # 检查是否有错误
+                    if 'Error:' in output or 'failed' in output.lower():
+                        return ConnectionResult(
+                            success=False,
+                            message=f"Docker容器 {container_name} 创建失败",
+                            status=ConnectionStatus.ERROR
+                        )
+                    
+                    log_output(f"⏳ 等待Docker容器创建... ({i+check_interval}s)", "INFO")
+                else:
+                    return ConnectionResult(
+                        success=False,
+                        message=f"Docker容器 {container_name} 创建超时",
+                        status=ConnectionStatus.ERROR
+                    )
+            else:
+                log_output(f"✅ Docker容器 {container_name} 已存在", "SUCCESS")
+            
+            # 步骤2: 用bash进入docker环境
+            log_output(f"🐳 进入Docker容器: {container_name}", "INFO")
             bash_cmd = f'docker exec -it {container_name} bash'
             subprocess.run(
                 ['tmux', 'send-keys', '-t', session_name, bash_cmd, 'Enter'],

@@ -363,7 +363,8 @@ class EnhancedConfigManager:
                 'message': '交互配置界面已成功启动',
                 'platform': platform_type,
                 'terminal_type': terminal_type,
-                'prefill_file': prefill_file
+                'prefill_file': prefill_file,
+                'process_id': 'new_terminal_window' if plat == 'Darwin' else None
             }
             
         except Exception as e:
