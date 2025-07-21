@@ -689,7 +689,9 @@ async def handle_request(request):
                         # 🚀 使用新的connect.py连接管理器
                         try:
                             from connect import connect_server as new_connect_server
-                            result = new_connect_server(server_name)
+                            # 使用正确的配置文件路径
+                            config_path = "config/config.yaml"
+                            result = new_connect_server(server_name, config_path=config_path)
                             
                             if result.success:
                                 content = f"✅ 连接成功！\n📝 详情: {result.message}\n\n🎯 连接信息:\n"
@@ -728,7 +730,9 @@ async def handle_request(request):
                     if server_name:
                         try:
                             from connect import disconnect_server as new_disconnect_server
-                            result = new_disconnect_server(server_name)
+                            # 使用正确的配置文件路径
+                            config_path = "config/config.yaml"
+                            result = new_disconnect_server(server_name, config_path=config_path)
                             
                             if result.success:
                                 content = f"✅ 断开连接成功\n📝 详情: {result.message}\n🎯 服务器: {server_name}"
@@ -759,7 +763,9 @@ async def handle_request(request):
                     if command:
                         try:
                             from connect import execute_server_command
-                            result = execute_server_command(server or "default", command)
+                            # 使用正确的配置文件路径
+                            config_path = "config/config.yaml"
+                            result = execute_server_command(server or "default", command, config_path=config_path)
                             
                             if result.success:
                                 content = f"✅ 命令执行成功\n\n📋 命令: {command}\n\n📄 输出:\n{result.details.get('output', '无输出') if result.details else '无输出'}"
@@ -779,7 +785,9 @@ async def handle_request(request):
                     if server_name:
                         try:
                             from connect import get_server_status as new_get_server_status
-                            result = new_get_server_status(server_name)
+                            # 使用正确的配置文件路径
+                            config_path = "config/config.yaml"
+                            result = new_get_server_status(server_name, config_path=config_path)
                             
                             if result.success:
                                 content = f"📊 服务器状态: {server_name}\n"
@@ -799,7 +807,9 @@ async def handle_request(request):
                         # 获取所有服务器状态
                         try:
                             from connect import list_all_servers
-                            servers_info = list_all_servers()
+                            # 使用正确的配置文件路径
+                            config_path = "config/config.yaml"
+                            servers_info = list_all_servers(config_path=config_path)
                             
                             if servers_info:
                                 content = "📊 所有服务器状态:\n\n"
