@@ -547,25 +547,19 @@ class ConnectionManager:
         log_output("🚀 新一代连接管理器已初始化", "SUCCESS")
     
     def _find_config_file(self) -> str:
-        """查找配置文件"""
-        # 与原有逻辑保持一致
+        """查找配置文件 - 统一使用 ~/.remote-terminal/config.yaml"""
         user_config_dir = Path.home() / ".remote-terminal"
         user_config_file = user_config_dir / "config.yaml"
         
         if user_config_file.exists():
             return str(user_config_file)
         
-        script_dir = Path(__file__).parent
-        project_dir = script_dir.parent
-        local_config = project_dir / "config" / "servers.local.yaml"
-        if local_config.exists():
-            return str(local_config)
+        # 如果配置文件不存在，创建目录和空配置文件
+        user_config_dir.mkdir(parents=True, exist_ok=True)
+        with open(user_config_file, 'w', encoding='utf-8') as f:
+            f.write("servers:\n")
         
-        template_config = project_dir / "config" / "servers.template.yaml"
-        if template_config.exists():
-            return str(template_config)
-        
-        raise FileNotFoundError("未找到配置文件")
+        return str(user_config_file)
     
     def _load_servers(self) -> Dict[str, ServerConfig]:
         """加载服务器配置"""
@@ -1452,24 +1446,19 @@ class SimpleConnectionManager:
         log_output("🚀 简化版连接管理器已初始化", "SUCCESS")
     
     def _find_config_file(self) -> str:
-        """查找配置文件"""
+        """查找配置文件 - 统一使用 ~/.remote-terminal/config.yaml"""
         user_config_dir = Path.home() / ".remote-terminal"
         user_config_file = user_config_dir / "config.yaml"
         
         if user_config_file.exists():
             return str(user_config_file)
         
-        script_dir = Path(__file__).parent
-        project_dir = script_dir.parent
-        local_config = project_dir / "config" / "servers.local.yaml"
-        if local_config.exists():
-            return str(local_config)
+        # 如果配置文件不存在，创建目录和空配置文件
+        user_config_dir.mkdir(parents=True, exist_ok=True)
+        with open(user_config_file, 'w', encoding='utf-8') as f:
+            f.write("servers:\n")
         
-        template_config = project_dir / "config" / "servers.template.yaml"
-        if template_config.exists():
-            return str(template_config)
-        
-        raise FileNotFoundError("未找到配置文件")
+        return str(user_config_file)
     
     def _load_servers(self) -> Dict[str, ServerConfig]:
         """加载服务器配置"""

@@ -131,7 +131,8 @@ class EnhancedConfigManager:
             final_cfg = {'servers': existing}
         else:
             final_cfg = {'servers': config.get('servers', {})}
-        config_path = getattr(self, 'config_path', 'config.yaml')
+        # 确保使用正确的配置文件路径
+        config_path = self.config_path
         with open(config_path, 'w', encoding='utf-8') as f:
             yaml.safe_dump(final_cfg, f, allow_unicode=True)
         return True
